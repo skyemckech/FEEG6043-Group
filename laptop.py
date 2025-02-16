@@ -86,6 +86,9 @@ class LaptopPilot:
                     
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
+        # update wheel rates
+        self.measured_wheelrate_right = msg.vector.x
+        self.measured_wheelrate_left = msg.vector.y
         self.datalog.log(msg, topic_name="/true_wheel_speeds")
 
     def lidar_callback(self, msg):
