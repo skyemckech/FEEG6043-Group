@@ -14,6 +14,9 @@ from zeroros import Subscriber, Publisher
 from zeroros.messages import LaserScan, Vector3Stamped, Pose, PoseStamped, Header, Quaternion
 from zeroros.datalogger import DataLogger
 from zeroros.rate import Rate
+from Libraries.model_feeg6043 import ActuatorConfiguration
+from Libraries.math_feeg6043 import Vector
+from Libraries.model_feeg6043 import rigid_body_kinematics
 # add more libraries here
 
 class LaptopPilot:
@@ -33,9 +36,10 @@ class LaptopPilot:
             self.robot_ip = "127.0.0.1"          
             aruco_params['marker_id'] = 0  #Ovewrites Aruco marker ID to 0 (needed for simulation)
             self.sim_init = True #used to deal with webots timestamps
-
+        
         print("Connecting to robot with IP", self.robot_ip)
         self.aruco_driver = ArUcoUDPDriver(aruco_params, parent=self)
+        self.initialise_pose = True # False once the pose is initialised
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
@@ -64,6 +68,11 @@ class LaptopPilot:
         # lidar
         self.lidar_timestamp_s = None
         self.lidar_data = None
+
+        # modelling parameters
+        wheel_distance = 0.07 # m 
+        wheel_diameter = 0.15 # m
+        self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
         ###############################################################        
 
         self.datalog = DataLogger(log_dir="logs")
@@ -162,14 +171,21 @@ class LaptopPilot:
 
         Your code should go here.
         """
+        ################### Motion Model ##############################
+        # convert true wheel speeds in to twist
+        q = Vector(2)            
+        q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
+        q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
+        u = self.ddrive.fwd_kinematics(q)    
+
         # > Sense < #
         # get the latest position measurements
         aruco_pose = self.aruco_driver.read()    
 
-        if aruco_pose is not None:                                                
+        if aruco_pose is not None:
+            
             # converts aruco date to zeroros PoseStamped format
             msg = self.pose_parse(aruco_pose, aruco = True)
-
             # reads sensed pose for local use 
             self.measured_pose_timestamp_s = msg.header.stamp
             self.measured_pose_northings_m = msg.pose.position.x
@@ -179,7 +195,6 @@ class LaptopPilot:
 
             # logs the data            
             self.datalog.log(msg, topic_name="/aruco")
-
 
         # > Think < #
         ################################################################################
