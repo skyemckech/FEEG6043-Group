@@ -115,7 +115,7 @@ class LaptopPilot:
         msg.header.stamp += self.sim_time_offset
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
-        self.lidar_data = np.zeros((len(msg.header.stamp), 2)) #specify length of the lidar data
+        self.lidar_data = np.zeros((len(self.lidar_timestamp_s), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
         ###############(imported)#########################
@@ -226,16 +226,16 @@ class LaptopPilot:
 
             ####################### wait for the first sensor info to initialize the pose ########################### (imported)
             if self.initialise_pose == True:
-                self.est_pose_northings_m = msg.aruco_pose.x ######## (changed)
-                self.est_pose_eastings_m = msg.aruco_pose.y  ######## (changed)
+                self.est_pose_northings_m = self.measured_pose_northings_m ######## (changed)
+                self.est_pose_eastings_m = self.measured_pose_eastings_m  ######## (changed)
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
-        # get current time and determine timestep
+                # get current time and determine timestep
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
 
-        # path and tragectory are initialised
+                # path and tragectory are initialised
                 self.initialise_pose = False 
                 
 
@@ -282,7 +282,7 @@ class LaptopPilot:
 
             wheel_speed_msg = Vector3Stamped()
             wheel_speed_msg.vector.x = 2 * np.pi  # Right wheel 1 rev/s = 1*pi rad/s
-            wheel_speed_msg.vector.y = 3 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
+            wheel_speed_msg.vector.y = 1 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
 
             self.cmd_wheelrate_right = wheel_speed_msg.vector.x
             self.cmd_wheelrate_left = wheel_speed_msg.vector.y
