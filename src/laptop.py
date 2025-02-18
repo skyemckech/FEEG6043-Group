@@ -7,8 +7,9 @@ See LICENSE.md file in the project root for full license information.
 """
 import numpy as np
 import argparse
-from datetime import datetime
 import time
+
+from datetime import datetime
 from drivers.aruco_udp_driver import ArUcoUDPDriver
 from zeroros import Subscriber, Publisher
 from zeroros.messages import LaserScan, Vector3Stamped, Pose, PoseStamped, Header, Quaternion
@@ -206,19 +207,11 @@ class LaptopPilot:
 
         Your code should go here.
         """
-        ################### Motion Model ##############################
-        # convert true wheel speeds in to twist
-        q = Vector(2)            
-        q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
-        q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
-        u = self.ddrive.fwd_kinematics(q)    
-
         # > Sense < #
         # get the latest position measurements
         aruco_pose = self.aruco_driver.read()    
 
         if aruco_pose is not None:
-            <code that parses aruco and logs the topic>
             # converts aruco date to zeroros PoseStamped format
             msg = self.pose_parse(aruco_pose, aruco = True)
             # reads sensed pose for local use
@@ -241,8 +234,6 @@ class LaptopPilot:
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
-        
-
 
         # path and tragectory are initialised
                 self.initialise_pose = False 
@@ -250,6 +241,12 @@ class LaptopPilot:
 
         if self.initialise_pose != True:  
             
+            ################### Motion Model ##############################
+            # convert true wheel speeds in to twist
+            q = Vector(2)            
+            q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
+            q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
+            u = self.ddrive.fwd_kinematics(q)    
             #determine the time step
             t_now = datetime.utcnow().timestamp()        
                     
@@ -270,36 +267,31 @@ class LaptopPilot:
             self.est_pose_northings_m = p_robot[0,0]
             self.est_pose_eastings_m = p_robot[1,0]
             self.est_pose_yaw_rad = p_robot[2,0]
-
-            <parse and log /est_pose>
-
             ##################################################################################################### (imported)
-            
-
-        # > Think < #
-        ################################################################################
-        #  TODO: Implement your state estimation
-        self.est_pose_northings_m = 0
-        self.est_pose_eastings_m = 0
-        self.est_pose_yaw_rad = 0
+             # > Think < #
+            ################################################################################
+            #  TODO: Implement your state estimation
+            self.est_pose_northings_m = 0
+            self.est_pose_eastings_m = 0
+            self.est_pose_yaw_rad = 0
         
-        msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
-        self.datalog.log(msg, topic_name="/est_pose")
-        ################################################################################
-        #  TODO: Implement your controller here                                        #
+            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
+            self.datalog.log(msg, topic_name="/est_pose")
+            ################################################################################
+            #  TODO: Implement your controller here                                        #
 
-        wheel_speed_msg = Vector3Stamped()
-        wheel_speed_msg.vector.x = 2 * np.pi  # Right wheel 1 rev/s = 1*pi rad/s
-        wheel_speed_msg.vector.y = 0 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
+            wheel_speed_msg = Vector3Stamped()
+            wheel_speed_msg.vector.x = 2 * np.pi  # Right wheel 1 rev/s = 1*pi rad/s
+            wheel_speed_msg.vector.y = 3 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
 
-        self.cmd_wheelrate_right = wheel_speed_msg.vector.x
-        self.cmd_wheelrate_left = wheel_speed_msg.vector.y
-        ################################################################################
+            self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+            self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+            ################################################################################
 
-        # > Act < #
-        # Send commands to the robot        
-        self.wheel_speed_pub.publish(wheel_speed_msg)
-        self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+            # > Act < #
+            # Send commands to the robot        
+            self.wheel_speed_pub.publish(wheel_speed_msg)
+            self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
 
 if __name__ == "__main__":
