@@ -19,6 +19,8 @@ from Libraries.model_feeg6043 import ActuatorConfiguration
 from Libraries.math_feeg6043 import Vector
 from Libraries.model_feeg6043 import rigid_body_kinematics
 from Libraries.model_feeg6043 import RangeAngleKinematics
+from Libraries.model_feeg6043 import feedback_control
+from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 # add more libraries here
 
 class LaptopPilot:
@@ -58,6 +60,13 @@ class LaptopPilot:
         self.measured_pose_northings_m = None
         self.measured_pose_eastings_m = None
         self.measured_pose_yaw_rad = None
+
+        # control parameters        
+        self.tau_s = 1 # s to remove along track error
+        self.L = ?? # m distance to remove normal and angular error
+        self.v_max = ?? # fastest the robot can go
+        self.w_max = ?? # fastest the robot can turn
+        self.initialise_control = True # False once control gains is initialised 
 
         # wheel speed commands
         self.cmd_wheelrate_right = None
@@ -115,7 +124,7 @@ class LaptopPilot:
         msg.header.stamp += self.sim_time_offset
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
-        self.lidar_data = np.zeros((len(self.lidar_timestamp_s), 2)) #specify length of the lidar data
+        self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
         ###############(imported)#########################
