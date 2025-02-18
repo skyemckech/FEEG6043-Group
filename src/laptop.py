@@ -204,8 +204,8 @@ class LaptopPilot:
                 self.eastings_path[i] += self.est_pose_eastings_m #offset by current eastings
 
             # convert path to matrix and create a trajectory class instance
-            C = l2m([len(self.northings_path), len(self.eastings_path)])        
-            self.path = TrajectoryGenerate(self.northings_path, self.eastings_path)        
+            C = l2m([self.northings_path, self.eastings_path])        
+            self.path = TrajectoryGenerate(C[0],C[1])        
             
             # set trajectory variables (velocity, acceleration and turning arc radius)
             self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
@@ -303,7 +303,7 @@ class LaptopPilot:
             #################### Trajectory sample #################################    
 
             # feedforward control: check wp progress and sample reference trajectory
-            self.path.wp_progress(self.t, p_robot,r ) # fill turning radius
+            self.path.wp_progress(self.t, p_robot,self.path_radius) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             ##################################################################################################### (imported)
              # > Think < #
