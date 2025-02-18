@@ -22,7 +22,7 @@ from Libraries.model_feeg6043 import RangeAngleKinematics
 from Libraries.model_feeg6043 import feedback_control
 from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 from Libraries.model_feeg6043 import TrajectoryGenerate
-from math_feeg6043 import l2m
+from Libraries.math_feeg6043 import l2m
 # add more libraries here
 
 class LaptopPilot:
