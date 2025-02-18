@@ -66,6 +66,7 @@ class LaptopPilot:
         self.L = 2 # m distance to remove normal and angular error
         self.v_max = 0.2 # m/s fastest the robot can go
         self.w_max = np.deg2rad(30) # fastest the robot can turn
+        
         self.initialise_control = True # False once control gains is initialised 
 
         # wheel speed commands
