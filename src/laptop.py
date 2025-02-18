@@ -221,11 +221,20 @@ class LaptopPilot:
             <code that parses aruco and logs the topic>
             # converts aruco date to zeroros PoseStamped format
             msg = self.pose_parse(aruco_pose, aruco = True)
+            # reads sensed pose for local use
+            self.measured_pose_timestamp_s = msg.header.stamp
+            self.measured_pose_northings_m = msg.pose.position.x
+            self.measured_pose_eastings_m = msg.pose.position.y
+            _, _, self.measured_pose_yaw_rad = msg.pose.orientation.to_euler()        
+            self.measured_pose_yaw_rad = self.measured_pose_yaw_rad % (np.pi*2) # manage angle wrapping
+
+            # logs the data            
+            self.datalog.log(msg, topic_name="/aruco")
 
             ####################### wait for the first sensor info to initialize the pose ########################### (imported)
             if self.initialise_pose == True:
-                self.est_pose_northings_m = aruco_pose.x ######## (changed)
-                self.est_pose_eastings_m = aruco_pose.y  ######## (changed)
+                self.est_pose_northings_m = msg.aruco_pose.x ######## (changed)
+                self.est_pose_eastings_m = msg.aruco_pose.y  ######## (changed)
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
         # get current time and determine timestep
@@ -233,12 +242,13 @@ class LaptopPilot:
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
         
+
+
         # path and tragectory are initialised
                 self.initialise_pose = False 
+                
 
         if self.initialise_pose != True:  
-
-            <actuator forward kinematic to determine u >
             
             #determine the time step
             t_now = datetime.utcnow().timestamp()        
@@ -263,25 +273,8 @@ class LaptopPilot:
 
             <parse and log /est_pose>
 
-
-
-
-
             ##################################################################################################### (imported)
-            # reads sensed pose for local use 
-            self.measured_pose_timestamp_s = msg.header.stamp
-            self.measured_pose_northings_m = msg.pose.position.x
-            self.measured_pose_eastings_m = msg.pose.position.y
-            _, _, self.measured_pose_yaw_rad = msg.pose.orientation.to_euler()        
-            self.measured_pose_yaw_rad = self.measured_pose_yaw_rad % (np.pi*2) # manage angle wrapping
-
-            # logs the data            
-            self.datalog.log(msg, topic_name="/aruco")
-
-
-
-
-
+            
 
         # > Think < #
         ################################################################################
