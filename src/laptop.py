@@ -315,41 +315,9 @@ class LaptopPilot:
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")
             ################################################################################
-            # feedback control: get pose change to desired trajectory from body
-            dp = p_ref - p_robot #compute difference between reference and estimated pose in the $e$-frame
-            dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
-            H_eb = HomogeneousTransformation(p_robot[0:2], p_robot[2])
-            ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
-
-            # compute control gains for the initial condition (where the robot is stationalry)
-            self.k_s = 1/self.tau_s #ks
-            if self.initialise_control == True:
-                self.k_n = 0 #kn
-                self.k_g = 0 #kg
-                self.initialise_control = False # maths changes a bit after the first iteration
-
-            # update the controls
-            du = feedback_control(ds, self.k_s, self.k_n, self.k_g)
-
-            # total control
-            u = u_ref + du # combine feedback and feedforward control twist components
-
-            # update control gains for the next timestep
-            self.k_n = 2*u[0]/self.L #kn
-            self.k_g = u[0]/self.L #kg
-
-            # ensure within performance limitation
-            if u[0] > self.v_max: u[0] = self.v_max
-            if u[0] < -self.v_max: u[0] = -self.v_max
-            if u[1] > self.w_max: u[1] = self.w_max
-            if u[1] < -self.w_max: u[1] = -self.w_max
-
-            # actuator commands                 
-            q = self.ddrive.inv_kinematics(u)            
-
             wheel_speed_msg = Vector3Stamped()
-            wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
-            wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
+            wheel_speed_msg.vector.x = 1 * np.pi  # Right wheel 1 rev/s = 1*pi rad/s
+            wheel_speed_msg.vector.y = 1 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
 
             self.cmd_wheelrate_right = wheel_speed_msg.vector.x
             self.cmd_wheelrate_left = wheel_speed_msg.vector.y
