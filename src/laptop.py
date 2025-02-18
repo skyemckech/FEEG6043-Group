@@ -17,7 +17,7 @@ from zeroros.rate import Rate
 from Libraries.model_feeg6043 import ActuatorConfiguration
 from Libraries.math_feeg6043 import Vector
 from Libraries.model_feeg6043 import rigid_body_kinematics
-from model_feeg6043 import RangeAngleKinematics
+from Libraries.model_feeg6043 import RangeAngleKinematics
 # add more libraries here
 
 class LaptopPilot:
@@ -113,10 +113,10 @@ class LaptopPilot:
 
         msg.header.stamp += self.sim_time_offset
         ###############(imported)#########################
-        self.lidar_timestamp_s = msg.??.?? #we want the lidar measurement timestamp here
-        self.lidar_data = np.zeros((len(msg.??.??), 2)) #specify length of the lidar data
-        self.lidar_data[:,0] = msg.?? # use ranges as a placeholder, workout northings in Task 4
-        self.lidar_data[:,1] = msg.?? # use angles as a placeholder, workout eastings in Task 4
+        self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
+        self.lidar_data = np.zeros((len(msg.header.stamp), 2)) #specify length of the lidar data
+        self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
+        self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
