@@ -299,6 +299,12 @@ class LaptopPilot:
             self.est_pose_northings_m = p_robot[0,0]
             self.est_pose_eastings_m = p_robot[1,0]
             self.est_pose_yaw_rad = p_robot[2,0]
+
+            #################### Trajectory sample #################################    
+
+            # feedforward control: check wp progress and sample reference trajectory
+            self.path.wp_progress(self.t, p_robot,r ) # fill turning radius
+            p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             ##################################################################################################### (imported)
              # > Think < #
             ################################################################################
@@ -348,6 +354,7 @@ class LaptopPilot:
 
             self.cmd_wheelrate_right = wheel_speed_msg.vector.x
             self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+            
             ################################################################################
 
             # > Act < #
@@ -355,11 +362,6 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
-    #################### Trajectory sample #################################    
-
-    # feedforward control: check wp progress and sample reference trajectory
-    self.path.wp_progress(self.t, p_robot,r ) # fill turning radius
-    p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
