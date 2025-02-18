@@ -21,6 +21,8 @@ from Libraries.model_feeg6043 import rigid_body_kinematics
 from Libraries.model_feeg6043 import RangeAngleKinematics
 from Libraries.model_feeg6043 import feedback_control
 from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
+from model_feeg6043 import TrajectoryGenerate
+from math_feeg6043 import l2m
 # add more libraries here
 
 class LaptopPilot:
@@ -47,6 +49,9 @@ class LaptopPilot:
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
+        v = 0.1
+        a = 0.1/3
+        r = 0.5
         self.northings_path = [0,5,5,0,0]
         self.eastings_path = [0,0,5,5,0]         
 
@@ -189,7 +194,24 @@ class LaptopPilot:
         else: quat.from_euler(0, 0, msg[6])
         pose_msg.pose.orientation = quat        
         return pose_msg
+        ###################### (Imported)
 
+    def generate_trajectory(self):
+    # pick waypoints as current pose relative or absolute northings and eastings
+        if self.relative_path == True:
+            for i in range(len(self.northings_path)):
+                self.northings_path[i] += self.est_pose_northings_m #offset by current northings
+                self.eastings_path[i] += self.est_pose_eastings_m #offset by current eastings
+
+            # convert path to matrix and create a trajectory class instance
+            C = l2m([len(self.northings_path), len(self.eastings_path)])        
+            self.path = TrajectoryGenerate(self.northings_path, self.eastings_path)        
+            
+            # set trajectory variables (velocity, acceleration and turning arc radius)
+            self.path.path_to_trajectory(v, a) #velocity and acceleration
+            self.path.turning_arcs(r) #turning radius
+            self.path.wp_id=0 #initialises the next waypoint
+        ####################  (^^^^^^^imported^^^^^^)
 
     def run(self, time_to_run=-1):
         self.start_time = datetime.utcnow().timestamp()
