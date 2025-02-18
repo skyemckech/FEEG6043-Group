@@ -124,9 +124,9 @@ class LaptopPilot:
         ###############(imported)#########################
         # b to e frame
         p_eb = Vector(3)
-        p_eb[0] = self.measured_pose_northings_m #robot pose northings (see Task 3)
-        p_eb[1] = self.measured_pose_eastings_m #robot pose eastings (see Task 3)
-        p_eb[2] = self.measured_pose_yaw_rad #robot pose yaw (see Task 3)
+        p_eb[0] = self.est_pose_northings_m #robot pose northings (see Task 3)
+        p_eb[1] = self.est_pose_eastings_m #robot pose eastings (see Task 3)
+        p_eb[2] = self.est_pose_yaw_rad #robot pose yaw (see Task 3)
 
         # m to e frame
         self.lidar_data = np.zeros((len(msg.ranges), 2))        
@@ -256,9 +256,9 @@ class LaptopPilot:
 
             # take current pose estimate and update by twist
             p_robot = Vector(3)
-            p_robot[0,0] = self.measured_pose_northings_m
-            p_robot[1,0] = self.measured_pose_eastings_m
-            p_robot[2,0] = self.measured_pose_yaw_rad
+            p_robot[0,0] = self.est_pose_northings_m
+            p_robot[1,0] = self.est_pose_eastings_m
+            p_robot[2,0] = self.est_pose_yaw_rad
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
