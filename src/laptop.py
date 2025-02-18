@@ -21,7 +21,7 @@ from Libraries.model_feeg6043 import rigid_body_kinematics
 from Libraries.model_feeg6043 import RangeAngleKinematics
 from Libraries.model_feeg6043 import feedback_control
 from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
-from model_feeg6043 import TrajectoryGenerate
+from Libraries.model_feeg6043 import TrajectoryGenerate
 from math_feeg6043 import l2m
 # add more libraries here
 
@@ -49,9 +49,9 @@ class LaptopPilot:
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
-        v = 0.1
-        a = 0.1/3
-        r = 0.5
+        self.path_velocity = 0.1
+        self.path_acceleration = 0.1/3
+        self.path_radius = 0.5
         self.northings_path = [0,5,5,0,0]
         self.eastings_path = [0,0,5,5,0]         
 
@@ -176,7 +176,7 @@ class LaptopPilot:
                 
             # self.sim_time_offset is 0 if not a simulation. Deals with webots dealing in elapse timeself.sim_time_offset
             print(
-                "Received position update from",
+                "Received update from",
                 datetime.utcnow().timestamp() - msg[0] - self.sim_time_offset,
                 "seconds ago",
             )
@@ -208,8 +208,8 @@ class LaptopPilot:
             self.path = TrajectoryGenerate(self.northings_path, self.eastings_path)        
             
             # set trajectory variables (velocity, acceleration and turning arc radius)
-            self.path.path_to_trajectory(v, a) #velocity and acceleration
-            self.path.turning_arcs(r) #turning radius
+            self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
+            self.path.turning_arcs(self.path_velocity) #turning radius
             self.path.wp_id=0 #initialises the next waypoint
         ####################  (^^^^^^^imported^^^^^^)
 
@@ -354,7 +354,6 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
