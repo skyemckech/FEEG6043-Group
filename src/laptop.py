@@ -68,7 +68,7 @@ class LaptopPilot:
         self.measured_pose_yaw_rad = None
 
         # control parameters        
-        self.tau_s = 5 # s to remove along track error
+        self.tau_s = 0.2 # s to remove along track error
         self.L = 0.4 # m distance to remove normal and angular error
         self.v_max = 0.2 # m/s fastest the robot can go
         self.w_max = np.deg2rad(30) # fastest the robot can turn
