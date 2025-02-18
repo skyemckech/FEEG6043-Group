@@ -12,7 +12,9 @@ from threading import Thread
 from time import sleep
 import argparse
 import numpy as np
-from numpy._globals import VisibleDeprecationWarning  
+""" from numpy._globals import VisibleDeprecationWarning  """
+import warnings
+warnings.simplefilter("ignore") 
 import copy
 
 
