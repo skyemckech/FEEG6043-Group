@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from collections import Counter
 from matplotlib.patches import Ellipse
 from matplotlib.patches import Circle
+from scipy.optimize import curve_fit
 
 plt.rcParams["figure.figsize"] = (5,3) #make plots look nice
 plt.rcParams["figure.dpi"] = 150 #make plots look nice
