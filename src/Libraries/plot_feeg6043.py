@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, polar2cartesian,gaussian
+from Libraries.math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, polar2cartesian,gaussian
 import matplotlib.patches as patches
 import numpy as np
 from scipy.stats import multivariate_normal
@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from collections import Counter
 from matplotlib.patches import Ellipse
 from matplotlib.patches import Circle
+from scipy.optimize import curve_fit
 
 plt.rcParams["figure.figsize"] = (5,3) #make plots look nice
 plt.rcParams["figure.dpi"] = 150 #make plots look nice
