@@ -19,8 +19,6 @@ from Libraries.model_feeg6043 import ActuatorConfiguration
 from Libraries.math_feeg6043 import Vector
 from Libraries.model_feeg6043 import rigid_body_kinematics
 from Libraries.model_feeg6043 import RangeAngleKinematics
-from Libraries.model_feeg6043 import feedback_control
-from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 # add more libraries here
 
 class LaptopPilot:
@@ -47,8 +45,8 @@ class LaptopPilot:
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
-        self.northings_path = [0,5,5,0,0]
-        self.eastings_path = [0,0,5,5,0]         
+        self.northings_path = []
+        self.eastings_path = []        
 
         # model pose
         self.est_pose_northings_m = 3
@@ -60,14 +58,6 @@ class LaptopPilot:
         self.measured_pose_northings_m = None
         self.measured_pose_eastings_m = None
         self.measured_pose_yaw_rad = None
-
-        # control parameters        
-        self.tau_s = 1 # s to remove along track error
-        self.L = 2 # m distance to remove normal and angular error
-        self.v_max = 0.2 # m/s fastest the robot can go
-        self.w_max = np.deg2rad(30) # fastest the robot can turn
-        
-        self.initialise_control = True # False once control gains is initialised 
 
         # wheel speed commands
         self.cmd_wheelrate_right = None
@@ -81,12 +71,12 @@ class LaptopPilot:
         self.lidar_timestamp_s = None
         self.lidar_data = None
         lidar_xb = 0 # location of lidar centre in b-frame primary axis ########################(changed)
-        lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
+        lidar_yb = 0.05 # location of lidar centre in b-frame secondary axis ###################(Changed)
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
         # modelling parameters
-        wheel_distance = 0.65 # m 
-        wheel_diameter = 0.073 # m
+        wheel_distance = 0.07 # m 
+        wheel_diameter = 0.15 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
         ###############################################################        
 
@@ -125,7 +115,7 @@ class LaptopPilot:
         msg.header.stamp += self.sim_time_offset
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
-        self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
+        self.lidar_data = np.zeros((len(msg.header.stamp), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
         ###############(imported)#########################
@@ -134,9 +124,9 @@ class LaptopPilot:
         ###############(imported)#########################
         # b to e frame
         p_eb = Vector(3)
-        p_eb[0] = self.est_pose_northings_m #robot pose northings (see Task 3)
-        p_eb[1] = self.est_pose_eastings_m #robot pose eastings (see Task 3)
-        p_eb[2] = self.est_pose_yaw_rad #robot pose yaw (see Task 3)
+        p_eb[0] = self.measured_pose_northings_m #robot pose northings (see Task 3)
+        p_eb[1] = self.measured_pose_eastings_m #robot pose eastings (see Task 3)
+        p_eb[2] = self.measured_pose_yaw_rad #robot pose yaw (see Task 3)
 
         # m to e frame
         self.lidar_data = np.zeros((len(msg.ranges), 2))        
@@ -236,16 +226,16 @@ class LaptopPilot:
 
             ####################### wait for the first sensor info to initialize the pose ########################### (imported)
             if self.initialise_pose == True:
-                self.est_pose_northings_m = self.measured_pose_northings_m ######## (changed)
-                self.est_pose_eastings_m = self.measured_pose_eastings_m  ######## (changed)
+                self.est_pose_northings_m = msg.aruco_pose.x ######## (changed)
+                self.est_pose_eastings_m = msg.aruco_pose.y  ######## (changed)
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
-                # get current time and determine timestep
+        # get current time and determine timestep
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
 
-                # path and tragectory are initialised
+        # path and tragectory are initialised
                 self.initialise_pose = False 
                 
 
@@ -266,9 +256,9 @@ class LaptopPilot:
 
             # take current pose estimate and update by twist
             p_robot = Vector(3)
-            p_robot[0,0] = self.est_pose_northings_m
-            p_robot[1,0] = self.est_pose_eastings_m
-            p_robot[2,0] = self.est_pose_yaw_rad
+            p_robot[0,0] = self.measured_pose_northings_m
+            p_robot[1,0] = self.measured_pose_eastings_m
+            p_robot[2,0] = self.measured_pose_yaw_rad
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
@@ -292,7 +282,7 @@ class LaptopPilot:
 
             wheel_speed_msg = Vector3Stamped()
             wheel_speed_msg.vector.x = 2 * np.pi  # Right wheel 1 rev/s = 1*pi rad/s
-            wheel_speed_msg.vector.y = 1 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
+            wheel_speed_msg.vector.y = 3 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
 
             self.cmd_wheelrate_right = wheel_speed_msg.vector.x
             self.cmd_wheelrate_left = wheel_speed_msg.vector.y
