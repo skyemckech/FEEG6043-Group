@@ -325,6 +325,11 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
+    #################### Trajectory sample #################################    
+
+    # feedforward control: check wp progress and sample reference trajectory
+    self.path.wp_progress(self.t, p_robot, ??) # fill turning radius
+    p_ref, u_ref = self.path.p_u_sample(??) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
