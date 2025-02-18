@@ -17,6 +17,7 @@ from zeroros.rate import Rate
 from Libraries.model_feeg6043 import ActuatorConfiguration
 from Libraries.math_feeg6043 import Vector
 from Libraries.model_feeg6043 import rigid_body_kinematics
+from model_feeg6043 import RangeAngleKinematics
 # add more libraries here
 
 class LaptopPilot:
@@ -68,6 +69,9 @@ class LaptopPilot:
         # lidar
         self.lidar_timestamp_s = None
         self.lidar_data = None
+        lidar_xb = 0 # location of lidar centre in b-frame primary axis ########################(changed)
+        lidar_yb = 0.05 # location of lidar centre in b-frame secondary axis ###################(Changed)
+        self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
         # modelling parameters
         wheel_distance = 0.07 # m 
@@ -108,6 +112,12 @@ class LaptopPilot:
             self.sim_init = False     
 
         msg.header.stamp += self.sim_time_offset
+        ###############(imported)#########################
+        self.lidar_timestamp_s = msg.??.?? #we want the lidar measurement timestamp here
+        self.lidar_data = np.zeros((len(msg.??.??), 2)) #specify length of the lidar data
+        self.lidar_data[:,0] = msg.?? # use ranges as a placeholder, workout northings in Task 4
+        self.lidar_data[:,1] = msg.?? # use angles as a placeholder, workout eastings in Task 4
+        ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
     def groundtruth_callback(self, msg):
@@ -183,9 +193,56 @@ class LaptopPilot:
         aruco_pose = self.aruco_driver.read()    
 
         if aruco_pose is not None:
-            
+            <code that parses aruco and logs the topic>
             # converts aruco date to zeroros PoseStamped format
             msg = self.pose_parse(aruco_pose, aruco = True)
+
+            ####################### wait for the first sensor info to initialize the pose ########################### (imported)
+            if self.initialise_pose == True:
+                self.est_pose_northings_m = aruco_pose.x ######## (changed)
+                self.est_pose_eastings_m = aruco_pose.y  ######## (changed)
+                self.est_pose_yaw_rad = self.measured_pose_yaw_rad
+
+        # get current time and determine timestep
+                self.t_prev = datetime.utcnow().timestamp() #initialise the time
+                self.t = 0 #elapsed time
+                time.sleep(0.1) #wait for approx a timestep before proceeding
+        
+        # path and tragectory are initialised
+                self.initialise_pose = False 
+
+        if self.initialise_pose != True:  
+
+            <actuator forward kinematic to determine u >
+            
+            #determine the time step
+            t_now = datetime.utcnow().timestamp()        
+                    
+            dt = t_now - self.t_prev #timestep from last estimate
+            self.t += dt #add to the elapsed time
+            self.t_prev = t_now #update the previous timestep for the next loop
+
+            # take current pose estimate and update by twist
+            p_robot = Vector(3)
+            p_robot[0,0] = aruco_pose.x
+            p_robot[1,0] = aruco_pose.y
+            p_robot[2,0] = self.measured_pose_yaw_rad
+                                
+            p_robot = rigid_body_kinematics(p_robot,u, dt)
+            p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
+
+            # update for show_laptop.py            
+            self.est_pose_northings_m = p_robot[0,0]
+            self.est_pose_eastings_m = p_robot[1,0]
+            self.est_pose_yaw_rad = p_robot[2,0]
+
+            <parse and log /est_pose>
+
+
+
+
+
+            ##################################################################################################### (imported)
             # reads sensed pose for local use 
             self.measured_pose_timestamp_s = msg.header.stamp
             self.measured_pose_northings_m = msg.pose.position.x
@@ -195,6 +252,11 @@ class LaptopPilot:
 
             # logs the data            
             self.datalog.log(msg, topic_name="/aruco")
+
+
+
+
+
 
         # > Think < #
         ################################################################################
