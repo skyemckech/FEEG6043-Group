@@ -359,7 +359,7 @@ class LaptopPilot:
 
     # feedforward control: check wp progress and sample reference trajectory
     self.path.wp_progress(self.t, p_robot,r ) # fill turning radius
-    p_ref, u_ref = self.path.p_u_sample(??) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
+    p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
