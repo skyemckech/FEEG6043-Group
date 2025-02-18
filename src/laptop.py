@@ -209,8 +209,8 @@ class LaptopPilot:
         #  TODO: Implement your controller here                                        #
 
         wheel_speed_msg = Vector3Stamped()
-        wheel_speed_msg.vector.x = 1 * np.pi  # Right wheel 1 rev/s = 1*pi rad/s
-        wheel_speed_msg.vector.y = 2 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
+        wheel_speed_msg.vector.x = 2 * np.pi  # Right wheel 1 rev/s = 1*pi rad/s
+        wheel_speed_msg.vector.y = 0 * np.pi  # Left wheel 1 rev/s = 2*pi rad/s
 
         self.cmd_wheelrate_right = wheel_speed_msg.vector.x
         self.cmd_wheelrate_left = wheel_speed_msg.vector.y
