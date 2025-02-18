@@ -47,9 +47,9 @@ class LaptopPilot:
         self.eastings_path = []        
 
         # model pose
-        self.est_pose_northings_m = None
-        self.est_pose_eastings_m = None
-        self.est_pose_yaw_rad = None
+        self.est_pose_northings_m = 3
+        self.est_pose_eastings_m = 5
+        self.est_pose_yaw_rad = np.deg2rad(6)
 
         # measured pose
         self.measured_pose_timestamp_s = None
