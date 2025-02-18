@@ -47,8 +47,8 @@ class LaptopPilot:
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
-        self.northings_path = []
-        self.eastings_path = []        
+        self.northings_path = [0,5,5,0,0]
+        self.eastings_path = [0,0,5,5,0]         
 
         # model pose
         self.est_pose_northings_m = 3
@@ -81,12 +81,12 @@ class LaptopPilot:
         self.lidar_timestamp_s = None
         self.lidar_data = None
         lidar_xb = 0 # location of lidar centre in b-frame primary axis ########################(changed)
-        lidar_yb = 0.05 # location of lidar centre in b-frame secondary axis ###################(Changed)
+        lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
         # modelling parameters
-        wheel_distance = 0.07 # m 
-        wheel_diameter = 0.15 # m
+        wheel_distance = 0.65 # m 
+        wheel_diameter = 0.073 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
         ###############################################################        
 
