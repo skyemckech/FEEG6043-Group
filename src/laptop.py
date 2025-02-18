@@ -52,8 +52,8 @@ class LaptopPilot:
         self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
         self.path_radius = 0.5
-        self.northings_path = [0,5,5,0,0]
-        self.eastings_path = [0,0,5,5,0]         
+        self.northings_path = [0,1,1]
+        self.eastings_path = [0,0,1]         
 
         # model pose
         self.est_pose_northings_m = 3
