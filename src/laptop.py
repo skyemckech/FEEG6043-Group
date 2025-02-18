@@ -311,10 +311,7 @@ class LaptopPilot:
              # > Think < #
             ################################################################################
             #  TODO: Implement your state estimation
-            self.est_pose_northings_m = 0
-            self.est_pose_eastings_m = 0
-            self.est_pose_yaw_rad = 0
-        
+    
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")
             ################################################################################
