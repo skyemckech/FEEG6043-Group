@@ -53,12 +53,13 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.5
         self.northings_path = [0,1,1]
-        self.eastings_path = [0,0,1]         
+        self.eastings_path = [0,0,1]       
+        self.relative_path = True #False if you want it to be absolute  
 
         # model pose
-        self.est_pose_northings_m = 3
-        self.est_pose_eastings_m = 5
-        self.est_pose_yaw_rad = np.deg2rad(6)
+        self.est_pose_northings_m = None
+        self.est_pose_eastings_m = None
+        self.est_pose_yaw_rad = None
 
         # measured pose
         self.measured_pose_timestamp_s = None
@@ -67,8 +68,8 @@ class LaptopPilot:
         self.measured_pose_yaw_rad = None
 
         # control parameters        
-        self.tau_s = 1 # s to remove along track error
-        self.L = 2 # m distance to remove normal and angular error
+        self.tau_s = 0.2 # s to remove along track error
+        self.L = 0.4 # m distance to remove normal and angular error
         self.v_max = 0.2 # m/s fastest the robot can go
         self.w_max = np.deg2rad(30) # fastest the robot can turn
         
@@ -267,6 +268,7 @@ class LaptopPilot:
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
 
+                self.generate_trajectory()
                 # path and tragectory are initialised
                 self.initialise_pose = False 
                 
@@ -288,9 +290,9 @@ class LaptopPilot:
 
             # take current pose estimate and update by twist
             p_robot = Vector(3)
-            p_robot[0,0] = self.est_pose_northings_m
-            p_robot[1,0] = self.est_pose_eastings_m
-            p_robot[2,0] = self.est_pose_yaw_rad
+            p_robot[0,0] = self.measured_pose_northings_m
+            p_robot[1,0] = self.measured_pose_eastings_m
+            p_robot[2,0] = self.measured_pose_yaw_rad
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
