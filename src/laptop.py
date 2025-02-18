@@ -358,7 +358,7 @@ class LaptopPilot:
     #################### Trajectory sample #################################    
 
     # feedforward control: check wp progress and sample reference trajectory
-    self.path.wp_progress(self.t, p_robot, ??) # fill turning radius
+    self.path.wp_progress(self.t, p_robot, ) # fill turning radius
     p_ref, u_ref = self.path.p_u_sample(??) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
 
 if __name__ == "__main__":
