@@ -1,17 +1,7 @@
 {
-    "terminal.integrated.env.windows": {
-        "PYTHONDONTWRITEBYTECODE": "1"
-    },
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "./tests",
-        "-p",
-        "test_*.py"
-    ],
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestArgs": ["tests"], // Replace "tests" with the path to your test folder
+    "python.testing.autoTestDiscoverOnSaveEnabled": true
 }
