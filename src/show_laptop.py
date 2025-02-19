@@ -186,8 +186,8 @@ class Window(QWidget):
                 self.est_position.cb_append_data_point(est_pose_northings_m, est_pose_eastings_m)
             if measured_pose_northings_m is not None and measured_pose_eastings_m is not None  and measured_pose_timestamp_s > measured_pose_stamp_prev:
                 self.measured_position.cb_append_data_point(measured_pose_northings_m, measured_pose_eastings_m)
-            if p_reference_tracker is not None:
-                self.p_reference_tracker.cb_append_data_point(p_reference_tracker[0,0], p_reference_tracker[1,0])
+            #if p_reference_tracker is not None:
+            #    self.p_reference_tracker.cb_append_data_point(p_reference_tracker[0,0], p_reference_tracker[1,0])
     
             #lidar 
             if lidar_data is not None and lidar_timestamp_s != lidar_timestamp_s_prev:
