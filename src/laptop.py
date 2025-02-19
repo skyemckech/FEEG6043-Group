@@ -23,6 +23,8 @@ from Libraries.model_feeg6043 import feedback_control
 from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 from Libraries.model_feeg6043 import TrajectoryGenerate
 from Libraries.math_feeg6043 import l2m
+from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
+from matplotlib import pyplot as plt
 # add more libraries here
 
 class LaptopPilot:
@@ -205,14 +207,14 @@ class LaptopPilot:
                 self.northings_path[i] += self.est_pose_northings_m #offset by current northings
                 self.eastings_path[i] += self.est_pose_eastings_m #offset by current eastings
 
-            # convert path to matrix and create a trajectory class instance
-            C = l2m([self.northings_path, self.eastings_path])        
-            self.path = TrajectoryGenerate(C[:,0],C[:,1])        
+        # convert path to matrix and create a trajectory class instance
+        C = l2m([self.northings_path, self.eastings_path])        
+        self.path = TrajectoryGenerate(C[:,0],C[:,1])        
             
-            # set trajectory variables (velocity, acceleration and turning arc radius)
-            self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
-            self.path.turning_arcs(self.path_velocity) #turning radius
-            self.path.wp_id=0 #initialises the next waypoint
+        # set trajectory variables (velocity, acceleration and turning arc radius)
+        self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
+        self.path.turning_arcs(self.path_radius) #turning radius
+        self.path.wp_id=0 #initialises the next waypoint
         ####################  (^^^^^^^imported^^^^^^)
 
     def run(self, time_to_run=-1):
@@ -282,6 +284,7 @@ class LaptopPilot:
             q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
             q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
             u = self.ddrive.fwd_kinematics(q)    
+            
             #determine the time step
             t_now = datetime.utcnow().timestamp()        
                     
@@ -303,9 +306,9 @@ class LaptopPilot:
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
 
             # update for show_laptop.py            
-            self.est_pose_northings_m = p_robot[0,0]
-            self.est_pose_eastings_m = p_robot[1,0]
-            self.est_pose_yaw_rad = p_robot[2,0]
+            self.est_pose_northings_m = p_ref[0,0]
+            self.est_pose_eastings_m = p_ref[1,0]
+            self.est_pose_yaw_rad = p_ref[2,0]
 
             #################### Trajectory sample #################################    
 
@@ -363,7 +366,7 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
-
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
