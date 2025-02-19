@@ -23,6 +23,8 @@ from Libraries.model_feeg6043 import feedback_control
 from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 from Libraries.model_feeg6043 import TrajectoryGenerate
 from Libraries.math_feeg6043 import l2m
+from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
+from matplotlib import pyplot as plt
 # add more libraries here
 
 class LaptopPilot:
@@ -51,10 +53,20 @@ class LaptopPilot:
         # path
         self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
-        self.path_radius = 0.5
-        self.northings_path = [0,1,1]
-        self.eastings_path = [0,0,1]       
+        self.path_radius = 0.3
+        self.accept_radius = 0.2
+        self.northings_path = [0,1.4,1.4,0,0,0,1,1,0,0]
+        self.eastings_path = [0,0,1.4,1.4,0,0,0,1,1,0]       
         self.relative_path = True #False if you want it to be absolute  
+
+        # control parameters        
+        self.tau_s = 2 # s to remove along track error
+        self.L = 0.5 # m distance to remove normal and angular error
+        self.v_max = 0.2 # m/s fastest the robot can go
+        self.w_max = np.deg2rad(60) # fastest the robot can turn
+        self.timeout = 10 #s
+        
+        self.initialise_control = True # False once control gains is initialised 
 
         # model pose
         self.est_pose_northings_m = None
@@ -66,14 +78,6 @@ class LaptopPilot:
         self.measured_pose_northings_m = None
         self.measured_pose_eastings_m = None
         self.measured_pose_yaw_rad = None
-
-        # control parameters        
-        self.tau_s = 0.2 # s to remove along track error
-        self.L = 0.4 # m distance to remove normal and angular error
-        self.v_max = 0.2 # m/s fastest the robot can go
-        self.w_max = np.deg2rad(30) # fastest the robot can turn
-        
-        self.initialise_control = True # False once control gains is initialised 
 
         # wheel speed commands
         self.cmd_wheelrate_right = None
@@ -91,8 +95,8 @@ class LaptopPilot:
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
         # modelling parameters
-        wheel_distance = 0.165 # m 
-        wheel_diameter = 0.073 # m
+        wheel_distance = 0.162 # m 
+        wheel_diameter = 0.074 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
         ###############################################################        
 
@@ -204,14 +208,14 @@ class LaptopPilot:
                 self.northings_path[i] += self.est_pose_northings_m #offset by current northings
                 self.eastings_path[i] += self.est_pose_eastings_m #offset by current eastings
 
-            # convert path to matrix and create a trajectory class instance
-            C = l2m([self.northings_path, self.eastings_path])        
-            self.path = TrajectoryGenerate(C[0],C[1])        
+        # convert path to matrix and create a trajectory class instance
+        C = l2m([self.northings_path, self.eastings_path])        
+        self.path = TrajectoryGenerate(C[:,0],C[:,1])        
             
-            # set trajectory variables (velocity, acceleration and turning arc radius)
-            self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
-            self.path.turning_arcs(self.path_velocity) #turning radius
-            self.path.wp_id=0 #initialises the next waypoint
+        # set trajectory variables (velocity, acceleration and turning arc radius)
+        self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
+        self.path.turning_arcs(self.path_radius) #turning radius
+        self.path.wp_id=0 #initialises the next waypoint
         ####################  (^^^^^^^imported^^^^^^)
 
     def run(self, time_to_run=-1):
@@ -263,24 +267,26 @@ class LaptopPilot:
                 self.est_pose_eastings_m = self.measured_pose_eastings_m  ######## (changed)
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
+                self.generate_trajectory()
                 # get current time and determine timestep
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
 
-                self.generate_trajectory()
                 # path and tragectory are initialised
                 self.initialise_pose = False 
                 
 
         if self.initialise_pose != True:  
             
-            ################### Motion Model ##############################
+             # > Receive < #
+            #################################################################################
             # convert true wheel speeds in to twist
             q = Vector(2)            
             q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
             q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
             u = self.ddrive.fwd_kinematics(q)    
+            
             #determine the time step
             t_now = datetime.utcnow().timestamp()        
                     
@@ -288,6 +294,9 @@ class LaptopPilot:
             self.t += dt #add to the elapsed time
             self.t_prev = t_now #update the previous timestep for the next loop
 
+             # > Think < #
+            ################################################################################
+            ################### Motion Model ##############################
             # take current pose estimate and update by twist
             p_robot = Vector(3)
             p_robot[0,0] = self.est_pose_northings_m
@@ -297,23 +306,21 @@ class LaptopPilot:
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
 
+            #################### Trajectory sample #################################    
+
+            # feedforward control: check wp progress and sample reference trajectory
+            self.path.wp_progress(self.t, p_robot,self.accept_radius,2,self.timeout) # fill turning radius
+            p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
+
+            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
+            self.datalog.log(msg, topic_name="/est_pose")
+
             # update for show_laptop.py            
             self.est_pose_northings_m = p_robot[0,0]
             self.est_pose_eastings_m = p_robot[1,0]
             self.est_pose_yaw_rad = p_robot[2,0]
 
-            #################### Trajectory sample #################################    
-
-            # feedforward control: check wp progress and sample reference trajectory
-            self.path.wp_progress(self.t, p_robot,self.path_radius) # fill turning radius
-            p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
-            ##################################################################################################### (imported)
-             # > Think < #
-            ################################################################################
-            #  TODO: Implement your state estimation
-    
-            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
-            self.datalog.log(msg, topic_name="/est_pose")
+            # > Control < #
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - p_robot #compute difference between reference and estimated pose in the $e$-frame
@@ -332,7 +339,8 @@ class LaptopPilot:
             du = feedback_control(ds, self.k_s, self.k_n, self.k_g)
 
             # total control
-            u = u_ref + du # combine feedback and feedforward control twist components
+            #u = u_ref + du # combine feedback and feedforward control twist components
+            u = u_ref + du
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
@@ -361,6 +369,8 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
+
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
