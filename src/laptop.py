@@ -280,8 +280,10 @@ class LaptopPilot:
             q = Vector(2)            
             q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
             q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
-            u = self.ddrive.fwd_kinematics(q)    
-            #determine the time step
+            u = self.ddrive.fwd_kinematics(q)  
+
+
+            #############determine the time step##############
             t_now = datetime.utcnow().timestamp()        
                     
             dt = t_now - self.t_prev #timestep from last estimate
