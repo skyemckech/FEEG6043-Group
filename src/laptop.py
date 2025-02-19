@@ -279,7 +279,8 @@ class LaptopPilot:
 
         if self.initialise_pose != True:  
             
-            ################### Motion Model ##############################
+             # > Receive < #
+            #################################################################################
             # convert true wheel speeds in to twist
             q = Vector(2)            
             q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
@@ -295,13 +296,12 @@ class LaptopPilot:
 
              # > Think < #
             ################################################################################
-            #  TODO: Implement your state estimation
-    
+            ################### Motion Model ##############################
             # take current pose estimate and update by twist
             p_robot = Vector(3)
-            p_robot[0,0] = self.measured_pose_northings_m
-            p_robot[1,0] = self.measured_pose_eastings_m
-            p_robot[2,0] = self.measured_pose_yaw_rad
+            p_robot[0,0] = self.est_pose_northings_m
+            p_robot[1,0] = self.est_pose_eastings_m
+            p_robot[2,0] = self.est_pose_yaw_rad
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
@@ -314,6 +314,13 @@ class LaptopPilot:
 
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")
+
+            # update for show_laptop.py            
+            self.est_pose_northings_m = p_robot[0,0]
+            self.est_pose_eastings_m = p_robot[1,0]
+            self.est_pose_yaw_rad = p_robot[2,0]
+
+            # > Control < #
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - p_robot #compute difference between reference and estimated pose in the $e$-frame
@@ -362,10 +369,7 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
-            # update for show_laptop.py            
-            self.est_pose_northings_m = p_robot[0,0]
-            self.est_pose_eastings_m = p_robot[1,0]
-            self.est_pose_yaw_rad = p_robot[2,0]
+
     
 
 if __name__ == "__main__":
