@@ -52,9 +52,10 @@ class LaptopPilot:
         self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
         self.path_radius = 0.2
-        self.northings_path = [1.6,1.6,0.3,1.6]
-        self.eastings_path = [0.3,1.6,0.3,0.3]       
-        self.relative_path = False #False if you want it to be absolute  
+        self.accept_radius = 0.3
+        self.northings_path = [1,1]
+        self.eastings_path = [0.4,1]       
+        self.relative_path = True #False if you want it to be absolute  
 
         # control parameters        
         self.tau_s = 4 # s to remove along track error
@@ -206,7 +207,7 @@ class LaptopPilot:
 
             # convert path to matrix and create a trajectory class instance
             C = l2m([self.northings_path, self.eastings_path])        
-            self.path = TrajectoryGenerate(C[0],C[1])        
+            self.path = TrajectoryGenerate(C[:,0],C[:,1])        
             
             # set trajectory variables (velocity, acceleration and turning arc radius)
             self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
@@ -288,6 +289,10 @@ class LaptopPilot:
             self.t += dt #add to the elapsed time
             self.t_prev = t_now #update the previous timestep for the next loop
 
+             # > Think < #
+            ################################################################################
+            #  TODO: Implement your state estimation
+    
             # take current pose estimate and update by twist
             p_robot = Vector(3)
             p_robot[0,0] = self.est_pose_northings_m
@@ -305,13 +310,10 @@ class LaptopPilot:
             #################### Trajectory sample #################################    
 
             # feedforward control: check wp progress and sample reference trajectory
-            self.path.wp_progress(self.t, p_robot,self.path_radius,2,4) # fill turning radius
+            self.path.wp_progress(self.t, p_robot,self.accept_radius,2,4) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             ##################################################################################################### (imported)
-             # > Think < #
-            ################################################################################
-            #  TODO: Implement your state estimation
-    
+
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")
             ################################################################################
@@ -332,7 +334,8 @@ class LaptopPilot:
             du = feedback_control(ds, self.k_s, self.k_n, self.k_g)
 
             # total control
-            u = u_ref + du # combine feedback and feedforward control twist components
+            #u = u_ref + du # combine feedback and feedforward control twist components
+            u = u_ref
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
