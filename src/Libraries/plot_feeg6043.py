@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from Libraries.math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, polar2cartesian,gaussian
+from math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, polar2cartesian,gaussian
 import matplotlib.patches as patches
 import numpy as np
 from scipy.stats import multivariate_normal
