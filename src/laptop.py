@@ -48,6 +48,7 @@ class LaptopPilot:
         print("Connecting to robot with IP", self.robot_ip)
         self.aruco_driver = ArUcoUDPDriver(aruco_params, parent=self)
         self.initialise_pose = True # False once the pose is initialised
+        self.new_aruco_measurement = True
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
@@ -181,7 +182,8 @@ class LaptopPilot:
                 datetime.utcnow().timestamp() - msg[0] - self.sim_time_offset,
                 "seconds ago",
             )
-            time_stamp = msg[0] + self.sim_time_offset                
+            time_stamp = msg[0] + self.sim_time_offset
+            self.new_aruco_measurement = True                
 
         pose_msg = PoseStamped() 
         pose_msg.header = Header()
@@ -293,9 +295,16 @@ class LaptopPilot:
             ################### Motion Model ##############################
             # take current pose estimate and update by twist
             p_robot = Vector(3)
-            p_robot[0,0] = self.est_pose_northings_m
-            p_robot[1,0] = self.est_pose_eastings_m
-            p_robot[2,0] = self.est_pose_yaw_rad
+            if self.new_aruco_measurement == True :
+                p_robot[0,0] = self.measured_pose_northings_m
+                p_robot[1,0] = self.measured_pose_eastings_m
+                p_robot[2,0] = self.measured_pose_yaw_rad
+                self.new_aruco_measurement = False
+
+            else:
+                p_robot[0,0] = self.est_pose_northings_m
+                p_robot[1,0] = self.est_pose_eastings_m
+                p_robot[2,0] = self.est_pose_yaw_rad
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
@@ -306,13 +315,13 @@ class LaptopPilot:
             self.path.wp_progress(self.t, p_robot,self.accept_radius,2,self.timeout) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
 
-            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
-            self.datalog.log(msg, topic_name="/est_pose")
-
             # update for show_laptop.py            
             self.est_pose_northings_m = p_robot[0,0]
             self.est_pose_eastings_m = p_robot[1,0]
             self.est_pose_yaw_rad = p_robot[2,0]
+
+            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
+            self.datalog.log(msg, topic_name="/est_pose")
 
             # > Control < #
             ################################################################################
