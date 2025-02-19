@@ -90,10 +90,9 @@ class LaptopPilot:
         # lidar
         self.lidar_timestamp_s = None
         self.lidar_data = None
-        lidar_xb = 0 # location of lidar centre in b-frame primary axis ########################(changed)
-        lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
-        self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
-
+        lidar_xb = 0 # location of lidar centre in b-frame primary axis
+        lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis 
+        self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb)
         # modelling parameters
         wheel_distance = 0.162 # m 
         wheel_diameter = 0.074 # m
@@ -133,15 +132,13 @@ class LaptopPilot:
             self.sim_init = False     
 
         msg.header.stamp += self.sim_time_offset
-        ###############(imported)#########################
+
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
-        ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
-        ###############(imported)#########################
         # b to e frame
         p_eb = Vector(3)
         p_eb[0] = self.est_pose_northings_m #robot pose northings (see Task 3)
@@ -164,7 +161,6 @@ class LaptopPilot:
 
         # this filters out any 
         self.lidar_data = self.lidar_data[~np.isnan(self.lidar_data).any(axis=1)]
-        ###############(imported)#########################  
 
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
@@ -199,7 +195,6 @@ class LaptopPilot:
         else: quat.from_euler(0, 0, msg[6])
         pose_msg.pose.orientation = quat        
         return pose_msg
-        ###################### (Imported)
 
     def generate_trajectory(self):
     # pick waypoints as current pose relative or absolute northings and eastings
@@ -216,7 +211,6 @@ class LaptopPilot:
         self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
         self.path.turning_arcs(self.path_radius) #turning radius
         self.path.wp_id=0 #initialises the next waypoint
-        ####################  (^^^^^^^imported^^^^^^)
 
     def run(self, time_to_run=-1):
         self.start_time = datetime.utcnow().timestamp()
@@ -263,8 +257,8 @@ class LaptopPilot:
 
             ####################### wait for the first sensor info to initialize the pose ########################### (imported)
             if self.initialise_pose == True:
-                self.est_pose_northings_m = self.measured_pose_northings_m ######## (changed)
-                self.est_pose_eastings_m = self.measured_pose_eastings_m  ######## (changed)
+                self.est_pose_northings_m = self.measured_pose_northings_m 
+                self.est_pose_eastings_m = self.measured_pose_eastings_m  
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
                 self.generate_trajectory()
