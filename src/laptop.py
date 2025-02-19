@@ -52,8 +52,8 @@ class LaptopPilot:
         self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
         self.path_radius = 0.5
-        self.northings_path = [0,1,1]
-        self.eastings_path = [0,0,1]       
+        self.northings_path = [0,0.5,0.5]
+        self.eastings_path = [0,0,0.2]       
         self.relative_path = True #False if you want it to be absolute  
 
         # model pose
@@ -68,8 +68,8 @@ class LaptopPilot:
         self.measured_pose_yaw_rad = None
 
         # control parameters        
-        self.tau_s = 0.2 # s to remove along track error
-        self.L = 0.4 # m distance to remove normal and angular error
+        self.tau_s = 4 # s to remove along track error
+        self.L = 2 # m distance to remove normal and angular error
         self.v_max = 0.2 # m/s fastest the robot can go
         self.w_max = np.deg2rad(30) # fastest the robot can turn
         
@@ -305,7 +305,7 @@ class LaptopPilot:
             #################### Trajectory sample #################################    
 
             # feedforward control: check wp progress and sample reference trajectory
-            self.path.wp_progress(self.t, p_robot,self.path_radius) # fill turning radius
+            self.path.wp_progress(self.t, p_robot,self.path_radius,2,4) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             ##################################################################################################### (imported)
              # > Think < #
