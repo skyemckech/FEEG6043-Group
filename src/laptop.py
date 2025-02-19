@@ -91,7 +91,7 @@ class LaptopPilot:
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
         # modelling parameters
-        wheel_distance = 0.65 # m 
+        wheel_distance = 0.165 # m 
         wheel_diameter = 0.073 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
         ###############################################################        
