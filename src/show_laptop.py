@@ -40,7 +40,6 @@ class Window(QWidget):
         layout.addWidget(self.wheelrate_plot, 0, 3, 1, 2)
         layout.addWidget(self.heading_plot, 1, 3, 1, 2)
         layout.addWidget(self.position_plot, 0, 0, 2, 2)
-        
         self.loopcounter = 0
         self.Laptop = LaptopPilot(simulation)
         
@@ -57,6 +56,8 @@ class Window(QWidget):
         measured_position = LiveScatterPlot(symbol = 'x', pen = 'green', name = 'Measured Position')
         waypoints = LiveScatterPlot(symbol = 'o', pen = 'red', name = 'Waypoints')
         lidar = LiveScatterPlot(symbol = 'o', size = 1, pen = 'w', name = 'Lidar')
+        p_reference_tracker = LiveScatterPlot(symbol = 'x', size = 4, pen = 'w', name = 'p_ref')
+
         
         # Data connectors for each plot with dequeue of 600 points
         self.cmd_wheelrate_right = DataConnector(cmd_wheelrate_right, max_points=1500)
@@ -71,7 +72,8 @@ class Window(QWidget):
         self.measured_position = DataConnector(measured_position, max_points=100)
         self.waypoints = DataConnector(waypoints, max_points=50)
         self.lidar = DataConnector(lidar, max_points=3000)
-        
+        self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=1000)
+
         # Show grid
         self.wheelrate_plot.showGrid(x=True, y=True, alpha=0.3)
         self.heading_plot.showGrid(x=True, y=True, alpha=0.3)
@@ -101,7 +103,8 @@ class Window(QWidget):
         self.position_plot.addItem(est_position)
         self.position_plot.addItem(measured_position)
         self.position_plot.addItem(waypoints)
-        self.position_plot.addItem(lidar)       
+        self.position_plot.addItem(lidar)   
+        self.position_plot.addItem(p_reference_tracker)    
 
 
 
@@ -134,6 +137,7 @@ class Window(QWidget):
                 est_pose_northings_m = self.Laptop.est_pose_northings_m
                 est_pose_eastings_m = self.Laptop.est_pose_eastings_m
                 est_pose_yaw_rad = self.Laptop.est_pose_yaw_rad
+                p_reference_tracker = self.Laptop.p_reference_tracker
             else:
                 est_pose_northings_m = None
                 est_pose_eastings_m = None
@@ -182,6 +186,8 @@ class Window(QWidget):
                 self.est_position.cb_append_data_point(est_pose_northings_m, est_pose_eastings_m)
             if measured_pose_northings_m is not None and measured_pose_eastings_m is not None  and measured_pose_timestamp_s > measured_pose_stamp_prev:
                 self.measured_position.cb_append_data_point(measured_pose_northings_m, measured_pose_eastings_m)
+            if p_reference_tracker is not None:
+                self.p_reference_tracker.cb_append_data_point(p_reference_tracker[0,0], p_reference_tracker[1,0])
     
             #lidar 
             if lidar_data is not None and lidar_timestamp_s != lidar_timestamp_s_prev:
