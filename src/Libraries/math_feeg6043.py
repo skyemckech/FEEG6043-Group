@@ -15,6 +15,7 @@ def Inverse(m): return np.linalg.inv(m)
 def v2t(x): return np.insert(x, len(x), 1, axis=0)
 def t2v(x): return x[0:len(x)-1]
 
+
 class HomogeneousTransformation:
     """Class to handle homogeneous transformations
     H = [R t; 0 1] where R is a 2x2 rotation matrix and t is a 2x1 translation vector
@@ -269,6 +270,9 @@ def l2m(nlist):
             for j in range(len(nlist[i])):
                 N[j,i] = nlist[i][j]                            
     return N
+
+# m2l converts a matrix to a flattened list
+def m2l(m): return [element for row in m for element in row]
 
 def fill_timegaps(dt_max,T):
     add_timestamp = []

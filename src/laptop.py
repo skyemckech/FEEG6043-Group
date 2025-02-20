@@ -23,7 +23,7 @@ from Libraries.model_feeg6043 import RangeAngleKinematics
 from Libraries.model_feeg6043 import feedback_control
 from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 from Libraries.model_feeg6043 import TrajectoryGenerate
-from Libraries.math_feeg6043 import l2m
+from Libraries.math_feeg6043 import l2m, m2l
 from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
 # add more libraries here
@@ -128,9 +128,15 @@ class LaptopPilot:
         def __init__(self):
             self.workbook = openpyxl.Workbook()
             self.worksheet = self.workbook.active
-        def export_to_excel(self,data,filename = "data.xslx"):       
-            self.worksheet.append(data)
+            self.dataLine = []
+        def extend_data(self, data):
+            #if type(data) == type(np.array([])):
+             #   pass
+            self.dataLine.extend(data)
+        def export_to_excel(self,filename = "reference.xlsx"):
+            self.worksheet.append(self.dataLine)       
             self.workbook.save(filename)
+            self.dataLine = []
 
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
@@ -178,7 +184,6 @@ class LaptopPilot:
 
         # this filters out any 
         self.lidar_data = self.lidar_data[~np.isnan(self.lidar_data).any(axis=1)]
-        ###############(imported)#########################  
 
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
@@ -276,15 +281,21 @@ class LaptopPilot:
 
             ####################### wait for the first sensor info to initialize the pose ########################### (imported)
             if self.initialise_pose == True:
+                # set initial measurements
                 self.est_pose_northings_m = self.measured_pose_northings_m ######## (changed)
                 self.est_pose_eastings_m = self.measured_pose_eastings_m  ######## (changed)
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
                 self.generate_trajectory()
+
                 # get current time and determine timestep
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
+
+                # name excel sheets
+                self.ref_pose_worksheet.extend_data()
+                
 
                 # path and tragectory are initialised
                 self.initialise_pose = False
@@ -384,17 +395,10 @@ class LaptopPilot:
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
             # Export data to excel
-            self.export_data = [str(p_ref[0]), str(p_ref[1])]
-            self.ref_pose_worksheet.export_to_excel(self.export_data) 
+            self.ref_pose_worksheet.extend_data(m2l(p_robot))
+            self.ref_pose_worksheet.export_to_excel()
 
 
-
-            
-            
-
-
-
-    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
