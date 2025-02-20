@@ -280,11 +280,11 @@ class LaptopPilot:
             # logs the data            
             self.datalog.log(msg, topic_name="/aruco")
 
-            ####################### wait for the first sensor info to initialize the pose ########################### (imported)
+            # initialisation step
             if self.initialise_pose == True:
                 # set initial measurements
-                self.est_pose_northings_m = self.measured_pose_northings_m ######## (changed)
-                self.est_pose_eastings_m = self.measured_pose_eastings_m  ######## (changed)
+                self.est_pose_northings_m = self.measured_pose_northings_m 
+                self.est_pose_eastings_m = self.measured_pose_eastings_m  
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
                 self.generate_trajectory()
@@ -293,11 +293,7 @@ class LaptopPilot:
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
                 self.t = 0 #elapsed time
                 time.sleep(0.1) #wait for approx a timestep before proceeding
-
-                # name excel sheets
-                self.ref_pose_worksheet.extend_data()
                 
-
                 # path and tragectory are initialised
                 self.initialise_pose = False
 
