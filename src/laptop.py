@@ -8,6 +8,7 @@ See LICENSE.md file in the project root for full license information.
 import numpy as np
 import argparse
 import time
+# import openpyxl
 
 from datetime import datetime
 from drivers.aruco_udp_driver import ArUcoUDPDriver
@@ -199,7 +200,12 @@ class LaptopPilot:
         else: quat.from_euler(0, 0, msg[6])
         pose_msg.pose.orientation = quat        
         return pose_msg
-        ###################### (Imported)
+
+    # def export_to_excel(self,data):       
+    #     workbook = openpyxl.Workbook()
+    #     worksheet = workbook.active
+    #     worksheet.append([data])
+    #     workbook.save("data.xlsx")
 
     def generate_trajectory(self):
     # pick waypoints as current pose relative or absolute northings and eastings
