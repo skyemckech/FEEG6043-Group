@@ -126,6 +126,7 @@ class LaptopPilot:
         self.wb = openpyxl.Workbook()
         self.ws = self.wb.active
         self.ws.append([p_ref[0],p_ref[1],p_ref[3],u[0],u[1]])
+        self.wb.save("data.xlsx")
         
                     
     def true_wheel_speeds_callback(self, msg):
@@ -363,6 +364,7 @@ class LaptopPilot:
             #ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
             #filename = "data.xlsx"
             #wb.save(filename)
+            export_to_
 
             ######################## Trying to plot p_ref and u_ref#########################
 
