@@ -5,6 +5,7 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
+from Libraries.plot_feeg6043 import plot_trajectory
 import numpy as np
 import argparse
 import time
@@ -327,6 +328,13 @@ class LaptopPilot:
             p_robot[0,0] = self.est_pose_northings_m
             p_robot[1,0] = self.est_pose_eastings_m
             p_robot[2,0] = self.est_pose_yaw_rad
+
+            #creates measured pose
+            p_robot_measured = Vector(3)
+            p_robot_measured[0,0] = self.measured_pose_northings_m
+            p_robot_measured[1,0] = self.measured_pose_eastings_m 
+            p_robot_measured[2,0] = self.measured_pose_yaw_rad
+
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
@@ -349,6 +357,8 @@ class LaptopPilot:
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - p_robot #compute difference between reference and estimated pose in the $e$-frame
+            dp_measured = p_ref - p_robot_measured
+
             dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
             H_eb = HomogeneousTransformation(p_robot[0:2], p_robot[2])
             ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
