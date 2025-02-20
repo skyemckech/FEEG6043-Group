@@ -102,8 +102,8 @@ class LaptopPilot:
 
         # Excel export
         self.export_data = None
-        self.workbook = openpyxl.Workbook()
-        self.worksheet = self.workbook.active
+        self.ref_pose_worksheet = self.createExcelFile()
+
         ###############################################################        
 
         self.datalog = DataLogger(log_dir="logs")
@@ -123,7 +123,15 @@ class LaptopPilot:
         self.groundtruth_sub = Subscriber(
             "/groundtruth", Pose, self.groundtruth_callback, ip=self.robot_ip
         )
-                    
+    
+    class createExcelFile:
+        def __init__(self):
+            self.workbook = openpyxl.Workbook()
+            self.worksheet = self.workbook.active
+            def export_to_excel(self,data,filename = "data.xslx"):       
+                self.worksheet.append(data)
+                self.workbook.save(filename)
+
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
         # update wheel rates
@@ -205,10 +213,6 @@ class LaptopPilot:
         else: quat.from_euler(0, 0, msg[6])
         pose_msg.pose.orientation = quat        
         return pose_msg
-
-    def export_to_excel(self,data):       
-        self.worksheet.append(data)
-        self.workbook.save("data.xlsx")
 
     def generate_trajectory(self):
     # pick waypoints as current pose relative or absolute northings and eastings
@@ -380,8 +384,8 @@ class LaptopPilot:
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
             # Export data to excel
-            self.export_data = [str(p_ref[0])]
-            self.export_to_excel(self.export_data) 
+            #self.export_data = [str(p_ref[0]), str(p_ref[1])]
+            #self.export_to_excel(self.export_data) 
 
 
 
