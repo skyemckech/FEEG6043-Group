@@ -349,6 +349,21 @@ class LaptopPilot:
             #u = u_ref + du # combine feedback and feedforward control twist components
             u = u_ref + du
 
+
+            ######################## Trying to plot p_ref and u_ref#########################
+
+            #print("PLANNED REFERANCE:",p_ref)
+            #print("Control V",u[0], "m/s", "Control Twist:", np.rad2deg(u[1]),"rad/s")
+            #plot_trajectory(self, 0.2, t_now, p_ref, u_ref)
+            #plt.show()
+            excelcounter = excelcounter + 1
+            ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
+            filename = "data.xlsx"
+            wb.save(filename)
+
+            ######################## Trying to plot p_ref and u_ref#########################
+
+
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
             self.k_g = u[0]/self.L #kg
