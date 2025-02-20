@@ -13,6 +13,6 @@ def test_laptop():
 #     inner_instance = OuterClass.InnerClass()
 #     print(inner_instance.greet())
 
-import 
+from src.class_definer import OuterClass
 if __name__ == "__main__":
     print("OuterClass available:", hasattr(class_definer, "OuterClass"))
