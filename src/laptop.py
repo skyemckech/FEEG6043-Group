@@ -102,6 +102,8 @@ class LaptopPilot:
 
         # Excel export
         self.export_data = None
+        self.workbook = openpyxl.Workbook()
+        self.worksheet = self.workbook.active
         ###############################################################        
 
         self.datalog = DataLogger(log_dir="logs")
@@ -205,10 +207,8 @@ class LaptopPilot:
         return pose_msg
 
     def export_to_excel(self,data):       
-        workbook = openpyxl.Workbook()
-        worksheet = workbook.active
-        worksheet.append(["ID","Name","City"])
-        workbook.save("data.xlsx")
+        self.worksheet.append(data)
+        self.workbook.save("data.xlsx")
 
     def generate_trajectory(self):
     # pick waypoints as current pose relative or absolute northings and eastings
@@ -256,10 +256,7 @@ class LaptopPilot:
         # > Sense < #
         # get the latest position measurements
         aruco_pose = self.aruco_driver.read()    
-        # Export data to excel
-        #self.export_data = ["goon","spoon","room"]
-        #self.export_to_excel(self.export_data) 
-        self.export_to_excel
+
         if aruco_pose is not None:
             # converts aruco date to zeroros PoseStamped format
             msg = self.pose_parse(aruco_pose, aruco = True)
@@ -381,6 +378,12 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+
+            # Export data to excel
+            self.export_data = [str(p_ref[0])]
+            self.export_to_excel(self.export_data) 
+
+
 
             
             
