@@ -27,6 +27,7 @@ from Libraries.model_feeg6043 import TrajectoryGenerate
 from Libraries.math_feeg6043 import l2m
 # add more libraries here
 
+#=MID(A3, 2, LEN(A3) - 2)
 # Create a new Excel workbook and worksheet
 #wb = openpyxl.Workbook()
 #ws = wb.active
@@ -82,7 +83,7 @@ class LaptopPilot:
             #####creates excle file#######
         self.wb = openpyxl.Workbook()
         self.ws = self.wb.active
-        self.ws.title = "Sample Data"
+        #self.ws.title = "Sample Data"
             #####creates excle file#######
         # measured pose
         self.measured_pose_timestamp_s = None
@@ -183,22 +184,15 @@ class LaptopPilot:
         """This callback receives the odometry ground truth from the simulator."""
         self.datalog.log(msg, topic_name="/groundtruth")
 
-#########################################Excel Import Function###############
-    def turbostroke(self,u):
-        # Create a new Excel workbook and worksheet
-        #wb = openpyxl.Workbook()
-        #ws = wb.active
-        #ws.title = "Sample Data"
-
-        # Sample data
-        # Insert data into the worksheet
-        
-        self.ws.append([u[0],u[1]])
-        filename = "data.xlsx"
+        #Excel Import Function
+    def export_excel(self,data,filename = "data.xlsx"):
+        #Excel Import Function
+        #Appends workbooks
+        self.ws.append(data)
+        #Saves workbook
         self.wb.save(filename)
         # Save the Excel file
-        print("Excel file '{filename}' created successfully.")
-        #########################################Excel Import Function###############
+        print("Excel file: ",filename," created successfully.")
     
     def pose_parse(self, msg, aruco = False):
         # parser converts pose data to a standard format for logging
@@ -331,6 +325,13 @@ class LaptopPilot:
             p_robot[0,0] = self.est_pose_northings_m
             p_robot[1,0] = self.est_pose_eastings_m
             p_robot[2,0] = self.est_pose_yaw_rad
+
+            #creates measured pose
+            p_robot_measured = Vector(3)
+            p_robot_measured[0,0] = self.measured_pose_northings_m
+            p_robot_measured[1,0] = self.measured_pose_eastings_m 
+            p_robot_measured[2,0] = self.measured_pose_yaw_rad
+
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
             p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
@@ -353,6 +354,8 @@ class LaptopPilot:
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - p_robot #compute difference between reference and estimated pose in the $e$-frame
+            dp_measured = p_ref - p_robot_measured
+
             dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
             H_eb = HomogeneousTransformation(p_robot[0:2], p_robot[2])
             ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
@@ -369,22 +372,6 @@ class LaptopPilot:
 
             # total control
             u = u_ref + du # combine feedback and feedforward control twist components
-            # u = u_ref
-            ######################## Trying to plot p_ref and u_ref#########################
-
-            #print("PLANNED REFERANCE:",p_ref)
-            #print("Control V",u[0], "m/s", "Control Twist:", np.rad2deg(u[1]),"rad/s")
-            #plot_trajectory(self, 0.2, t_now, p_ref, u_ref)
-            #plt.show()
-            #excelcounter = excelcounter + 1
-            #ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
-           #filename = "data.xlsx"
-            #wb.save(filename)
-            #print(u[0],u[1])
-            testfunciton = str(1,2)
-            savetest = LaptopPilot
-            LaptopPilot.turbostroke(savetest, testfunciton)
-            ######################## Trying to plot p_ref and u_ref#########################
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
@@ -408,10 +395,17 @@ class LaptopPilot:
             
             ################################################################################
 
-            # > Act < #
+            ####################################################### > Act < ########################(aka goon)########
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+
+            #Export to excel
+            testfunciton = [str(p_ref[0]),str(p_ref[1]),str(p_ref[2]),str(u[0]),str(u[1]),str(dp_measured[0]),str(dp_measured[1]),str(dp_measured[2])]
+            self.export_excel(testfunciton)
+
+
+            
 
 
 if __name__ == "__main__":
