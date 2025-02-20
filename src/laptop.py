@@ -102,7 +102,7 @@ class LaptopPilot:
 
         # Excel export
         self.export_data = None
-        self.ref_pose_worksheet = self.createExcelFile()
+        self.ref_pose_worksheet = LaptopPilot.createExcelFile()
 
         ###############################################################        
 
@@ -128,9 +128,9 @@ class LaptopPilot:
         def __init__(self):
             self.workbook = openpyxl.Workbook()
             self.worksheet = self.workbook.active
-            def export_to_excel(self,data,filename = "data.xslx"):       
-                self.worksheet.append(data)
-                self.workbook.save(filename)
+        def export_to_excel(self,data,filename = "data.xslx"):       
+            self.worksheet.append(data)
+            self.workbook.save(filename)
 
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
@@ -384,8 +384,8 @@ class LaptopPilot:
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
             # Export data to excel
-            #self.export_data = [str(p_ref[0]), str(p_ref[1])]
-            #self.export_to_excel(self.export_data) 
+            self.export_data = [str(p_ref[0]), str(p_ref[1])]
+            self.ref_pose_worksheet.export_to_excel(self.export_data) 
 
 
 
