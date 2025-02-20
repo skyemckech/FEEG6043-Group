@@ -28,11 +28,11 @@ from Libraries.math_feeg6043 import l2m
 # add more libraries here
 
 # Create a new Excel workbook and worksheet
-wb = openpyxl.Workbook()
-ws = wb.active
-ws.title = "Sample Data"
-ws.append(["Planed Trajectory:","X","Y","Yaw","Control Twist","T1","T2"])
-excelcounter = 0
+#wb = openpyxl.Workbook()
+#ws = wb.active
+##ws.title = "Sample Data"
+#ws.append(["Planed Trajectory:","X","Y","Yaw","Control Twist","T1","T2"])
+#excelcounter = 0
 
 
 class LaptopPilot:
@@ -124,7 +124,9 @@ class LaptopPilot:
         self.groundtruth_sub = Subscriber(
             "/groundtruth", Pose, self.groundtruth_callback, ip=self.robot_ip
         )
-                    
+
+
+
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
         # update wheel rates
@@ -176,6 +178,23 @@ class LaptopPilot:
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
         self.datalog.log(msg, topic_name="/groundtruth")
+
+#########################################Excel Import Function###############
+    def turbostroke(self,u):
+        # Create a new Excel workbook and worksheet
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Sample Data"
+
+        # Sample data
+        # Insert data into the worksheet
+        
+        ws.append([u[0],u[1]])
+        filename = "data.xlsx"
+        wb.save(filename)
+        # Save the Excel file
+        print("Excel file '{filename}' created successfully.")
+        #########################################Excel Import Function###############
     
     def pose_parse(self, msg, aruco = False):
         # parser converts pose data to a standard format for logging
@@ -353,11 +372,14 @@ class LaptopPilot:
             #print("Control V",u[0], "m/s", "Control Twist:", np.rad2deg(u[1]),"rad/s")
             #plot_trajectory(self, 0.2, t_now, p_ref, u_ref)
             #plt.show()
-            excelcounter = excelcounter + 1
-            ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
-            filename = "data.xlsx"
-            wb.save(filename)
+            #excelcounter = excelcounter + 1
+            #ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
+           #filename = "data.xlsx"
+            #wb.save(filename)
             #print(u[0],u[1])
+            testfunciton = str(1,2)
+            savetest = LaptopPilot
+            LaptopPilot.turbostroke(savetest, testfunciton)
             ######################## Trying to plot p_ref and u_ref#########################
 
             # update control gains for the next timestep

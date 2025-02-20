@@ -1,7 +1,7 @@
 import openpyxl 
 
 class goon:
-    def turbostroke(self):
+    def turbostroke(self,u):
         # Create a new Excel workbook and worksheet
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -9,12 +9,10 @@ class goon:
 
         # Sample data
         # Insert data into the worksheet
-        
-        ws.append(["ID", "Name", "Age", "City"])
 
         # Generate and insert large dataset using a loop
         for i in range(1, 75):  # Change 501 to any number of rows you want
-            ws.append(["ID2", "Name2", "Age2", "City2"])
+            ws.append([u[0],u[1]])
             filename = "data.xlsx"
             wb.save(filename)
 
@@ -24,8 +22,9 @@ class goon:
 # Reading back the data
 #wb = openpyxl.load_workbook(filename)
 #ws = wb.active
+u = [1,2]
 tomM = goon
-goon.turbostroke(tomM)
+goon.turbostroke(tomM,u)
 #print("\nImported Data:")
 #for row in ws.iter_rows(values_only=True):
 #    print(row)
