@@ -357,7 +357,7 @@ class LaptopPilot:
             ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
             filename = "data.xlsx"
             wb.save(filename)
-
+            #print(u[0],u[1])
             ######################## Trying to plot p_ref and u_ref#########################
 
             # update control gains for the next timestep
