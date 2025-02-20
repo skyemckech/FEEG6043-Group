@@ -79,7 +79,11 @@ class LaptopPilot:
         self.est_pose_northings_m = None
         self.est_pose_eastings_m = None
         self.est_pose_yaw_rad = None
-
+            #####creates excle file#######
+        self.wb = openpyxl.Workbook()
+        self.ws = self.wb.active
+        self.ws.title = "Sample Data"
+            #####creates excle file#######
         # measured pose
         self.measured_pose_timestamp_s = None
         self.measured_pose_northings_m = None
@@ -182,16 +186,16 @@ class LaptopPilot:
 #########################################Excel Import Function###############
     def turbostroke(self,u):
         # Create a new Excel workbook and worksheet
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Sample Data"
+        #wb = openpyxl.Workbook()
+        #ws = wb.active
+        #ws.title = "Sample Data"
 
         # Sample data
         # Insert data into the worksheet
         
-        ws.append([u[0],u[1]])
+        self.ws.append([u[0],u[1]])
         filename = "data.xlsx"
-        wb.save(filename)
+        self.wb.save(filename)
         # Save the Excel file
         print("Excel file '{filename}' created successfully.")
         #########################################Excel Import Function###############
