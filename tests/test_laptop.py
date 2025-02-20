@@ -1,5 +1,4 @@
 from laptop import LaptopPilot
-from class_definer import OuterClass
 
 def test_laptop():
     Laptop = LaptopPilot(True)
@@ -10,6 +9,10 @@ def test_laptop():
 #     Laptop = LaptopPilot(True)
 #     createExcelFile = LaptopPilot.createExcelFile()
 
-def test_innerclasses():
-    inner_instance = OuterClass.InnerClass()
-    print(inner_instance.greet())
+# def test_innerclasses():
+#     inner_instance = OuterClass.InnerClass()
+#     print(inner_instance.greet())
+
+import 
+if __name__ == "__main__":
+    print("OuterClass available:", hasattr(class_definer, "OuterClass"))

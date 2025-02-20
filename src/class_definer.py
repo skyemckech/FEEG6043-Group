@@ -1,7 +1,9 @@
 class OuterClass:
+    def __init__(self):
+        pass
     class InnerClass:
+        def __init__(self):
+            pass
         def greet(self):
             return "Hello from InnerClass!"
         
-if __name__ == "__main__":
-    print("OuterClass available:", hasattr(test, "OuterClass"))
