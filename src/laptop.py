@@ -29,10 +29,8 @@ from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
 # add more libraries here
 
-wb = openpyxl.Workbook()
-ws = wb.active
-ws.append(["1","p_ref[0]","p_ref[1]","p_ref[3]","excelcounter","u[0]","u[1]"])
-excelcounter = 0 
+
+
 
 class LaptopPilot:
     def __init__(self, simulation):
@@ -124,6 +122,11 @@ class LaptopPilot:
         self.groundtruth_sub = Subscriber(
             "/groundtruth", Pose, self.groundtruth_callback, ip=self.robot_ip
         )
+    def export_to_excel(self,p_ref,u): 
+        self.wb = openpyxl.Workbook()
+        self.ws = self.wb.active
+        self.ws.append([p_ref[0],p_ref[1],p_ref[3],u[0],u[1]])
+        
                     
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
@@ -356,10 +359,10 @@ class LaptopPilot:
             #print("Control V",u[0], "m/s", "Control Twist:", np.rad2deg(u[1]),"rad/s")
             #plot_trajectory(self, 0.2, t_now, p_ref, u_ref)
             #plt.show()
-            excelcounter = excelcounter + 1
-            ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
-            filename = "data.xlsx"
-            wb.save(filename)
+            #excelcounter = excelcounter + 1
+            #ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
+            #filename = "data.xlsx"
+            #wb.save(filename)
 
             ######################## Trying to plot p_ref and u_ref#########################
 
