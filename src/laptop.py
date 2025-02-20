@@ -207,7 +207,7 @@ class LaptopPilot:
     def export_to_excel(self,data):       
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
-        worksheet.append(["data"])
+        worksheet.append(["ID","Name","City"])
         workbook.save("data.xlsx")
 
     def generate_trajectory(self):
