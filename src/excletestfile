@@ -1,0 +1,29 @@
+import openpyxl 
+
+# Create a new Excel workbook and worksheet
+wb = openpyxl.Workbook()
+ws = wb.active
+ws.title = "Sample Data"
+
+# Sample data
+
+
+# Insert data into the worksheet
+ws.append(["ID", "Name", "Age", "City"])
+
+# Generate and insert large dataset using a loop
+for i in range(1, 75):  # Change 501 to any number of rows you want
+    ws.append([i, f"Person_{i}", 20 + (i % 30), f"City_{i % 10}"])
+    filename = "data.xlsx"
+    wb.save(filename)
+
+# Save the Excel file
+print(f"Excel file '{filename}' created successfully.")
+
+# Reading back the data
+#wb = openpyxl.load_workbook(filename)
+#ws = wb.active
+
+#print("\nImported Data:")
+#for row in ws.iter_rows(values_only=True):
+#    print(row)

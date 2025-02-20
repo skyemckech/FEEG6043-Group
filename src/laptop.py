@@ -5,9 +5,11 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
+from Libraries.plot_feeg6043 import plot_trajectory
 import numpy as np
 import argparse
 import time
+import openpyxl
 
 from datetime import datetime
 from drivers.aruco_udp_driver import ArUcoUDPDriver
@@ -24,6 +26,14 @@ from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 from Libraries.model_feeg6043 import TrajectoryGenerate
 from Libraries.math_feeg6043 import l2m
 # add more libraries here
+
+# Create a new Excel workbook and worksheet
+wb = openpyxl.Workbook()
+ws = wb.active
+ws.title = "Sample Data"
+ws.append(["Planed Trajectory:","X","Y","Yaw","Control Twist","T1","T2"])
+excelcounter = 0
+
 
 class LaptopPilot:
     def __init__(self, simulation):
@@ -51,10 +61,19 @@ class LaptopPilot:
         # path
         self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
-        self.path_radius = 0.5
-        self.northings_path = [0,1,1]
-        self.eastings_path = [0,0,1]       
+        self.path_radius = 0.2
+        self.accept_radius = 0.7
+        self.northings_path = [0.1,1,1,0,0]
+        self.eastings_path = [0,0,1,1,0]       
         self.relative_path = True #False if you want it to be absolute  
+
+        # control parameters        
+        self.tau_s = 0.2 # s to remove along track error
+        self.L = 0.2 # m distance to remove normal and angular error
+        self.v_max = 0.2 # m/s fastest the robot can go
+        self.w_max = np.deg2rad(30) # fastest the robot can turn
+        
+        self.initialise_control = True # False once control gains is initialised 
 
         # model pose
         self.est_pose_northings_m = None
@@ -66,14 +85,6 @@ class LaptopPilot:
         self.measured_pose_northings_m = None
         self.measured_pose_eastings_m = None
         self.measured_pose_yaw_rad = None
-
-        # control parameters        
-        self.tau_s = 0.2 # s to remove along track error
-        self.L = 0.4 # m distance to remove normal and angular error
-        self.v_max = 0.2 # m/s fastest the robot can go
-        self.w_max = np.deg2rad(30) # fastest the robot can turn
-        
-        self.initialise_control = True # False once control gains is initialised 
 
         # wheel speed commands
         self.cmd_wheelrate_right = None
@@ -206,7 +217,7 @@ class LaptopPilot:
 
             # convert path to matrix and create a trajectory class instance
             C = l2m([self.northings_path, self.eastings_path])        
-            self.path = TrajectoryGenerate(C[0],C[1])        
+            self.path = TrajectoryGenerate(C[:,0],C[:,1])        
             
             # set trajectory variables (velocity, acceleration and turning arc radius)
             self.path.path_to_trajectory(self.path_velocity, self.path_acceleration) #velocity and acceleration
@@ -280,16 +291,18 @@ class LaptopPilot:
             q = Vector(2)            
             q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
             q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
-            u = self.ddrive.fwd_kinematics(q)  
-
-
-            #############determine the time step##############
+            u = self.ddrive.fwd_kinematics(q)    
+            #determine the time step
             t_now = datetime.utcnow().timestamp()        
                     
             dt = t_now - self.t_prev #timestep from last estimate
             self.t += dt #add to the elapsed time
             self.t_prev = t_now #update the previous timestep for the next loop
 
+             # > Think < #
+            ################################################################################
+            #  TODO: Implement your state estimation
+    
             # take current pose estimate and update by twist
             p_robot = Vector(3)
             p_robot[0,0] = self.est_pose_northings_m
@@ -307,13 +320,11 @@ class LaptopPilot:
             #################### Trajectory sample #################################    
 
             # feedforward control: check wp progress and sample reference trajectory
-            self.path.wp_progress(self.t, p_robot,self.path_radius) # fill turning radius
+            self.path.wp_progress(self.t, p_robot,self.accept_radius) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             ##################################################################################################### (imported)
-             # > Think < #
-            ################################################################################
-            #  TODO: Implement your state estimation
-    
+            ########print("PLANNED REFERANCE:",p_ref,"TWIST REFERANCE:" ,u_ref)
+
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")
             ################################################################################
@@ -335,6 +346,19 @@ class LaptopPilot:
 
             # total control
             u = u_ref + du # combine feedback and feedforward control twist components
+            # u = u_ref
+            ######################## Trying to plot p_ref and u_ref#########################
+
+            #print("PLANNED REFERANCE:",p_ref)
+            #print("Control V",u[0], "m/s", "Control Twist:", np.rad2deg(u[1]),"rad/s")
+            #plot_trajectory(self, 0.2, t_now, p_ref, u_ref)
+            #plt.show()
+            excelcounter = excelcounter + 1
+            ws.append([excelcounter,p_ref[0],p_ref[1],p_ref[3],excelcounter,u[0],u[1]])
+            filename = "data.xlsx"
+            wb.save(filename)
+
+            ######################## Trying to plot p_ref and u_ref#########################
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
