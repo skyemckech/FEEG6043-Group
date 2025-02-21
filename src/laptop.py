@@ -54,13 +54,20 @@ class LaptopPilot:
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
-        self.path_velocity = 0.1
+        self.path_velocity = 0.6
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,2]
-        self.eastings_path = [0,0]      
+        self.northings_path = [0,1.4,1.4,0,0]
+        self.eastings_path = [0,0,1.4,1.4,0]
+        #self.northings_path = [0,1.4,1.4]
+        #self.eastings_path = [0,0,1.4]         
         self.relative_path = True #False if you want it to be absolute  
+
+        # modelling parameters
+        wheel_distance = 0.170 # m 
+        wheel_diameter = 0.068 # m
+        self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
         # control parameters        
         self.tau_s = 2 # s to remove along track error
@@ -103,14 +110,9 @@ class LaptopPilot:
         lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
-        # modelling parameters
-        wheel_distance = 0.162 # m 
-        wheel_diameter = 0.074 # m
-        self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
-
         # Excel export
         self.export_data = None
-        self.ref_pose_worksheet = LaptopPilot.createExcelFile()
+        self.ref_pose_worksheet = LaptopPilot.createExcelFile("output_data.xlsx")
 
         # Create variable for plotting ground truth and reference position
         self.p_reference_tracker = None
@@ -136,29 +138,29 @@ class LaptopPilot:
             "/groundtruth", Pose, self.groundtruth_callback, ip=self.robot_ip
         )
     
-class createExcelFile:
-    def __init__(self, filename = "reference.xlsx"):
-        # Creates workbook and worksheet to modify
-        self.workbook = openpyxl.Workbook()
-        self.worksheet = self.workbook.active
-        self.filename = filename
-        self.workbook.save(filename)
+    class createExcelFile:
+        def __init__(self, filename = "reference.xlsx"):
+            # Creates workbook and worksheet to modify
+            self.workbook = openpyxl.Workbook()
+            self.worksheet = self.workbook.active
+            self.filename = filename
+            self.workbook.save(filename)
 
-        # Initialise variable to store data
-        self.dataLine = []
+            # Initialise variable to store data
+            self.dataLine = []
 
-    def extend_data(self, data):
-        # adds to list self.dataLine
-        data = change_to_list(data)
-        self.dataLine.extend(data)
+        def extend_data(self, data):
+            # adds to list self.dataLine
+            data = change_to_list(data)
+            self.dataLine.extend(data)
 
-    def export_to_excel(self):
-        # appends dataLine to sheet and saves file
-        self.workbook = load_workbook(self.filename)
-        self.worksheet.append(self.dataLine)       
-        self.workbook.save(self.filename)
-        self.workbook.close
-        self.dataLine = []
+        def export_to_excel(self):
+            # appends dataLine to sheet and saves file
+            self.workbook = load_workbook(self.filename)
+            self.worksheet.append(self.dataLine)       
+            self.workbook.save(self.filename)
+            self.workbook.close
+            self.dataLine = []
 
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
@@ -212,8 +214,8 @@ class createExcelFile:
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
         self.groundtruth_northings = msg.position.x
-        self.groundtruth_eastings = msg.position.y
-        self.groundtruth_yaw = msg.orientation.z
+        self.groundtruth_eastings = msg.position.y 
+        _, _, self.groundtruth_yaw = msg.orientation.to_euler()  
         self.datalog.log(msg, topic_name="/groundtruth")
     
     def pose_parse(self, msg, aruco = False):
@@ -366,6 +368,7 @@ class createExcelFile:
             p_robot_truth[0,0] = self.groundtruth_northings
             p_robot_truth[1,0] = self.groundtruth_eastings
             p_robot_truth[2,0] = self.groundtruth_yaw
+            p_robot_truth[2] = p_robot_truth[2] % (2 * np.pi)
             self.p_groundtruth_tracker = p_robot_truth[0:3,0]
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
@@ -410,7 +413,7 @@ class createExcelFile:
 
             # total control
             #u = u_ref + du # combine feedback and feedforward control twist components
-            u = u_ref
+            u = u_ref + du
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
