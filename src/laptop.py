@@ -27,6 +27,7 @@ from Libraries.model_feeg6043 import TrajectoryGenerate
 from Libraries.math_feeg6043 import l2m, m2l, change_to_list
 from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
+from openpyxl import load_workbook
 # add more libraries here
 
 class LaptopPilot:
@@ -87,6 +88,7 @@ class LaptopPilot:
 
         # encoder/actual wheel speeds
         self.measured_wheelrate_right = None
+        self.measured_wheelrate_right_next = None
         self.measured_wheelrate_left = None
 
         # measured ground speeds
@@ -134,35 +136,37 @@ class LaptopPilot:
             "/groundtruth", Pose, self.groundtruth_callback, ip=self.robot_ip
         )
     
-    class createExcelFile:
-        def __init__(self):
-            # Creates workbook and worksheet to modify
-            self.workbook = openpyxl.Workbook()
-            self.worksheet = self.workbook.active
-            # Initialise variable to store data
-            self.dataLine = []
-            # Track if headers are written
-            self.headers_written = False  
-        def set_headers(self, headers):
-            # writes headers to the excel sheet
-            if not self.headers_written:
-                self.worksheet.append(headers)
-                self.headers_written = True
-        def extend_data(self, data):
-            # adds to list self.dataLine
-            data = change_to_list(data)
-            self.dataLine.extend(data)
-        def export_to_excel(self,filename = "reference.xlsx"):
-            # appends dataLine to sheet and saves file
-            self.worksheet.append(self.dataLine)       
-            self.workbook.save(filename)
-            self.dataLine = []
+class createExcelFile:
+    def __init__(self, filename = "reference.xlsx"):
+        # Creates workbook and worksheet to modify
+        self.workbook = openpyxl.Workbook()
+        self.worksheet = self.workbook.active
+        self.filename = filename
+        self.workbook.save(filename)
+
+        # Initialise variable to store data
+        self.dataLine = []
+
+    def extend_data(self, data):
+        # adds to list self.dataLine
+        data = change_to_list(data)
+        self.dataLine.extend(data)
+
+    def export_to_excel(self):
+        # appends dataLine to sheet and saves file
+        self.workbook = load_workbook(self.filename)
+        self.worksheet.append(self.dataLine)       
+        self.workbook.save(self.filename)
+        self.workbook.close
+        self.dataLine = []
 
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
         # update wheel rates
-        self.measured_wheelrate_right = msg.vector.x
+        self.measured_wheelrate_right = self.measured_wheelrate_right_next
+        self.measured_wheelrate_right_next = msg.vector.x
         self.measured_wheelrate_left = msg.vector.y
+
         self.datalog.log(msg, topic_name="/true_wheel_speeds")
 
     def lidar_callback(self, msg):
@@ -310,13 +314,14 @@ class LaptopPilot:
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
                 # Add headers
-                self.ref_pose_worksheet.set_headers(["Elapsed Time",
+                self.ref_pose_worksheet.extend_data(["Elapsed Time",
                                                     "Trajectory Northings",
                                                     "Trajectory Eastings",
                                                     "Trajectory Gamma",
                                                     "Measured Northings Error", 
                                                     "Measured Eastings Error", 
                                                     "Measured Gamma Error"])
+                self.ref_pose_worksheet.export_to_excel()
 
                 self.generate_trajectory()
 
