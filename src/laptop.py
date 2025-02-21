@@ -58,8 +58,8 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,1.4,1.4,0,0,0,1,1,0,0]
-        self.eastings_path = [0,0,1.4,1.4,0,0,0,1,1,0]       
+        self.northings_path = [0,2]
+        self.eastings_path = [0,0]      
         self.relative_path = True #False if you want it to be absolute  
 
         # control parameters        
@@ -410,7 +410,7 @@ class createExcelFile:
 
             # total control
             #u = u_ref + du # combine feedback and feedforward control twist components
-            u = u_ref + du
+            u = u_ref
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
@@ -440,10 +440,8 @@ class createExcelFile:
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
             
             # Export data to excel
-            self.ref_pose_worksheet.extend_data(self.t)
-            self.ref_pose_worksheet.extend_data(p_robot)
-            self.ref_pose_worksheet.extend_data(dp_truth)
-            self.ref_pose_worksheet.extend_data(u)
+            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
+            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.export_to_excel()
 
 
