@@ -110,6 +110,10 @@ class LaptopPilot:
         self.export_data = None
         self.ref_pose_worksheet = LaptopPilot.createExcelFile()
 
+        # Create variable for plotting ground truth and reference position
+        p_reference_tracker = None
+        p_ground_tracker = None
+
         ###############################################################        
 
         self.datalog = DataLogger(log_dir="logs")
@@ -367,6 +371,7 @@ class LaptopPilot:
             # feedforward control: check wp progress and sample reference trajectory
             self.path.wp_progress(self.t, p_robot,self.accept_radius,2,self.timeout) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
+            p_reference_tracker = p_ref[0:2,0]
 
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")

@@ -131,11 +131,13 @@ class Window(QWidget):
                 self.running = False
                 break
                 
-            #Planned trajectory
+            # Planned trajectory
             if self.Laptop.p_reference_tracker is not None:
                 p_reference = self.Laptop.p_reference_tracker
             else:
                 p_reference = None
+
+            # Ground truth
 
             # Estimated pose #
             if self.Laptop.est_pose_northings_m is not None:
