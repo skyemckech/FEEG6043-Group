@@ -55,15 +55,15 @@ class LaptopPilot:
         # path
         self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
-        self.path_radius = 0.3
+        self.path_radius = 0.7
         self.accept_radius = 0.2
         self.northings_path = [0,1.4,1.4,0,0,0,1,1,0,0]
         self.eastings_path = [0,0,1.4,1.4,0,0,0,1,1,0]       
         self.relative_path = True #False if you want it to be absolute  
 
         # control parameters        
-        self.tau_s = 2 # s to remove along track error
-        self.L = 0.5 # m distance to remove normal and angular error
+        self.tau_s = 1.75 # s to remove along track error
+        self.L = 0.4 # m distance to remove normal and angular error
         self.v_max = 0.2 # m/s fastest the robot can go
         self.w_max = np.deg2rad(60) # fastest the robot can turn
         self.timeout = 10 #s
@@ -433,7 +433,7 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
-            
+        
             # Export data to excel
             self.ref_pose_worksheet.extend_data(self.t)
             self.ref_pose_worksheet.extend_data(p_robot)
