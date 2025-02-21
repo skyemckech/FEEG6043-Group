@@ -87,7 +87,12 @@ class LaptopPilot:
 
         # encoder/actual wheel speeds
         self.measured_wheelrate_right = None
-        self.measured_wheelrate_left = None   
+        self.measured_wheelrate_left = None
+
+        # measured ground speeds
+        self.groundtruth_northings = None
+        self.groundtruth_eastings = None
+        self.groundtruth_yaw = None   
 
         # lidar
         self.lidar_timestamp_s = None
@@ -198,6 +203,9 @@ class LaptopPilot:
 
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
+        self.groundtruth_northings = msg.position.x
+        self.groundtruth_eastings = msg.position.y
+        self.groundtruth_yaw = msg.orientation.z
         self.datalog.log(msg, topic_name="/groundtruth")
     
     def pose_parse(self, msg, aruco = False):
@@ -345,10 +353,10 @@ class LaptopPilot:
             p_robot[2,0] = self.est_pose_yaw_rad
 
             #creates measured pose
-            p_robot_measured = Vector(3)
-            p_robot_measured[0,0] = self.measured_pose_northings_m
-            p_robot_measured[1,0] = self.measured_pose_eastings_m 
-            p_robot_measured[2,0] = self.measured_pose_yaw_rad
+            p_robot_truth = Vector(3)
+            p_robot_truth[0,0] = self.groundtruth_northings
+            p_robot_truth[1,0] = self.groundtruth_eastings
+            p_robot_truth[2,0] = self.groundtruth_yaw
 
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
@@ -372,9 +380,11 @@ class LaptopPilot:
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - p_robot #compute difference between reference and estimated pose in the $e$-frame
-            dp_measured = p_ref - p_robot_measured
+            dp_truth = p_ref - p_robot_truth
 
             dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+            dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+
             H_eb = HomogeneousTransformation(p_robot[0:2], p_robot[2])
             ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
 
@@ -422,7 +432,7 @@ class LaptopPilot:
             # Export data to excel
             self.ref_pose_worksheet.extend_data(self.t)
             self.ref_pose_worksheet.extend_data(p_robot)
-            self.ref_pose_worksheet.extend_data(dp_measured)
+            self.ref_pose_worksheet.extend_data(dp_truth)
             self.ref_pose_worksheet.extend_data(u)
             self.ref_pose_worksheet.export_to_excel()
 
