@@ -54,14 +54,12 @@ class LaptopPilot:
 
         ############# INITIALISE ATTRIBUTES ##########        
         # path
-        self.path_velocity = 0.6
+        self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,1.4,1.4,0,0]
-        self.eastings_path = [0,0,1.4,1.4,0]
-        #self.northings_path = [0,1.4,1.4]
-        #self.eastings_path = [0,0,1.4]         
+        self.northings_path = [0,2]
+        self.eastings_path = [0,0]      
         self.relative_path = True #False if you want it to be absolute  
 
         # modelling parameters
@@ -368,7 +366,6 @@ class LaptopPilot:
             p_robot_truth[0,0] = self.groundtruth_northings
             p_robot_truth[1,0] = self.groundtruth_eastings
             p_robot_truth[2,0] = self.groundtruth_yaw
-            p_robot_truth[2] = p_robot_truth[2] % (2 * np.pi)
             self.p_groundtruth_tracker = p_robot_truth[0:3,0]
                                 
             p_robot = rigid_body_kinematics(p_robot,u, dt)
@@ -413,7 +410,7 @@ class LaptopPilot:
 
             # total control
             #u = u_ref + du # combine feedback and feedforward control twist components
-            u = u_ref + du
+            u = u_ref
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn

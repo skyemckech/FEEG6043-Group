@@ -53,7 +53,7 @@ class Window(QWidget):
         # Heading
         est_heading = LiveLinePlot(pen = 'blue', name = 'Estimated Heading')
         measured_heading = LiveLinePlot(symbol = 'x', pen = 'green', name = 'Measured Heading')       
-        p_groundtruth_heading = LiveLinePlot(pen = 'green', name = 'Groundtruth Heading')
+        p_groundtruth_heading = LiveLinePlot(symbol = 'x', pen = 'green', name = 'Groundtruth Heading')
 
         # Position
         est_position = LiveScatterPlot(symbol = 'o', size = 4, pen = 'blue', name = 'Estimated Position')
@@ -72,15 +72,15 @@ class Window(QWidget):
         self.est_heading = DataConnector(est_heading, max_points=1000)
         self.measured_heading = DataConnector(measured_heading, max_points=100)
         
-        self.est_position = DataConnector(est_position, max_points=1000)
+        self.est_position = DataConnector(est_position, max_points=100)
         self.measured_position = DataConnector(measured_position, max_points=10)
         self.waypoints = DataConnector(waypoints, max_points=50)
         self.lidar = DataConnector(lidar, max_points=3000)
 
         # Assignment 1 additions
         self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=500)
-        self.p_groundtruth_position = DataConnector(p_groundtruth_position, max_points=1000)
-        self.p_groundtruth_heading = DataConnector(p_groundtruth_heading, max_points=1000)
+        self.p_groundtruth_position = DataConnector(p_groundtruth_position, max_points=500)
+        self.p_groundtruth_heading = DataConnector(p_groundtruth_heading, max_points=100)
 
         # Show grid
         self.wheelrate_plot.showGrid(x=True, y=True, alpha=0.3)
