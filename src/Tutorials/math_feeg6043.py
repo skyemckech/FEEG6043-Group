@@ -270,6 +270,9 @@ def l2m(nlist):
                 N[j,i] = nlist[i][j]                            
     return N
 
+def change_to_list(data):
+    if type(data) == type(np.2darray([])):
+
 def fill_timegaps(dt_max,T):
     add_timestamp = []
     t_prev=T[0]
