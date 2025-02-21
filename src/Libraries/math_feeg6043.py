@@ -281,6 +281,8 @@ def change_to_list(data):
         return [data]
     if type(data) == type([]):
         return data
+    if type(data) == type("string"):
+        return [data]
     else:
         return TypeError
 

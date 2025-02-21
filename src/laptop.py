@@ -127,21 +127,24 @@ class LaptopPilot:
     
     class createExcelFile:
         def __init__(self):
+            # Creates workbook and worksheet to modify
             self.workbook = openpyxl.Workbook()
             self.worksheet = self.workbook.active
+            # Initialise variable to store data
             self.dataLine = []
-            self.filename = "reference.xlsx"
-            self.headers_written = False  # Track if headers are written
-            
+            # Track if headers are written
+            self.headers_written = False  
         def set_headers(self, headers):
-            """ writes headers to the first row of the excel sheet """
+            # writes headers to the excel sheet
             if not self.headers_written:
                 self.worksheet.append(headers)
                 self.headers_written = True
         def extend_data(self, data):
+            # adds to list self.dataLine
             data = change_to_list(data)
             self.dataLine.extend(data)
         def export_to_excel(self,filename = "reference.xlsx"):
+            # appends dataLine to sheet and saves file
             self.worksheet.append(self.dataLine)       
             self.workbook.save(filename)
             self.dataLine = []
@@ -294,6 +297,15 @@ class LaptopPilot:
                 self.est_pose_eastings_m = self.measured_pose_eastings_m  
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
+                # Add headers
+                self.ref_pose_worksheet.set_headers(["Elapsed Time",
+                                                    "Trajectory Northings",
+                                                    "Trajectory Eastings",
+                                                    "Trajectory Gamma",
+                                                    "Measured Northings Error", 
+                                                    "Measured Eastings Error", 
+                                                    "Measured Gamma Error"])
+
                 self.generate_trajectory()
 
                 # get current time and determine timestep
@@ -406,10 +418,6 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
-
-            # Add headers
-            self.ref_pose_worksheet.set_headers(["Elapsed Time","Trajectory Northings", "Trajectory Eastings", "Trajectory Gamma", "Measured Northings Error", "Measured Eastings Error", "Measured Gamma Error"])
-
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data(self.t)
