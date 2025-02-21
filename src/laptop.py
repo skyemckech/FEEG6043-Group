@@ -130,6 +130,14 @@ class LaptopPilot:
             self.workbook = openpyxl.Workbook()
             self.worksheet = self.workbook.active
             self.dataLine = []
+            self.filename = "reference.xlsx"
+            self.headers_written = False  # Track if headers are written
+            
+        def set_headers(self, headers):
+            """ writes headers to the first row of the excel sheet """
+            if not self.headers_written:
+                self.worksheet.append(headers)
+                self.headers_written = True
         def extend_data(self, data):
             #if type(data) == type(np.array([])):
              #   pass
@@ -400,8 +408,14 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
+            # Add headers
+            self.ref_pose_worksheet.set_headers(["Elapsed Time","Trajectory Northings", "Trajectory Eastings", "Trajectory Gamma", "Measured Northings Error", "Measured Eastings Error", "Measured Gamma Error"])
+
+            
             # Export data to excel
+            self.ref_pose_worksheet.extend_data([self.t])
             self.ref_pose_worksheet.extend_data(m2l(p_robot))
+            self.ref_pose_worksheet.extend_data(m2l(dp_measured))
             self.ref_pose_worksheet.export_to_excel()
 
 
