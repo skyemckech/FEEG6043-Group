@@ -57,8 +57,8 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,1.0]
-        self.eastings_path = [0,0]      
+        self.northings_path = [0,1.4,1.4,0,0,0,1,1,0,0]
+        self.eastings_path = [0,0,1.4,1.4,0,0,0,1,1,0]      
         self.relative_path = True #False if you want it to be absolute  
 
         # control parameters        
