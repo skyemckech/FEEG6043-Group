@@ -24,7 +24,7 @@ from Libraries.model_feeg6043 import RangeAngleKinematics
 from Libraries.model_feeg6043 import feedback_control
 from Libraries.math_feeg6043 import Inverse, HomogeneousTransformation
 from Libraries.model_feeg6043 import TrajectoryGenerate
-from Libraries.math_feeg6043 import l2m, m2l
+from Libraries.math_feeg6043 import l2m, m2l, change_to_list
 from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
 # add more libraries here
@@ -131,8 +131,7 @@ class LaptopPilot:
             self.worksheet = self.workbook.active
             self.dataLine = []
         def extend_data(self, data):
-            #if type(data) == type(np.array([])):
-             #   pass
+            data = change_to_list(data)
             self.dataLine.extend(data)
         def export_to_excel(self,filename = "reference.xlsx"):
             self.worksheet.append(self.dataLine)       

@@ -274,6 +274,16 @@ def l2m(nlist):
 # m2l converts a matrix to a flattened list
 def m2l(m): return [element for row in m for element in row]
 
+def change_to_list(data):
+    if type(data) == type(np.array([])):
+        return m2l(data)
+    if type(data) == type(2.0):
+        return [data]
+    if type(data) == type([]):
+        return data
+    else:
+        return TypeError
+
 def fill_timegaps(dt_max,T):
     add_timestamp = []
     t_prev=T[0]
