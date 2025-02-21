@@ -44,19 +44,24 @@ class Window(QWidget):
         self.Laptop = LaptopPilot(simulation)
         
         # Create one curve pre dataset
+        # Wheelrate
         cmd_wheelrate_right = LiveLinePlot(pen="red", name = 'Right Wheel Cmd')
         cmd_wheelrate_left = LiveLinePlot(pen="blue", name = 'Left Wheel Cmd')
         measured_wheelrate_right = LiveLinePlot(pen="magenta", name='Right Wheel Measured')
         measured_wheelrate_left = LiveLinePlot(pen="cyan", name='Left Wheel Measured')
         
+        # Heading
         est_heading = LiveLinePlot(pen = 'blue', name = 'Estimated Heading')
         measured_heading = LiveLinePlot(symbol = 'x', pen = 'green', name = 'Measured Heading')       
-        
-        p_reference_tracker = LiveLinePlot(pen="grey", name='Reference path')
+        p_groundtruth_heading = LiveLinePlot(symbol = 'x', pen = 'green', name = 'Groundtruth Heading')
+
+        # Position
         est_position = LiveScatterPlot(symbol = 'o', size = 4, pen = 'blue', name = 'Estimated Position')
         measured_position = LiveScatterPlot(symbol = 'x', pen = 'green', name = 'Measured Position')
         waypoints = LiveScatterPlot(symbol = 'o', pen = 'red', name = 'Waypoints')
         lidar = LiveScatterPlot(symbol = 'o', size = 1, pen = 'w', name = 'Lidar')
+        p_reference_tracker = LiveLinePlot(pen="grey", name='Reference path')
+        p_groundtruth_position = LiveLinePlot(pen="green", name='Groundtruth')
         
         # Data connectors for each plot with dequeue of 600 points
         self.cmd_wheelrate_right = DataConnector(cmd_wheelrate_right, max_points=1500)
@@ -71,7 +76,11 @@ class Window(QWidget):
         self.measured_position = DataConnector(measured_position, max_points=10)
         self.waypoints = DataConnector(waypoints, max_points=50)
         self.lidar = DataConnector(lidar, max_points=3000)
-        self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=100)
+
+        # Assignment 1 additions
+        self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=500)
+        self.p_groundtruth_position = DataConnector(p_groundtruth_position, max_points=500)
+        self.p_groundtruth_heading = DataConnector(p_groundtruth_heading, max_points=100)
 
         # Show grid
         self.wheelrate_plot.showGrid(x=True, y=True, alpha=0.3)
@@ -97,13 +106,18 @@ class Window(QWidget):
         self.wheelrate_plot.addItem(cmd_wheelrate_left)
         self.wheelrate_plot.addItem(measured_wheelrate_right)
         self.wheelrate_plot.addItem(measured_wheelrate_left)
-        self.heading_plot.addItem(measured_heading)
+
+        #self.heading_plot.addItem(measured_heading)
         self.heading_plot.addItem(est_heading)
+        self.heading_plot.addItem(p_groundtruth_heading)  
+
         self.position_plot.addItem(est_position)
-        self.position_plot.addItem(measured_position)
+        #self.position_plot.addItem(measured_position)
         self.position_plot.addItem(waypoints)
         self.position_plot.addItem(lidar)   
-        self.position_plot.addItem(p_reference_tracker)    
+        self.position_plot.addItem(p_reference_tracker)
+        self.position_plot.addItem(p_groundtruth_position)
+          
 
 
 
@@ -138,6 +152,10 @@ class Window(QWidget):
                 p_reference = None
 
             # Ground truth
+            if self.Laptop.p_groundtruth_tracker is not None:
+                p_groundtruth = self.Laptop.p_groundtruth_tracker
+            else:
+                p_groundtruth = None
 
             # Estimated pose #
             if self.Laptop.est_pose_northings_m is not None:
@@ -190,6 +208,9 @@ class Window(QWidget):
             if p_reference is not None:
                 self.p_reference_tracker.cb_append_data_point(p_reference[0], p_reference[1])
 
+            if p_groundtruth is not None:
+                self.p_groundtruth_position.cb_append_data_point(p_groundtruth[0], p_groundtruth[1])
+
             # estimated and measured positions
             if est_pose_northings_m is not None and est_pose_eastings_m is not None:
                 self.est_position.cb_append_data_point(est_pose_northings_m, est_pose_eastings_m)
@@ -233,6 +254,9 @@ class Window(QWidget):
             
             if measured_pose_timestamp_s is not None:
                 measured_pose_stamp_prev= measured_pose_timestamp_s
+
+            if p_groundtruth is not None:
+                self.p_groundtruth_heading.cb_append_data_point(np.rad2deg(p_groundtruth[2]), current_time)
             
             self.loopcounter += 1  
             
