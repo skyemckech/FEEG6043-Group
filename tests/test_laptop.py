@@ -1,26 +1,36 @@
 from laptop import LaptopPilot
 import openpyxl
-from src.Libraries.math_feeg6043 import Vector, Transpose, m2l
+from openpyxl import load_workbook
+from src.Libraries.math_feeg6043 import Vector, Transpose, m2l, change_to_list
 import numpy as np
-
-def test_laptop():
-    Laptop = LaptopPilot(True)
-    Laptop.infinite_loop
-    assert Laptop.robot_ip == '127.0.0.1'
-
 class createExcelFile:
-        def __init__(self):
-            self.workbook = openpyxl.Workbook()
-            self.worksheet = self.workbook.active
-            self.dataLine = []
-        def extend_data(self, data):
-            self.dataLine.extend(data)
-        def export_to_excel(self,filename = "data.xslx"):
-            self.worksheet.append(self.dataLine)       
-            self.workbook.save(filename)
+    def __init__(self):
+        # Creates workbook and worksheet to modify
+        self.workbook = openpyxl.Workbook()
+        self.worksheet = self.workbook.active
+        # Initialise variable to store data
+        self.dataLine = []
+        # Track if headers are written
+        self.headers_written = False  
+    def set_headers(self, headers):
+        # writes headers to the excel sheet
+        if not self.headers_written:
+            self.worksheet.append(headers)
+            self.headers_written = True
+    def extend_data(self, data):
+        # adds to list self.dataLine
+        data = change_to_list(data)
+        self.dataLine.extend(data)
+    def export_to_excel(self,filename = "reference.xlsx"):
+        # appends dataLine to sheet and saves file
+        self.workbook = load_workbook(filename)
+        self.worksheet.append(self.dataLine)       
+        self.workbook.save(filename)
+        self.dataLine = []
+        self.workbook.close
 
 def test_createExcelFile():
-    testSheet = createExcelFile()
+    testSheet = createExcelFile
     p_example = Vector(3)
     p_example[0,0] = 1
     p_example[1,0] = 2
