@@ -400,10 +400,10 @@ class LaptopPilot:
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
             # Export data to excel
-            self.ref_pose_worksheet.extend_data([self.t])
-            self.ref_pose_worksheet.extend_data(m2l(p_robot))
-            self.ref_pose_worksheet.extend_data(m2l(dp_measured))
-            self.ref_pose_worksheet.extend_data(m2l(u))
+            self.ref_pose_worksheet.extend_data(self.t)
+            self.ref_pose_worksheet.extend_data(p_robot)
+            self.ref_pose_worksheet.extend_data(dp_measured)
+            self.ref_pose_worksheet.extend_data(u)
             self.ref_pose_worksheet.export_to_excel()
 
 
