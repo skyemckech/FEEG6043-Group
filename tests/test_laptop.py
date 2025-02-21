@@ -28,7 +28,7 @@ def test_createExcelFile():
     list2=[4,5,6]
     list3=[7,8,9]
     testSheet.extend_data([2,3])
-    testSheet.extend_data(m2l(p_example))
+    testSheet.extend_data([p_example[0,0]])
     testSheet.extend_data(list3)
     testSheet.export_to_excel("MEGAGOONEAAAH.xlsx")
 
