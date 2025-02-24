@@ -169,10 +169,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
-# Blacklist everything
-*
-# Whitelist all directories
-!*/
-# Whitelist the file you're interested in. 
-!*.py
