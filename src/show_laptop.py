@@ -70,17 +70,17 @@ class Window(QWidget):
         self.measured_wheelrate_left = DataConnector(measured_wheelrate_left, max_points=1500)
         
         self.est_heading = DataConnector(est_heading, max_points=1000)
-        self.measured_heading = DataConnector(measured_heading, max_points=100)
+        self.measured_heading = DataConnector(measured_heading, max_points=1000)
         
-        self.est_position = DataConnector(est_position, max_points=100)
-        self.measured_position = DataConnector(measured_position, max_points=10)
+        self.est_position = DataConnector(est_position, max_points=1000)
+        self.measured_position = DataConnector(measured_position, max_points=100)
         self.waypoints = DataConnector(waypoints, max_points=50)
         self.lidar = DataConnector(lidar, max_points=3000)
 
         # Assignment 1 additions
-        self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=500)
-        self.p_groundtruth_position = DataConnector(p_groundtruth_position, max_points=500)
-        self.p_groundtruth_heading = DataConnector(p_groundtruth_heading, max_points=100)
+        self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=1000)
+        self.p_groundtruth_position = DataConnector(p_groundtruth_position, max_points=1000)
+        self.p_groundtruth_heading = DataConnector(p_groundtruth_heading, max_points=1000)
 
         # Show grid
         self.wheelrate_plot.showGrid(x=True, y=True, alpha=0.3)
