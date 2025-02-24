@@ -58,19 +58,19 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,2]
-        self.eastings_path = [0,0]      
+        self.northings_path = [0,1.4,1.4,0,0]
+        self.eastings_path = [0,0,1.4,1.4,0]      
         self.relative_path = True #False if you want it to be absolute  
 
         # modelling parameters
-        wheel_distance = 0.170 # m 
-        wheel_diameter = 0.068 # m
+        wheel_distance = 0.174 # m 
+        wheel_diameter = 0.070 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
         # control parameters        
-        self.tau_s = 2 # s to remove along track error
-        self.L = 0.5 # m distance to remove normal and angular error
-        self.v_max = 0.2 # m/s fastest the robot can go
+        self.tau_s = 0.15 # s to remove along track error
+        self.L = 0.1 # m distance to remove normal and angular error
+        self.v_max = 0.6 # m/s fastest the robot can go
         self.w_max = np.deg2rad(60) # fastest the robot can turn
         self.timeout = 10 #s
         
@@ -410,7 +410,7 @@ class LaptopPilot:
 
             # total control
             #u = u_ref + du # combine feedback and feedforward control twist components
-            u = u_ref
+            u = u_ref + du
 
             # update control gains for the next timestep
             self.k_n = 2*u[0]/self.L #kn
