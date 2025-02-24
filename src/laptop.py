@@ -160,8 +160,8 @@ class LaptopPilot:
             self.workbook.close
             self.dataLine = []
 
-class EKF:
-    def __init__(self, initiAL_state, process_noise, measurement_noise):
+    class EKF:
+         def __init__(self, initiAL_state, process_noise, measurement_noise):
 
 
     def true_wheel_speeds_callback(self, msg):
