@@ -28,6 +28,9 @@ from Libraries.math_feeg6043 import l2m, m2l, change_to_list
 from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
 from openpyxl import load_workbook
+from Libraries.math_feeg6043 import Vector, Matrix, Identity, Inverse, eigsorted, gaussian, l2m
+from matplotlib.patches import Ellipse
+from Libraries.plot_feeg6043 import plot_kalman, plot_EKF_trajectory
 # add more libraries here
 
 class LaptopPilot:
