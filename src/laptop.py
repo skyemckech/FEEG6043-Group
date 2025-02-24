@@ -167,18 +167,30 @@ class LaptopPilot:
     class EKF:
          def __init__(self, initiaL_state, process_noise, measurement_noise):
         
-        self.Sigma = np.eye(len(initiaL_state))
-        self.mu = np.array(initial_state)
-        
-        self.Q = process_noise
-        self.R = measurement noise
+        Sigma = np.eye(len(initiaL_state))
+        mu = np.array(initial_state)
+        zm = Matrix (1,1)
     
-        ### control and process noise######
+        ##CREATING THE BASE MATRIX FOR Q,U AND R!!!!!########     
+        om = Matrix(1,1); self.om[0,0] =1
+     
+        ### ADDED CONTROL AND PROCESS NOISE!!!!!!!!!########
+        Q = om
         u = 2*om
         R = 2*om
+        wrapping_index = True
+    
+        def kalman_filter_process(self,state, covariance, u, f_nonlin, R, dt,view_flag=True)
 
-        zm = Matrix (1,1)
-        om = Matrix(1,1); om[0,0] =1
+
+        pred_state, pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
+        cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
+
+
+        return cor_mu, cor_Sigma
+
+
+
         #def extended_kalman_filter_predict(mu, Sigma, u, f, R, dt):
             # (1) Project the state forward
             #pred_mu, F = f(mu, u, dt)
@@ -493,6 +505,9 @@ class LaptopPilot:
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.export_to_excel()
+
+            #pred_state, pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
+            #cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
 
 
 
