@@ -47,6 +47,8 @@ class LaptopPilot:
         self.initialise_pose = True # False once the pose is initialised
 
         ############# INITIALISE ATTRIBUTES ##########        
+        #>Modelling<#
+        ################
         # path
         self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
@@ -75,6 +77,15 @@ class LaptopPilot:
         self.est_pose_eastings_m = None
         self.est_pose_yaw_rad = None
 
+        #motion model variables
+        self.state = None
+
+        # kalman filter
+        self.jacobian = None
+
+        #>Communication>#
+        #################
+    
         # measured pose
         self.measured_pose_timestamp_s = None
         self.measured_pose_northings_m = None
@@ -300,10 +311,17 @@ class LaptopPilot:
 
             # logs the data            
             self.datalog.log(msg, topic_name="/aruco")
-
+        
             # initialisation step
             if self.initialise_pose == True:
                 # set initial measurements
+                self.state = Vector(5)
+                self.state[0] = self.measured_pose_northings_m 
+                self.state[1] = self.measured_pose_eastings_m  
+                self.state[2] = self.measured_pose_yaw_rad
+                self.state[3] = 0 
+                self.state[4] = 0
+
                 self.est_pose_northings_m = self.measured_pose_northings_m 
                 self.est_pose_eastings_m = self.measured_pose_eastings_m  
                 self.est_pose_yaw_rad = self.measured_pose_yaw_rad
@@ -328,7 +346,6 @@ class LaptopPilot:
                 # path and tragectory are initialised
                 self.initialise_pose = False
 
-                
 
         if self.initialise_pose != True:  
             
@@ -351,11 +368,8 @@ class LaptopPilot:
             ################################################################################
             ################### Motion Model ##############################
             # take current pose estimate and update by twist
-            p_robot = Vector(3)
-            p_robot[0,0] = self.est_pose_northings_m
-            p_robot[1,0] = self.est_pose_eastings_m
-            p_robot[2,0] = self.est_pose_yaw_rad
-
+            self.state, self.jacobian = motion_model(self.state, u, dt)
+            
             #creates measured pose
             p_robot_truth = Vector(3)
             p_robot_truth[0,0] = self.groundtruth_northings
@@ -363,13 +377,12 @@ class LaptopPilot:
             p_robot_truth[2,0] = self.groundtruth_yaw
             self.p_groundtruth_tracker = p_robot_truth[0:3,0]
                                 
-            p_robot = rigid_body_kinematics(p_robot,u, dt)
-            p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
+            #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
 
             #################### Trajectory sample #################################    
 
             # feedforward control: check wp progress and sample reference trajectory
-            self.path.wp_progress(self.t, p_robot,self.accept_radius,2,self.timeout) # fill turning radius
+            self.path.wp_progress(self.t, self.state[0:3],self.accept_radius,2,self.timeout) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             self.p_reference_tracker = p_ref[0:2,0]
 
@@ -377,20 +390,20 @@ class LaptopPilot:
             self.datalog.log(msg, topic_name="/est_pose")
 
             # update for show_laptop.py            
-            self.est_pose_northings_m = p_robot[0,0]
-            self.est_pose_eastings_m = p_robot[1,0]
-            self.est_pose_yaw_rad = p_robot[2,0]
+            self.est_pose_northings_m = self.state[0,0]
+            self.est_pose_eastings_m = self.state[1,0]
+            self.est_pose_yaw_rad = self.state[2,0]
 
             # > Control < #
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
-            dp = p_ref - p_robot #compute difference between reference and estimated pose in the $e$-frame
+            dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
             dp_truth = p_ref - p_robot_truth
 
             dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
             dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
-            H_eb = HomogeneousTransformation(p_robot[0:2], p_robot[2])
+            H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
             ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
 
             # compute control gains for the initial condition (where the robot is stationalry)
