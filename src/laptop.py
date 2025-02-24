@@ -177,7 +177,8 @@ class LaptopPilot:
         u = 2*om
         R = 2*om
 
-
+        zm = Matrix (1,1)
+        om = Matrix(1,1); om[0,0] =1
         #def extended_kalman_filter_predict(mu, Sigma, u, f, R, dt):
             # (1) Project the state forward
             #pred_mu, F = f(mu, u, dt)
