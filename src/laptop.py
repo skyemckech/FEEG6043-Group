@@ -167,27 +167,47 @@ class LaptopPilot:
     class EKF:
          def __init__(self, initiaL_state, process_noise, measurement_noise):
         
-        Sigma = np.eye(len(initiaL_state))
-        mu = np.array(initial_state)
-        zm = Matrix (1,1)
+            Sigma = np.eye(len(initiaL_state))
+            mu = np.array(initial_state)
+            zm = Matrix (1,1)
+
+
     
         ##CREATING THE BASE MATRIX FOR Q,U AND R!!!!!########     
-        om = Matrix(1,1); self.om[0,0] =1
+            om = Matrix(1,1); om[0,0] =1
      
         ### ADDED CONTROL AND PROCESS NOISE!!!!!!!!!########
-        Q = om
-        u = 2*om
-        R = 2*om
-        wrapping_index = True
+            Q = om
+            u = 2*om
+            R = 2*om
+            state = zm; 
+            covariance = om
+            wrapping_index = True
+
+
+            ###Example of a nonlinear funtion#####
+        def f_nonlintest(x, u, dt):
+            # this is a non-linear model that cannot be solved with a KF f(x)=x**2+u
+            F = np.zeros((1, 1), dtype=float)
+            F[0,0] = 2*x
+            return x ** 2 + u , F
+            #####creates H matrix from mu value.....###
+        def h(x):
+            H = Matrix(1,1)
+            H[0,0] = 1
+            return x, H
     
-        def kalman_filter_process(self,state, covariance, u, f_nonlin, R, dt,view_flag=True)
+        def kalman_filter_process(self,state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True)
 
+            pred_state, pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
 
-        pred_state, pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
-        cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
+            print('Time predicted is', dt, 's', 'control predicted is', u, 'state predicted is', cor_state, 'covariance predicted is', cor_covariance)
 
+            cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
 
-        return cor_mu, cor_Sigma
+            print('Time is', dt, 's', 'control is', u, 'state is', cor_state, 'covariance is', cor_covariance)
+
+            return cor_state, cor_covariance
 
 
 
