@@ -172,6 +172,10 @@ class LaptopPilot:
         
         self.Q = process_noise
         self.R = measurement noise
+    
+        ### control and process noise######
+        u = 2*om
+        R = 2*om
 
 
         #def extended_kalman_filter_predict(mu, Sigma, u, f, R, dt):
