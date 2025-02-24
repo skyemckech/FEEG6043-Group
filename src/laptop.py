@@ -160,6 +160,10 @@ class LaptopPilot:
             self.workbook.close
             self.dataLine = []
 
+class EKF:
+    def __init__(self, initiAL_state, process_noise, measurement_noise):
+
+
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
         # update wheel rates
