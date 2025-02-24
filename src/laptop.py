@@ -162,7 +162,7 @@ class LaptopPilot:
             self.workbook.save(self.filename)
             self.workbook.close
             self.dataLine = []
-
+        
     class EKF:
          def __init__(self, initiAL_state, process_noise, measurement_noise):
 
