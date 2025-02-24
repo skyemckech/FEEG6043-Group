@@ -31,6 +31,7 @@ from openpyxl import load_workbook
 from Libraries.math_feeg6043 import Vector, Matrix, Identity, Inverse, eigsorted, gaussian, l2m
 from matplotlib.patches import Ellipse
 from Libraries.plot_feeg6043 import plot_kalman, plot_EKF_trajectory
+from Libraries.model_feeg6043 import extended_kalman_filter_predict, extended_kalman_filter_update
 # add more libraries here
 
 class LaptopPilot:
@@ -162,7 +163,7 @@ class LaptopPilot:
             self.workbook.save(self.filename)
             self.workbook.close
             self.dataLine = []
-        
+
     class EKF:
          def __init__(self, initiAL_state, process_noise, measurement_noise):
 
