@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class EKF:
     def __init__(self, initial_state):
-        
+        self.state = initial_state
         return
 
     def set_parameters(self, Q_factor, u_factor, R_factor):
@@ -66,18 +66,24 @@ class EKF:
         
         # Return the state and the covariance
         return cor_mu, cor_Sigma
-    
-    # def kalman_filter_process(self,state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True):
+
+   # def set_noise(self, Q_factor, u_factor, R_factor):
+        #Q, u, R, z, state, covariance, dt = self.set_parameters(Q_factor, u_factor, R_factor)
+        #return Q, u, R, z, state, covariance, dt   
 
 
-    #     self.pred_state, self.pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
-    #     print('Time predicted is', dt, 's', 'control predicted is', u, 'state predicted is', cor_state, 'covariance predicted is', cor_covariance)
-    #     # cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
-    #     # print('Time is', dt, 's', 'control is', u, 'state is', cor_state, 'covariance is', cor_covariance)
+    #def kalman_filter_process(self, state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True):
 
-    #     return self.pred_state, self.pred_covariance 
 
-testexample = EKF
+        #self.pred_state, self.pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
+        #print('Time predicted is', dt, 's', 'control predicted is', u, 'state predicted is', cor_state, 'covariance predicted is', cor_covariance)
+        #cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
+        #print('Time is', dt, 's', 'control is', u, 'state is', cor_state, 'covariance is', cor_covariance)
+
+        #return self.pred_state, self.pred_covariance 
+
+initial_state = Matrix(1,1)
+testexample = EKF (initial_state)
 Q_factor= 2 
 u_factor = 2 
 R_factor = 2
