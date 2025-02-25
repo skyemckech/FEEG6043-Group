@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 class EKF:
     def __init__(self, initial_state):
         
-        Sigma = np.eye(len(initial_state))
-        mu = np.array(initial_state)
-        
+        #Sigma = np.eye(len(initial_state))
+        #mu = np.array(initial_state)
+
         #zm = Matrix(1,1)
         ##CREATING THE BASE MATRIX FOR Q,U AND R!!!!!########     
         # om = Matrix(1,1); om[0,0] =1
@@ -82,6 +82,6 @@ class EKF:
 
 
 
-Q, u, R = set_noise(-,---,----)
+Q, u, R, state, covariance = set_noise(self, Q_factor, u_factor, R_factor))
 testexample = class.EKF
 cor_state, cor_covarianc = testexample.kalman_filter_process(testexample.state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True)
