@@ -1,5 +1,5 @@
 
-from Tutorials.math_feeg6043 import Matrix
+from Libraries.math_feeg6043 import Matrix
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -25,9 +25,6 @@ class EKF:
         self.z = -2*om
 
         self.Q = Q_factor*om
-        
-        return self.Q, self.u, self.R, self.z, self.state, self.covariance, self.dt
-    
 
     def f_nonlintest(x, u, dt):
             # this is a non-linear model that cannot be solved with a KF f(x)=x**2+u
@@ -41,15 +38,15 @@ class EKF:
         H[0,0] = 1
         return x, H
     
-    def extended_kalman_filter_predict(mu, Sigma, u, f, R, dt):
+    def extended_kalman_filter_predict(self, mu, Sigma,u, f, R, dt):
     # (1) Project the state forward (f = rigid body motion model)
-        pred_mu, F = f(mu, u, dt)
+        self.pred_mu, F = f(mu, u, dt)
       
     # (2) Project the error forward: R is covancerance
-        pred_Sigma = (F @ Sigma @ F.T) + R
+        self.pred_Sigma = (F @ Sigma @ F.T) + R
     
     # Return the predicted state and the covariance
-        return pred_mu, pred_Sigma
+        return self.pred_mu, self.pred_Sigma
 
     def extended_kalman_filter_update(mu, Sigma, z, h, Q, wrap_index = None):
         
@@ -84,7 +81,7 @@ testexample = EKF
 Q_factor= 2 
 u_factor = 2 
 R_factor = 2
-Q, u, R, z, state, covariance, dt = testexample.set_noise(Q_factor, u_factor, R_factor)
+Q, u, R, z, state, covariance, dt = testexample.set_parameters(Q_factor, u_factor, R_factor)
 
-or_state, cor_covarianc = testexample.kalman_filter_process(state, covariance, u, testexample.f_nonlintest, R, dt , z , testexample.h , Q , view_flag=True)
-print(cor_state,cor_covarianc)
+pred_mu, pred_Sigma = testexample.extended_kalman_filter_predict(state, covariance, u, testexample.f_nonlintest, R, dt)
+print(pred_mu, pred_Sigma)
