@@ -39,7 +39,7 @@ class EKF:
             return x ** 2 + u, F
 
         
-    def h(x):
+    def h(self, x):
         H = Matrix(1,1)
         H[0,0] = 1
         return x, H
@@ -54,7 +54,7 @@ class EKF:
     # Return the predicted state and the covariance
         return self.pred_mu, self.pred_Sigma
 
-    def extended_kalman_filter_update(mu, Sigma, z, h, Q, wrap_index = None):
+    def extended_kalman_filter_update(self, mu, Sigma, z, h, Q, wrap_index = None):
         
         ##---Prepare the estimated measurement-----
         pred_z, H = h(mu)
@@ -92,3 +92,5 @@ print(Q, u, R, z, state, covariance, dt)
 
 pred_mu, pred_Sigma = testexample.extended_kalman_filter_predict(state, covariance, u, testexample.f_nonlintest, R, dt)
 print(pred_mu, pred_Sigma)
+cor_mu, cor_Sigma = testexample.extended_kalman_filter_update(pred_mu, pred_Sigma, z, testexample.h, Q)
+print(cor_mu, cor_Sigma)
