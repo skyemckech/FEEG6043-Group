@@ -165,9 +165,9 @@ class LaptopPilot:
             self.dataLine = []
 
     class EKF:
-         def __init__(self, initiaL_state, process_noise, measurement_noise):
+         def __init__(self):
         
-            Sigma = np.eye(len(initiaL_state))
+            Sigma = np.eye(len(initial_state))
             mu = np.array(initial_state)
             zm = Matrix (1,1)
 
