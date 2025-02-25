@@ -5,7 +5,7 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
-from Libraries.plot_feeg6043 import plot_trajectory
+#from Libraries.plot_feeg6043 import plot_trajectory
 import numpy as np
 import argparse
 import time
@@ -30,7 +30,7 @@ from matplotlib import pyplot as plt
 from openpyxl import load_workbook
 from Libraries.math_feeg6043 import Vector, Matrix, Identity, Inverse, eigsorted, gaussian, l2m
 from matplotlib.patches import Ellipse
-from Libraries.plot_feeg6043 import plot_kalman, plot_EKF_trajectory
+#from Libraries.plot_feeg6043 import plot_kalman, plot_EKF_trajectory
 from Libraries.model_feeg6043 import extended_kalman_filter_predict, extended_kalman_filter_update
 # add more libraries here
 
