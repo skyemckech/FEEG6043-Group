@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class EKF:
     def __init__(self, initial_state):
-        
+        self.state = initial_state
         return
 
     def set_parameters(self, Q_factor, u_factor, R_factor):
@@ -26,7 +26,6 @@ class EKF:
 
         self.Q = Q_factor*om
         
-        return self.Q, self.u, self.R, self.z, self.state, self.covariance, self.dt
     
 
     def f_nonlintest(x, u, dt):
@@ -41,12 +40,12 @@ class EKF:
         H[0,0] = 1
         return x, H
     
-    def extended_kalman_filter_predict(mu, Sigma, u, f, R, dt):
+    def extended_kalman_filter_predict(mu, Sigma, f):
     # (1) Project the state forward (f = rigid body motion model)
-        pred_mu, F = f(mu, u, dt)
+        pred_mu, F = f(mu, self.u, self.dt)
       
     # (2) Project the error forward: R is covancerance
-        pred_Sigma = (F @ Sigma @ F.T) + R
+        pred_Sigma = (F @ Sigma @ F.T) + self.R
     
     # Return the predicted state and the covariance
         return pred_mu, pred_Sigma
@@ -69,22 +68,28 @@ class EKF:
         
         # Return the state and the covariance
         return cor_mu, cor_Sigma
-    
-    # def kalman_filter_process(self,state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True):
+
+   # def set_noise(self, Q_factor, u_factor, R_factor):
+        #Q, u, R, z, state, covariance, dt = self.set_parameters(Q_factor, u_factor, R_factor)
+        #return Q, u, R, z, state, covariance, dt   
 
 
-    #     self.pred_state, self.pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
-    #     print('Time predicted is', dt, 's', 'control predicted is', u, 'state predicted is', cor_state, 'covariance predicted is', cor_covariance)
-    #     # cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
-    #     # print('Time is', dt, 's', 'control is', u, 'state is', cor_state, 'covariance is', cor_covariance)
+    #def kalman_filter_process(self, state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True):
 
-    #     return self.pred_state, self.pred_covariance 
 
-testexample = EKF
+        #self.pred_state, self.pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=True)
+        #print('Time predicted is', dt, 's', 'control predicted is', u, 'state predicted is', cor_state, 'covariance predicted is', cor_covariance)
+        #cor_state, cor_covariance = extended_kalman_filter_update(pred_state, pred_covariance,z,h,Q,view_flag=True)
+        #print('Time is', dt, 's', 'control is', u, 'state is', cor_state, 'covariance is', cor_covariance)
+
+        #return self.pred_state, self.pred_covariance 
+
+initial_state = Matrix(1,1)
+testexample = EKF (initial_state)
 Q_factor= 2 
 u_factor = 2 
 R_factor = 2
-Q, u, R, z, state, covariance, dt = testexample.set_noise(Q_factor, u_factor, R_factor)
+Q, u, R, z, state, covariance, dt = testexample.set_parameters(Q_factor, u_factor, R_factor)
 
 or_state, cor_covarianc = testexample.kalman_filter_process(state, covariance, u, testexample.f_nonlintest, R, dt , z , testexample.h , Q , view_flag=True)
 print(cor_state,cor_covarianc)
