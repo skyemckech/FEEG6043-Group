@@ -177,9 +177,9 @@ class LaptopPilot:
             om = Matrix(1,1); om[0,0] =1
      
         ### ADDED CONTROL AND PROCESS NOISE!!!!!!!!!########
-            Q = om
-            u = 2*om
-            R = 2*om
+            Q = om #measurement noise
+            u = 2*om #control noise
+            R = 2*om #process noise 
             state = zm; 
             covariance = om
             wrapping_index = True
