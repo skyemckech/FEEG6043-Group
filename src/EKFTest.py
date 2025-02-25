@@ -1,5 +1,6 @@
 
 from Libraries.math_feeg6043 import Matrix
+from Libraries.math_feeg6043 import extended_kalman_filter_predict, extended_kalman_filter_update
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -38,35 +39,6 @@ class EKF:
         H[0,0] = 1
         return x, H
     
-    def extended_kalman_filter_predict(self, mu, Sigma,u, f, R, dt):
-    # (1) Project the state forward (f = rigid body motion model)
-        self.pred_mu, F = f(mu, u, dt)
-      
-    # (2) Project the error forward: R is covancerance
-        self.pred_Sigma = (F @ Sigma @ F.T) + R
-    
-    # Return the predicted state and the covariance
-        return self.pred_mu, self.pred_Sigma
-
-    def extended_kalman_filter_update(mu, Sigma, z, h, Q, wrap_index = None):
-        
-        ##---Prepare the estimated measurement-----
-        pred_z, H = h(mu)
-    
-        ####Compute the Kalman gain####
-        K = Sigma @ H.T @ np.linalg.inv(H @ Sigma @ H.T + Q)
-        
-        # ###Compute the updated state estimate #####
-        delta_z = z- pred_z        
-        if wrap_index != None: delta_z[wrap_index] = (delta_z[wrap_index] + np.pi) % (2 * np.pi) - np.pi    
-        cor_mu = mu + K @ (delta_z)
-
-        # (5) Compute the updated state covariance
-        cor_Sigma = (np.eye(mu.shape[0], dtype=float) - K @ H) @ Sigma
-        
-        # Return the state and the covariance
-        return cor_mu, cor_Sigma
-    
     # def kalman_filter_process(self,state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True):
 
 
@@ -81,7 +53,7 @@ testexample = EKF
 Q_factor= 2 
 u_factor = 2 
 R_factor = 2
-Q, u, R, z, state, covariance, dt = testexample.set_parameters(Q_factor, u_factor, R_factor)
 
-pred_mu, pred_Sigma = testexample.extended_kalman_filter_predict(state, covariance, u, testexample.f_nonlintest, R, dt)
+
+pred_mu, pred_Sigma = testexample.extended_kalman_filter_predict()
 print(pred_mu, pred_Sigma)
