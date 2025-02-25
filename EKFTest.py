@@ -4,7 +4,7 @@ from Libraries.model_feeg6043 import extended_kalman_filter_predict, extended_ka
 import numpy as np
 
 class EKF:
-    def __init__(self):
+def __init__(self):
         
             Sigma = np.eye(len(initial_state))
             mu = np.array(initial_state)
@@ -22,11 +22,8 @@ class EKF:
             state = zm; 
             covariance = om
             wrapping_index = True
-
-
-
-
-    def f_nonlintest(x, u, dt):
+            
+        def f_nonlintest(x, u, dt):
             # this is a non-linear model that cannot be solved with a KF f(x)=x**2+u
             F = np.zeros((1, 1), dtype=float)
             F[0,0] = 2*x
@@ -35,30 +32,31 @@ class EKF:
             ##### PLOT TEST #####
 
             # Generate x values for plotting
-    x_values = np.linspace(-5, 5, 100)  # Range from -5 to 5
-    u = 1  # Example input
-    dt = 1  # Not used in this function
+            
+x_values = np.linspace(-5, 5, 100)  # Range from -5 to 5
+u = 1  # Example input
+dt = 1  # Not used in this function
 
             # Compute f(x) for each x in x_values
-    f_values = [f_nonlintest(x, u, dt)[0] for x in x_values]
+f_values = [f_nonlintest(x, u, dt)[0] for x in x_values]
 
             # Plot the function
-    print(f_values)
-    plt.figure(figsize=(8, 5))
-    plt.plot(x_values, f_values, label=r'$f(x) = x^2 + u$', color='b')
-    plt.xlabel('x')
-    plt.ylabel('f(x)')
-    plt.title('Non-Linear Function Plot')
-    plt.axhline(0, color='black', linewidth=0.5, linestyle='--')
-    plt.axvline(0, color='black', linewidth=0.5, linestyle='--')
-    plt.legend()
-    plt.grid()
-    plt.show()
+print(f_values)
+plt.figure(figsize=(8, 5))
+plt.plot(x_values, f_values, label=r'$f(x) = x^2 + u$', color='b')
+plt.xlabel('x')
+plt.ylabel('f(x)')
+plt.title('Non-Linear Function Plot')
+plt.axhline(0, color='black', linewidth=0.5, linestyle='--')
+plt.axvline(0, color='black', linewidth=0.5, linestyle='--')
+plt.legend()
+plt.grid()
+plt.show()
 
-    def h(x):
-            H = Matrix(1,1)
-            H[0,0] = 1
-            return x, H
+        # def h(x):
+        #     H = Matrix(1,1)
+        #     H[0,0] = 1
+        #     return x, H
     
         # def kalman_filter_process(self,state, covariance, u, f_nonlin, R, dt , z , h , Q , view_flag=True)
 
