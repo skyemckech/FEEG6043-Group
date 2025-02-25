@@ -191,6 +191,31 @@ class LaptopPilot:
             F = np.zeros((1, 1), dtype=float)
             F[0,0] = 2*x
             return x ** 2 + u , F
+
+            ##### PLOT TEST #####
+
+            # Generate x values for plotting
+            x_values = np.linspace(-5, 5, 100)  # Range from -5 to 5
+            u = 1  # Example input
+            dt = 1  # Not used in this function
+
+            # Compute f(x) for each x in x_values
+            f_values = [f_nonlintest(x, u, dt)[0] for x in x_values]
+
+            # Plot the function
+            plt.figure(figsize=(8, 5))
+            plt.plot(x_values, f_values, label=r'$f(x) = x^2 + u$', color='b')
+            plt.xlabel('x')
+            plt.ylabel('f(x)')
+            plt.title('Non-Linear Function Plot')
+            plt.axhline(0, color='black', linewidth=0.5, linestyle='--')
+            plt.axvline(0, color='black', linewidth=0.5, linestyle='--')
+            plt.legend()
+            plt.grid()
+            plt.show()
+
+            ##### END OF PLOT TEST #####
+
             #####creates H matrix from mu value.....###
         def h(x):
             H = Matrix(1,1)
