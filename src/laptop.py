@@ -165,7 +165,7 @@ class LaptopPilot:
             self.dataLine = []
 
     class EKF:
-         def __init__(self):
+        def __init__(self):
         
             Sigma = np.eye(len(initial_state))
             mu = np.array(initial_state)
@@ -186,7 +186,7 @@ class LaptopPilot:
 
 
             ###Example of a nonlinear funtion#####
-        def f_nonlintest(x, u, dt):
+    def f_nonlintest(x, u, dt):
             # this is a non-linear model that cannot be solved with a KF f(x)=x**2+u
             F = np.zeros((1, 1), dtype=float)
             F[0,0] = 2*x
