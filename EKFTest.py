@@ -26,7 +26,8 @@ class EKF:
 
         self.Q = Q_factor*om
         
-    
+    pred_state, pred_covariance = extended_kalman_filter_predict(state, covariance, u, f_nonlin, R, dt,view_flag=view_flag)
+
 
     def f_nonlintest(x, u, dt):
             # this is a non-linear model that cannot be solved with a KF f(x)=x**2+u
@@ -89,7 +90,4 @@ testexample = EKF (initial_state)
 Q_factor= 2 
 u_factor = 2 
 R_factor = 2
-Q, u, R, z, state, covariance, dt = testexample.set_parameters(Q_factor, u_factor, R_factor)
-
-or_state, cor_covarianc = testexample.kalman_filter_process(state, covariance, u, testexample.f_nonlintest, R, dt , z , testexample.h , Q , view_flag=True)
-print(cor_state,cor_covarianc)
+#Q, u, R, z, state, covariance, dt = testexample.set_parameters(Q_factor, u_factor, R_factor)
