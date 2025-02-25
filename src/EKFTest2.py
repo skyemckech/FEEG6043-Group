@@ -1,10 +1,15 @@
-from src.Libraries.math_feeg6043 import Matrix
+from Libraries.math_feeg6043 import Matrix
 import numpy as np
 import matplotlib.pyplot as plt
 
 class EKF:
     def __init__(self, initial_state):
-        
+        if initial_state is not None:
+            self.state = initial_state
+        else:
+            self.state = None
+        self.covariance = None
+
         return
 
     def set_parameters(self, Q_factor, u_factor, R_factor):
@@ -25,7 +30,9 @@ class EKF:
 
         self.Q = Q_factor*om
 
-    def f_nonlintest(x, u, dt):
+        return self.Q , self.u, self.R, self.z, self.state, self.covariance, self.dt
+
+    def f_nonlintest(self, x, u, dt):
             # this is a non-linear model that cannot be solved with a KF f(x)=x**2+u
             F = np.zeros((1, 1), dtype=float)
             F[0,0] = 2*x
@@ -76,11 +83,12 @@ class EKF:
 
     #     return self.pred_state, self.pred_covariance 
 
-testexample = EKF
+testexample = EKF(None)
 Q_factor= 2 
 u_factor = 2 
 R_factor = 2
 Q, u, R, z, state, covariance, dt = testexample.set_parameters(Q_factor, u_factor, R_factor)
+print(Q, u, R, z, state, covariance, dt)
 
 pred_mu, pred_Sigma = testexample.extended_kalman_filter_predict(state, covariance, u, testexample.f_nonlintest, R, dt)
 print(pred_mu, pred_Sigma)
