@@ -1,4 +1,4 @@
-from Libraries.math_feeg6043 import Matrix
+from src.Libraries.math_feeg6043 import Matrix
 import numpy as np
 import matplotlib.pyplot as plt
 
