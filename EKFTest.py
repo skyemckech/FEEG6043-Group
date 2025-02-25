@@ -1,10 +1,9 @@
 
-        from Libraries.plot_feeg6043 import plot_kalman
-        from Libraries.model_feeg6043 import extended_kalman_filter_predict, extended_kalman_filter_update
+from Libraries.plot_feeg6043 import plot_kalman
+from Libraries.model_feeg6043 import extended_kalman_filter_predict, extended_kalman_filter_update
 
-
-    class EKF:
-         def __init__(self):
+class EKF:
+    def __init__(self):
         
             Sigma = np.eye(len(initial_state))
             mu = np.array(initial_state)
@@ -26,7 +25,7 @@
 
 
 
-        def f_nonlintest(x, u, dt):
+    def f_nonlintest(x, u, dt):
             # this is a non-linear model that cannot be solved with a KF f(x)=x**2+u
             F = np.zeros((1, 1), dtype=float)
             F[0,0] = 2*x
@@ -43,18 +42,18 @@
             f_values = [f_nonlintest(x, u, dt)[0] for x in x_values]
 
             # Plot the function
-        plt.figure(figsize=(8, 5))
-        plt.plot(x_values, f_values, label=r'$f(x) = x^2 + u$', color='b')
-        plt.xlabel('x')
-        plt.ylabel('f(x)')
-        plt.title('Non-Linear Function Plot')
-        plt.axhline(0, color='black', linewidth=0.5, linestyle='--')
-        plt.axvline(0, color='black', linewidth=0.5, linestyle='--')
-        plt.legend()
-        plt.grid()
-        plt.show()
+            plt.figure(figsize=(8, 5))
+            plt.plot(x_values, f_values, label=r'$f(x) = x^2 + u$', color='b')
+            plt.xlabel('x')
+            plt.ylabel('f(x)')
+            plt.title('Non-Linear Function Plot')
+            plt.axhline(0, color='black', linewidth=0.5, linestyle='--')
+            plt.axvline(0, color='black', linewidth=0.5, linestyle='--')
+            plt.legend()
+            plt.grid()
+            plt.show()
 
-        def h(x):
+    def h(x):
             H = Matrix(1,1)
             H[0,0] = 1
             return x, H
