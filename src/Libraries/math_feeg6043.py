@@ -339,3 +339,4 @@ def complex_observation_function(mu,sigma,k,x):
 def rbf_kernel(X1, X2, l=1.0, sigma_f=1.0):
     sqdist = np.sum(X1**2, 1).reshape(-1, 1) + np.sum(X2**2, 1) - 2 * np.dot(X1, X2.T)
     return sigma_f**2 * np.exp(-0.5 / l**2 * sqdist)
+
