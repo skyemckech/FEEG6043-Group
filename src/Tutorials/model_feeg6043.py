@@ -1109,18 +1109,18 @@ def kalman_filter_update(mu, Sigma, z, C, Q, view_flag=None, x=None, ylim=None):
     # Return the correct state and the covariance        
     return update_mu, update_Sigma
 
-def extended_kalman_filter_predict(mu, Sigma, u, f, R, dt, view_flag=False, x=None, xlim=None, ylim=None):
+def extended_kalman_filter_predict(self, mu, Sigma, u, f, R, dt, view_flag=False, x=None, xlim=None, ylim=None):
     """
     Keyword arguments:    
     view_flag -- A boolean to show intermediate plots of the prediction and measurement update
     optional argument -- a range of states to plot probabilities over, using numpy arrays e.g. np.arange(-8,8,0.05)    
     """    
     # (1) Project the state forward
-    pred_mu, F = f(mu, u, dt)
+    self.pred_mu, F = f(mu, u, dt)
       
     # (2) Project the error forward: 
 
-    pred_Sigma = (F @ copy.copy(Sigma) @ F.T) + R
+    self.pred_Sigma = (F @ copy.copy(Sigma) @ F.T) + R
     
 
     
@@ -1130,12 +1130,12 @@ def extended_kalman_filter_predict(mu, Sigma, u, f, R, dt, view_flag=False, x=No
         if x is None: x = np.arange(mu-10,mu+10,0.05) 
         if ylim is None: ylim=[0,0.6] #default, otherwise use what is provided    
         if xlim is None: xlim=[-5,5] #default, otherwise use what is provided            
-        plot_kalman(mu, Sigma, pred_mu, pred_Sigma, x, xlim, ylim)
+        plot_kalman(mu, Sigma, self.pred_mu, self.pred_Sigma, x, xlim, ylim)
 
     # Return the state and the covariance
-    return pred_mu, pred_Sigma
+    return self.pred_mu, self.pred_Sigma
 
-def extended_kalman_filter_update(mu, Sigma, z, h, Q, view_flag=False, x=None, xlim=None, ylim =None, wrap_index = None):
+def extended_kalman_filter_update(self, mu, Sigma, z, h, Q, view_flag=False, x=None, xlim=None, ylim =None, wrap_index = None):
     """Keyword arguments:    
     view_flag -- A boolean to show intermediate plots of the prediction and measurement update
     optional argument -- a range of states to plot probabilities over, using numpy arrays e.g. np.arange(-8,8,0.05)    
