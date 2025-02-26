@@ -69,8 +69,8 @@ class LaptopPilot:
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
         # control parameters        
-        self.tau_s = 0.15 # s to remove along track error
-        self.L = 0.1 # m distance to remove normal and angular error
+        self.tau_s = 0.5 # s to remove along track error
+        self.L = 0.2 # m distance to remove normal and angular error
         self.v_max = 0.6 # m/s fastest the robot can go
         self.w_max = np.deg2rad(60) # fastest the robot can turn
         self.timeout = 10 #s
@@ -299,7 +299,7 @@ class LaptopPilot:
             self.true_wheel_speed_sub.stop()
     
     def initialise_robot(self):
-       
+        # Create initial state, covariance and position estimate
         self.state = Vector(5)
         self.state[0] = self.measured_pose_northings_m 
         self.state[1] = self.measured_pose_eastings_m  
@@ -314,11 +314,12 @@ class LaptopPilot:
         self.covariance[DOTX, DOTX] = 0.0**2
         self.covariance[DOTG, DOTG] = np.deg2rad(0)**2
 
-        self.est_pose_northings_m = self.measured_pose_northings_m 
-        self.est_pose_eastings_m = self.measured_pose_eastings_m  
-        self.est_pose_yaw_rad = self.measured_pose_yaw_rad
+        self.update_estimated_pose()
 
     def position_sensor_transform(self, sensor_measurement):
+        # Create transformation matrix from sensor reading to measured position
+        # To use with kalman_update, must return two outputs, (z, H) and take one input, (z)
+        # z the measurement vector, H the sensor transformation matrix jacobian
         measurement_vector = Vector(5)
         measurement_vector[N] = sensor_measurement[N]
         measurement_vector[E] = sensor_measurement[E]
@@ -330,6 +331,9 @@ class LaptopPilot:
         return measurement_vector, sensor_jacobian
 
     def yaw_sensor_transform(self, sensor_measurement):
+        # Create transformation matrix from sensor reading to measured yaw
+        # To use with kalman_update, must return two outputs, (z, H) and take one input, (z)
+        # z the measurement vector, H the sensor transformation matrix jacobian
         measurement_vector = Vector(5)
         measurement_vector[G] = sensor_measurement[G]
 
@@ -339,17 +343,21 @@ class LaptopPilot:
         return measurement_vector, sensor_jacobian
 
     def position_sensor_update(self):
+        # Sample position data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[N] = self.measured_pose_northings_m
         self.sensor_measurement[E] = self.measured_pose_eastings_m
 
     def yaw_sensor_update(self):
+        # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
 
-    class delete_me:  
+    class uncertaintyMatrices:  
+        #Class to keep track of model uncertainty
         def get_process_uncertainty(self):
+            # Create process uncertainty matrix
             R = Identity(5)
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
@@ -359,6 +367,7 @@ class LaptopPilot:
             return R
 
         def get_p_sensor_uncertainty(self):
+            # Create position sensor uncertainty matrix
             Q = Identity(5)
 
             Q[N, N] = 0.0**2
@@ -367,12 +376,18 @@ class LaptopPilot:
             return Q
         
         def get_yaw_sensor_uncertainty(self):
+            # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
             Q[G, G] = np.deg2rad(0.0)**2
 
             return Q
 
+    def update_estimated_pose(self):
+        # Update estimate variable for logging
+        self.est_pose_northings_m = self.state[0,0]
+        self.est_pose_eastings_m = self.state[1,0]
+        self.est_pose_yaw_rad = self.state[2,0]
         
     def infinite_loop(self):
         """Main control loop
@@ -400,7 +415,7 @@ class LaptopPilot:
             if self.initialise_pose == True:
                 # set initial measurements
                 self.initialise_robot()
-                self.uncertainty = LaptopPilot.delete_me()
+                self.uncertainty = LaptopPilot.uncertaintyMatrices()
 
                 # Add headers
                 self.ref_pose_worksheet.extend_data(["Elapsed Time",
@@ -477,9 +492,7 @@ class LaptopPilot:
             self.p_reference_tracker = p_ref[0:2,0]
             
             # update for show_laptop.py            
-            self.est_pose_northings_m = self.state[0,0]
-            self.est_pose_eastings_m = self.state[1,0]
-            self.est_pose_yaw_rad = self.state[2,0]
+            self.update_estimated_pose()
             
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")
@@ -513,7 +526,7 @@ class LaptopPilot:
             u = u_ref + du
 
             # update control gains for the next timestep
-            self.k_n = 2*u[0]/self.L #kn
+            self.k_n = 2*u[0]/(self.L**2) #kn
             self.k_g = u[0]/self.L #kg
 
             # ensure within performance limitation
