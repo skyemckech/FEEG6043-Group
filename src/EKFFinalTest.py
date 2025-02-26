@@ -84,9 +84,9 @@ class EKF:
     #     return self.pred_state, self.pred_covariance 
 
 testexample = EKF(None)
-Q_factor= 2 
-u_factor = 2 
-R_factor = 2
+Q_factor= 2 ###measurment nosie
+u_factor = 2 ###control nosie
+R_factor = 2  ##process nosie
 Q, u, R, z, state, covariance, dt = testexample.set_parameters(Q_factor, u_factor, R_factor)
 print(Q, u, R, z, state, covariance, dt)
 

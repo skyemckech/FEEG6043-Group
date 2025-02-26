@@ -1155,3 +1155,13 @@ def feedback_control(ds, ks = None, kn = None, kg = None):
     du[1] = dw
     
     return du
+
+def extended_kalman_filter_predict(mu, Sigma,u, f, R, dt):
+    # (1) Project the state forward (f = rigid body motion model)
+        pred_mu, F = f(mu, u, dt)
+      
+    # (2) Project the error forward: R is covancerance
+        pred_Sigma = (F @ Sigma @ F.T) + R
+    
+    # Return the predicted state and the covariance
+        return pred_mu, pred_Sigma

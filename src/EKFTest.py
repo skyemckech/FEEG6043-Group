@@ -39,15 +39,7 @@ class EKF:
         H[0,0] = 1
         return x, H
     
-    def extended_kalman_filter_predict(self, mu, Sigma,u, f, R, dt):
-    # (1) Project the state forward (f = rigid body motion model)
-        self.pred_mu, F = f(mu, u, dt)
-      
-    # (2) Project the error forward: R is covancerance
-        self.pred_Sigma = (F @ Sigma @ F.T) + R
     
-    # Return the predicted state and the covariance
-        return self.pred_mu, self.pred_Sigma
 
     def extended_kalman_filter_update(mu, Sigma, z, h, Q, wrap_index = None):
         
