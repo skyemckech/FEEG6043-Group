@@ -17,14 +17,20 @@ from zeroros import Subscriber, Publisher
 from zeroros.messages import LaserScan, Vector3Stamped, Pose, PoseStamped, Header, Quaternion
 from zeroros.datalogger import DataLogger
 from zeroros.rate import Rate
-from Libraries.model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, motion_model
-from Libraries.math_feeg6043 import Vector, Inverse, HomogeneousTransformation, Identity, l2m, m2l, change_to_list
+from Libraries.model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, motion_model, extended_kalman_filter_predict, extended_kalman_filter_update, sensor_transform, sensor_update
+from Libraries.math_feeg6043 import Vector, Inverse, HomogeneousTransformation, Identity, l2m, m2l, change_to_list, Matrix
 from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
 from openpyxl import load_workbook
 # add more libraries here
-
+N = 0
+E = 1
+G = 2
+DOTX = 3
+DOTG = 4
 class LaptopPilot:
+
+
     def __init__(self, simulation):
         # network for sensed pose
         aruco_params = {
@@ -57,7 +63,6 @@ class LaptopPilot:
         self.northings_path = [0,1.4,1.4,0,0]
         self.eastings_path = [0,0,1.4,1.4,0]      
         self.relative_path = True #False if you want it to be absolute  
-
         # modelling parameters
         wheel_distance = 0.174 # m 
         wheel_diameter = 0.070 # m
@@ -82,6 +87,7 @@ class LaptopPilot:
 
         # kalman filter
         self.jacobian = None
+        self.covariance = None
 
         #>Communication>#
         #################
@@ -121,6 +127,7 @@ class LaptopPilot:
         self.p_reference_tracker = None
         self.p_groundtruth_tracker = None
 
+        
         ###############################################################        
 
         self.datalog = DataLogger(log_dir="logs")
@@ -164,6 +171,27 @@ class LaptopPilot:
             self.workbook.save(self.filename)
             self.workbook.close
             self.dataLine = []
+
+    def initialise_robot(self):
+        # State Indices
+       
+        self.state = Vector(5)
+        self.state[0] = self.measured_pose_northings_m 
+        self.state[1] = self.measured_pose_eastings_m  
+        self.state[2] = self.measured_pose_yaw_rad
+        self.state[3] = 0 
+        self.state[4] = 0
+
+        self.covariance = Identity(5) 
+        self.covariance[N,N] = self.state[0]**2
+        self.covariance[E, E] = self.state[1]**2
+        self.covariance[G, G] = self.state[0]**2
+        self.covariance[DOTX, DOTX] = 0.0**2
+        self.covariance[DOTG, DOTG] = np.deg2rad(0)**2
+
+        self.est_pose_northings_m = self.measured_pose_northings_m 
+        self.est_pose_eastings_m = self.measured_pose_eastings_m  
+        self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
@@ -290,6 +318,37 @@ class LaptopPilot:
             self.true_wheel_speed_sub.stop()
     
 
+
+    def sensor_transform(sensor_measurement):
+        transform_matrix = Identity(5)
+        transform_matrix[0,0] = 1
+        return sensor_measurement, transform_matrix
+
+    def sensor_update(self):
+        z = Vector(5)
+        z[N] = self.measured_pose_northings_m
+        z[E] = self.measured_pose_eastings_m
+        z[G] = self.measured_pose_yaw_rad
+
+    class delete_me:
+        def process_uncertainty(self):
+            R = Identity(5) 
+            R[N, N] = 0.0**2
+            R[E, E] = 0.0**2
+            R[G, G] = np.deg2rad(0.0)**2
+            R[DOTX, DOTX] = 0.01**2
+            R[DOTG, DOTG] = np.deg2rad(0.05)**2
+            return R
+
+        def sensor_uncertainty(self):
+            Q = Identity(5) 
+            Q[N, N] = 0.0**2
+            Q[E, E] = 0.0**2
+            Q[G, G] = np.deg2rad(0.0)**2
+            Q[DOTX, DOTX] = 0.01**2
+            Q[DOTG, DOTG] = np.deg2rad(0.05)**2
+            return Q
+        
     def infinite_loop(self):
         """Main control loop
 
@@ -315,16 +374,7 @@ class LaptopPilot:
             # initialisation step
             if self.initialise_pose == True:
                 # set initial measurements
-                self.state = Vector(5)
-                self.state[0] = self.measured_pose_northings_m 
-                self.state[1] = self.measured_pose_eastings_m  
-                self.state[2] = self.measured_pose_yaw_rad
-                self.state[3] = 0 
-                self.state[4] = 0
-
-                self.est_pose_northings_m = self.measured_pose_northings_m 
-                self.est_pose_eastings_m = self.measured_pose_eastings_m  
-                self.est_pose_yaw_rad = self.measured_pose_yaw_rad
+                self.initialise_robot()
 
                 # Add headers
                 self.ref_pose_worksheet.extend_data(["Elapsed Time",
@@ -368,7 +418,19 @@ class LaptopPilot:
             ################################################################################
             ################### Motion Model ##############################
             # take current pose estimate and update by twist
-            self.state, self.jacobian = motion_model(self.state, u, dt)
+
+            R = Identity(5) 
+            R[N, N] = 0.0**2
+            R[E, E] = 0.0**2
+            R[G, G] = np.deg2rad(0.0)**2
+            R[DOTX, DOTX] = 0.01**2
+            R[DOTG, DOTG] = np.deg2rad(0.05)**2
+
+            self.state, self.covariance = extended_kalman_filter_predict(self.state, self.covariance, u, motion_model, R, dt)
+            
+            if aruco_pose is not None:
+                self.sensor_update
+                class
             
             #creates measured pose
             p_robot_truth = Vector(3)
@@ -385,14 +447,16 @@ class LaptopPilot:
             self.path.wp_progress(self.t, self.state[0:3],self.accept_radius,2,self.timeout) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             self.p_reference_tracker = p_ref[0:2,0]
-
-            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
-            self.datalog.log(msg, topic_name="/est_pose")
-
+            
             # update for show_laptop.py            
             self.est_pose_northings_m = self.state[0,0]
             self.est_pose_eastings_m = self.state[1,0]
             self.est_pose_yaw_rad = self.state[2,0]
+            
+            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
+            self.datalog.log(msg, topic_name="/est_pose")
+
+
 
             # > Control < #
             ################################################################################
