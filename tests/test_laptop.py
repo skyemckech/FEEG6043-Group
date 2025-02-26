@@ -2,6 +2,7 @@ from laptop import LaptopPilot
 import openpyxl
 from openpyxl import load_workbook
 from src.Libraries.math_feeg6043 import Vector, Transpose, m2l, change_to_list
+from src.Libraries.model_feeg6043 import motion_model
 import numpy as np
 class createExcelFile:
     def __init__(self, filename = "reference.xlsx"):
@@ -47,3 +48,18 @@ def test_type_checker():
     assert type(list) == type([])
     assert type(matrix) == type(np.array([]))
     
+def test_motion_model():
+    state = Vector(5)
+    state[0] = 1
+    state[1] = 2
+    state[2] = 3
+    state[3] = 0
+    state[4] = 0
+
+    u = Vector(2)
+    u[0] = 2
+    u[1] = 3
+
+    dt = 2
+
+    state, _, = motion_model(state,u,dt)

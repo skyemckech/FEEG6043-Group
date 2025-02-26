@@ -30,7 +30,7 @@ from laptop import LaptopPilot #imports LaptopPilot from `./laptop.py`. If you w
 class Window(QWidget):
     running = False
 
-    def __init__(self, simulation=False, parent=None):
+    def __init__(self, simulation=True, parent=None):
         super().__init__(parent)
         self.wheelrate_plot = LivePlotWidget()
         self.heading_plot = LivePlotWidget()
@@ -107,7 +107,7 @@ class Window(QWidget):
         self.wheelrate_plot.addItem(measured_wheelrate_right)
         self.wheelrate_plot.addItem(measured_wheelrate_left)
 
-        #self.heading_plot.addItem(measured_heading)
+        self.heading_plot.addItem(measured_heading)
         self.heading_plot.addItem(est_heading)
         self.heading_plot.addItem(p_groundtruth_heading)  
 
@@ -289,36 +289,36 @@ class Window(QWidget):
 
         
         
-if __name__ == '__main__':    
+#if __name__ == '__main__' or sys.gettrace() is not None:   
 
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-        "--simulation",
-        action="store_true",
-        help="Run in simulation mode. Defaults to False",
-    )
+parser = argparse.ArgumentParser(
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+parser.add_argument(
+    "--simulation",
+    action="store_true",
+    help="Run in simulation mode. Defaults to False",
+)
 
-    parser.add_argument(
-        "--time",
-        type=float,
-        default=-1,
-        help="Time to run an experiment for. If negative, run forever.",
-    )
+parser.add_argument(
+    "--time",
+    type=float,
+    default=-1,
+    help="Time to run an experiment for. If negative, run forever.",
+)
 
-    args = parser.parse_args()
+args = parser.parse_args()
 
-    if args.simulation: 
-        print('Running laptop.py in simulation')
-    else: 
-        print('Running laptop.py on robot')
+if args.simulation: 
+    print('Running laptop.py in simulation')
+else: 
+    print('Running laptop.py on robot')
 
-    app = QApplication(sys.argv)
-    simulation = args.simulation
-    window = Window(simulation)
-    window.show()
-    window.start_app(time_to_run=args.time)
+app = QApplication(sys.argv)
+simulation = args.simulation
+window = Window(simulation)
+window.show()
+window.start_app(time_to_run=args.time)
 
-    sys.exit(app.exec_())
-    window.running = False
+sys.exit(app.exec_())
+window.running = False
