@@ -17,7 +17,7 @@ from zeroros import Subscriber, Publisher
 from zeroros.messages import LaserScan, Vector3Stamped, Pose, PoseStamped, Header, Quaternion
 from zeroros.datalogger import DataLogger
 from zeroros.rate import Rate
-from Libraries.model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, motion_model, extended_kalman_filter_predict, extended_kalman_filter_update, sensor_transform, sensor_update
+from Libraries.model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, motion_model, extended_kalman_filter_predict, extended_kalman_filter_update
 from Libraries.math_feeg6043 import Vector, Inverse, HomogeneousTransformation, Identity, l2m, m2l, change_to_list, Matrix
 from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
@@ -84,10 +84,12 @@ class LaptopPilot:
 
         #motion model variables
         self.state = None
+        self.sensor_measurement = None
 
         # kalman filter
         self.jacobian = None
         self.covariance = None
+        self.uncertainty = None
 
         #>Communication>#
         #################
@@ -171,27 +173,6 @@ class LaptopPilot:
             self.workbook.save(self.filename)
             self.workbook.close
             self.dataLine = []
-
-    def initialise_robot(self):
-        # State Indices
-       
-        self.state = Vector(5)
-        self.state[0] = self.measured_pose_northings_m 
-        self.state[1] = self.measured_pose_eastings_m  
-        self.state[2] = self.measured_pose_yaw_rad
-        self.state[3] = 0 
-        self.state[4] = 0
-
-        self.covariance = Identity(5) 
-        self.covariance[N,N] = self.state[0]**2
-        self.covariance[E, E] = self.state[1]**2
-        self.covariance[G, G] = self.state[0]**2
-        self.covariance[DOTX, DOTX] = 0.0**2
-        self.covariance[DOTG, DOTG] = np.deg2rad(0)**2
-
-        self.est_pose_northings_m = self.measured_pose_northings_m 
-        self.est_pose_eastings_m = self.measured_pose_eastings_m  
-        self.est_pose_yaw_rad = self.measured_pose_yaw_rad
 
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
@@ -317,22 +298,59 @@ class LaptopPilot:
             self.groundtruth_sub.stop()
             self.true_wheel_speed_sub.stop()
     
+    def initialise_robot(self):
+       
+        self.state = Vector(5)
+        self.state[0] = self.measured_pose_northings_m 
+        self.state[1] = self.measured_pose_eastings_m  
+        self.state[2] = self.measured_pose_yaw_rad
+        self.state[3] = 0 
+        self.state[4] = 0
+
+        self.covariance = Identity(5) 
+        self.covariance[N,N] = self.state[0]**2
+        self.covariance[E, E] = self.state[1]**2
+        self.covariance[G, G] = self.state[0]**2
+        self.covariance[DOTX, DOTX] = 0.0**2
+        self.covariance[DOTG, DOTG] = np.deg2rad(0)**2
+
+        self.est_pose_northings_m = self.measured_pose_northings_m 
+        self.est_pose_eastings_m = self.measured_pose_eastings_m  
+        self.est_pose_yaw_rad = self.measured_pose_yaw_rad
+
+    def position_sensor_transform(self, sensor_measurement):
+        measurement_vector = Vector(5)
+        measurement_vector[N] = sensor_measurement[N]
+        measurement_vector[E] = sensor_measurement[E]
+
+        sensor_jacobian = Matrix(5,5)
+        sensor_jacobian[N,N] = 1
+        sensor_jacobian[E,E] = 1
+
+        return measurement_vector, sensor_jacobian
+
+    def yaw_sensor_transform(self, sensor_measurement):
+        measurement_vector = Vector(5)
+        measurement_vector[G] = sensor_measurement[G]
+
+        sensor_jacobian = Matrix(5,5)
+        sensor_jacobian[G,G] = 1
+
+        return measurement_vector, sensor_jacobian
+
+    def position_sensor_update(self):
+        self.sensor_measurement = Vector(5)
+        self.sensor_measurement[N] = self.measured_pose_northings_m
+        self.sensor_measurement[E] = self.measured_pose_eastings_m
+
+    def yaw_sensor_update(self):
+        self.sensor_measurement = Vector(5)
+        self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
 
-    def sensor_transform(sensor_measurement):
-        transform_matrix = Identity(5)
-        transform_matrix[0,0] = 1
-        return sensor_measurement, transform_matrix
-
-    def sensor_update(self):
-        z = Vector(5)
-        z[N] = self.measured_pose_northings_m
-        z[E] = self.measured_pose_eastings_m
-        z[G] = self.measured_pose_yaw_rad
-
-    class delete_me:
-        def process_uncertainty(self):
-            R = Identity(5) 
+    class delete_me:  
+        def get_process_uncertainty(self):
+            R = Identity(5)
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
             R[G, G] = np.deg2rad(0.0)**2
@@ -340,14 +358,21 @@ class LaptopPilot:
             R[DOTG, DOTG] = np.deg2rad(0.05)**2
             return R
 
-        def sensor_uncertainty(self):
-            Q = Identity(5) 
+        def get_p_sensor_uncertainty(self):
+            Q = Identity(5)
+
             Q[N, N] = 0.0**2
             Q[E, E] = 0.0**2
-            Q[G, G] = np.deg2rad(0.0)**2
-            Q[DOTX, DOTX] = 0.01**2
-            Q[DOTG, DOTG] = np.deg2rad(0.05)**2
+
             return Q
+        
+        def get_yaw_sensor_uncertainty(self):
+            Q = Identity(5)
+
+            Q[G, G] = np.deg2rad(0.0)**2
+
+            return Q
+
         
     def infinite_loop(self):
         """Main control loop
@@ -375,6 +400,7 @@ class LaptopPilot:
             if self.initialise_pose == True:
                 # set initial measurements
                 self.initialise_robot()
+                self.uncertainty = LaptopPilot.delete_me()
 
                 # Add headers
                 self.ref_pose_worksheet.extend_data(["Elapsed Time",
@@ -419,18 +445,20 @@ class LaptopPilot:
             ################### Motion Model ##############################
             # take current pose estimate and update by twist
 
-            R = Identity(5) 
-            R[N, N] = 0.0**2
-            R[E, E] = 0.0**2
-            R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = 0.01**2
-            R[DOTG, DOTG] = np.deg2rad(0.05)**2
+            R = self.uncertainty.get_process_uncertainty()
 
             self.state, self.covariance = extended_kalman_filter_predict(self.state, self.covariance, u, motion_model, R, dt)
             
             if aruco_pose is not None:
-                self.sensor_update
-                class
+                Q = self.uncertainty.get_yaw_sensor_uncertainty()
+                self.yaw_sensor_update()
+                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
+
+                Q = self.uncertainty.get_p_sensor_uncertainty()
+                self.position_sensor_update()
+                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
+
+                
             
             #creates measured pose
             p_robot_truth = Vector(3)
