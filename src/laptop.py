@@ -366,20 +366,20 @@ class LaptopPilot:
             R[DOTG, DOTG] = np.deg2rad(0.05)**2
             return R
 
-        def get_p_sensor_uncertainty(self):
+        def get_p_sensor_uncertainty(self, data):
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.0**2
-            Q[E, E] = 0.0**2
+            Q[N, N] = data[0]
+            Q[E, E] = data[1]
 
             return Q
         
-        def get_yaw_sensor_uncertainty(self):
+        def get_yaw_sensor_uncertainty(self, data):
             # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[G, G] = np.deg2rad(0.0)**2
+            Q[G, G] = np.deg2rad(data[2])**2
 
             return Q
 
@@ -458,6 +458,14 @@ class LaptopPilot:
 
              # > Think < #
             ################################################################################
+
+            #creates measured pose
+            p_robot_truth = Vector(3)
+            p_robot_truth[0,0] = self.groundtruth_northings
+            p_robot_truth[1,0] = self.groundtruth_eastings
+            p_robot_truth[2,0] = self.groundtruth_yaw
+            self.p_groundtruth_tracker = p_robot_truth[0:3,0]
+
             ################### Motion Model ##############################
             # take current pose estimate and update by twist
 
@@ -466,24 +474,14 @@ class LaptopPilot:
             self.state, self.covariance = extended_kalman_filter_predict(self.state, self.covariance, u, motion_model, R, dt)
             
             if aruco_pose is not None:
-                Q = self.uncertainty.get_yaw_sensor_uncertainty()
+                Q = self.uncertainty.get_yaw_sensor_uncertainty(p_robot_truth)
                 self.yaw_sensor_update()
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
-                Q = self.uncertainty.get_p_sensor_uncertainty()
+                Q = self.uncertainty.get_p_sensor_uncertainty(p_robot_truth)
                 self.position_sensor_update()
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
-
-                
-            
-            #creates measured pose
-            p_robot_truth = Vector(3)
-            p_robot_truth[0,0] = self.groundtruth_northings
-            p_robot_truth[1,0] = self.groundtruth_eastings
-            p_robot_truth[2,0] = self.groundtruth_yaw
-            self.p_groundtruth_tracker = p_robot_truth[0:3,0]
-                                
-            #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
+         
 
             #################### Trajectory sample #################################    
 
