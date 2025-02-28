@@ -396,7 +396,8 @@ class LaptopPilot:
         """
         # > Sense < #
         # get the latest position measurements
-        aruco_pose = self.aruco_driver.read()    
+        aruco_pose = self.aruco_driver.read() 
+          
 
         if aruco_pose is not None:
             # converts aruco date to zeroros PoseStamped format
@@ -545,6 +546,8 @@ class LaptopPilot:
             self.cmd_wheelrate_right = wheel_speed_msg.vector.x
             self.cmd_wheelrate_left = wheel_speed_msg.vector.y
             
+           # wheel_speed_msg.vector.x
+           # wheel_speed_msg.vector.y
             ################################################################################
 
             # > Act < #
@@ -556,7 +559,10 @@ class LaptopPilot:
             #Danae donst understand task manager:
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
-            self.ref_pose_worksheet.export_to_excel()
+            self.ref_pose_worksheet.extend_data([str(p_robot_truth[0]),str(p_robot_truth[1]),str(p_robot_truth[2])])
+            self.ref_pose_worksheet.export_to_excel() 
+            print("robot truth data:",p_robot_truth)
+            
 
 
 
