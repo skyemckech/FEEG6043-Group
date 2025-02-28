@@ -22,7 +22,6 @@ from Libraries.math_feeg6043 import Vector, Inverse, HomogeneousTransformation, 
 from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
 from matplotlib import pyplot as plt
 from openpyxl import load_workbook
-
 # add more libraries here
 N = 0
 E = 1
@@ -367,29 +366,22 @@ class LaptopPilot:
             R[DOTG, DOTG] = np.deg2rad(0.05)**2
             return R
 
-        def create_aruco_data(self, North, East, Gama):
-            
-            return [North, East, Gama]
-
-        
-        def get_p_sensor_uncertainty(self,aruco_data):
+        def get_p_sensor_uncertainty(self):
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = aruco_data[0]
-            Q[E, E] = aruco_data[1]
+            Q[N, N] = 0.0**2
+            Q[E, E] = 0.0**2
 
             return Q
         
-        def get_yaw_sensor_uncertainty(self, aruco_data):
+        def get_yaw_sensor_uncertainty(self):
             # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[G, G] = np.deg2rad(aruco_data[2])
+            Q[G, G] = np.deg2rad(0.0)**2
 
             return Q
-        
-
 
     def update_estimated_pose(self):
         # Update estimate variable for logging
@@ -397,11 +389,6 @@ class LaptopPilot:
         self.est_pose_eastings_m = self.state[1,0]
         self.est_pose_yaw_rad = self.state[2,0]
         
-
-
-
-
-
     def infinite_loop(self):
         """Main control loop
 
@@ -478,11 +465,11 @@ class LaptopPilot:
             self.state, self.covariance = extended_kalman_filter_predict(self.state, self.covariance, u, motion_model, R, dt)
             
             if aruco_pose is not None:
-                Q = self.uncertainty.get_yaw_sensor_uncertainty(aruco_pose)
+                Q = self.uncertainty.get_yaw_sensor_uncertainty()
                 self.yaw_sensor_update()
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
-                Q = self.uncertainty.get_p_sensor_uncertainty(aruco_pose)
+                Q = self.uncertainty.get_p_sensor_uncertainty()
                 self.position_sensor_update()
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
@@ -565,17 +552,14 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
             
-            arucotest = self.uncertaintyMatrices
-            Q = arucotest.create_aruco_data(self, self.groundtruth_northings,self.groundtruth_eastings,self.groundtruth_yaw)
-
             # Export data to excel
             #Danae donst understand task manager:
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
-            self.ref_pose_worksheet.extend_data([Q])
             self.ref_pose_worksheet.export_to_excel()
 
-            
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
