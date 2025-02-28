@@ -1,0 +1,75 @@
+from Libraries.plot_feeg6043 import plot_trajectory
+import numpy as np
+import argparse
+import time
+import openpyxl
+
+from datetime import datetime
+from drivers.aruco_udp_driver import ArUcoUDPDriver
+from zeroros import Subscriber, Publisher
+from zeroros.messages import LaserScan, Vector3Stamped, Pose, PoseStamped, Header, Quaternion
+from zeroros.datalogger import DataLogger
+from zeroros.rate import Rate
+from Libraries.model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, motion_model, extended_kalman_filter_predict, extended_kalman_filter_update
+from Libraries.math_feeg6043 import Vector, Inverse, HomogeneousTransformation, Identity, l2m, m2l, change_to_list, Matrix
+from Libraries.plot_feeg6043 import plot_zero_order, plot_trajectory, plot_2dframe
+from matplotlib import pyplot as plt
+from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
+from Libraries.math_feeg6043 import change_to_list
+
+# Constants
+N = 0
+E = 1
+G = 2
+
+
+class Gas:
+    def __init__(self, filename="data.xlsx"):
+        self.filename = filename
+        self.dataLine = []
+
+        # Check if the file exists, if not, create it
+        try:
+            self.workbook = load_workbook(self.filename)
+        except FileNotFoundError:
+            self.workbook = Workbook()  # Create new workbook
+            self.workbook.save(self.filename)  # Save it so it exists
+
+        self.worksheet = self.workbook.active
+
+    def extend_data(self, data):
+        data = change_to_list(data)
+        self.dataLine.extend(data)
+
+    def export_to_excel(self):
+        try:
+            self.workbook = load_workbook(self.filename)
+            self.worksheet = self.workbook.active
+        except FileNotFoundError:
+            self.workbook = Workbook()
+            self.worksheet = self.workbook.active
+
+        self.worksheet.append(self.dataLine)       
+        self.workbook.save(self.filename)
+        self.workbook.close()
+        self.dataLine = []  # Reset dataLine after saving
+
+    def create_aruco_data(self, North, East, Gama):
+
+        return [North, East, Gama]
+
+# Test the class
+
+for i in range(50):
+    North = 1 + i
+    East = 2 + 2
+    Gama = 3 + 1
+
+    testical = Gas()  # Create an instance of Gas
+    Q = testical.create_aruco_data(North, East, Gama)
+
+    testical.extend_data(Q)
+    testical.export_to_excel()
+
+    print(Q)

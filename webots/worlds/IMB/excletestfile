@@ -1,0 +1,32 @@
+import openpyxl
+
+# Create a new Excel workbook and worksheet
+wb = openpyxl.Workbook()
+ws = wb.active
+ws.title = "Sample Data"
+
+# Sample data
+data = [
+    ["ID", "Name", "Age", "City"],
+    [1, "Alice", 25, "New York"],
+    [2, "Bob", 30, "Los Angeles"],
+    [3, "Charlie", 22, "Chicago"],
+    [4, "David", 28, "Houston"]
+]
+
+# Insert data into the worksheet
+for row in data:
+    ws.append(row)
+
+# Save the Excel file
+filename = "data.xlsx"
+wb.save(filename)
+print(f"Excel file '{filename}' created successfully.")
+
+# Reading back the data
+wb = openpyxl.load_workbook(filename)
+ws = wb.active
+
+print("\nImported Data:")
+for row in ws.iter_rows(values_only=True):
+    print(row)

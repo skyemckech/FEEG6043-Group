@@ -32,9 +32,9 @@ class Window(QWidget):
 
     def __init__(self, simulation=True, parent=None):
         super().__init__(parent)
-        self.wheelrate_plot = LivePlotWidget()
-        self.heading_plot = LivePlotWidget()
-        self.position_plot = LivePlotWidget()
+        self.wheelrate_plot = LivePlotWidget(title="Wheelrate Plot")
+        self.heading_plot = LivePlotWidget(title="Heading Plot")
+        self.position_plot = LivePlotWidget(title="Position Plot")
         # self.timeplot = LivePlotWidget()
         layout = QGridLayout(self)
         layout.addWidget(self.wheelrate_plot, 0, 3, 1, 2)
@@ -212,8 +212,10 @@ class Window(QWidget):
                 self.p_groundtruth_position.cb_append_data_point(p_groundtruth[0], p_groundtruth[1])
 
             # estimated and measured positions
-            if est_pose_northings_m is not None and est_pose_eastings_m is not None:
-                self.est_position.cb_append_data_point(est_pose_northings_m, est_pose_eastings_m)
+            if self.position_plot is not None and self.est_position is not None:
+                if est_pose_northings_m is not None and est_pose_eastings_m is not None:
+                    self.est_position.cb_append_data_point(est_pose_northings_m, est_pose_eastings_m)
+
             if measured_pose_northings_m is not None and measured_pose_eastings_m is not None  and measured_pose_timestamp_s > measured_pose_stamp_prev:
                 self.measured_position.cb_append_data_point(measured_pose_northings_m, measured_pose_eastings_m)
     
