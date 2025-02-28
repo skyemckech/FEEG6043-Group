@@ -569,6 +569,7 @@ class LaptopPilot:
             Q = arucotest.create_aruco_data(self, self.groundtruth_northings,self.groundtruth_eastings,self.groundtruth_yaw)
 
             # Export data to excel
+            #Danae donst understand task manager:
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.extend_data([Q])
