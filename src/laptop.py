@@ -64,6 +64,7 @@ class LaptopPilot:
         self.eastings_path = [0,0,1.4,1.4,0]      
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
+        self.runtime = 0
         wheel_distance = 0.174 # m 
         wheel_diameter = 0.070 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
@@ -175,7 +176,7 @@ class LaptopPilot:
             self.dataLine = []
 
     def true_wheel_speeds_callback(self, msg):
-        print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
+        #print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
         # update wheel rates
         self.measured_wheelrate_right = self.measured_wheelrate_right_next
         self.measured_wheelrate_right_next = msg.vector.x
@@ -535,14 +536,31 @@ class LaptopPilot:
             if u[1] < -self.w_max: u[1] = -self.w_max
 
             # actuator commands                 
-            q = self.ddrive.inv_kinematics(u)            
+            q = self.ddrive.inv_kinematics(u)  
 
-            wheel_speed_msg = Vector3Stamped()
-            wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
-            wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
+            ######making the robot stop after 5 sec 
+            self.runtime +=  dt
 
-            self.cmd_wheelrate_right = wheel_speed_msg.vector.x
-            self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+            print("the timestamp is:",self.runtime,"sec")         
+
+            if self.runtime <= 5:
+
+                wheel_speed_msg = Vector3Stamped()
+                wheel_speed_msg.vector.x = np.pi*1  #q[0,0] # Right wheelspeed rad/s
+                wheel_speed_msg.vector.y = np.pi*1  #q[1,0] # Left wheelspeed rad/s
+
+                self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+                self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+            
+            else:
+                
+                wheel_speed_msg = Vector3Stamped()
+                wheel_speed_msg.vector.x = np.pi*0  #q[0,0] # Right wheelspeed rad/s
+                wheel_speed_msg.vector.y = np.pi*0  #q[1,0] # Left wheelspeed rad/s
+
+                self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+                self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+            
             
            # wheel_speed_msg.vector.x
            # wheel_speed_msg.vector.y
@@ -555,8 +573,8 @@ class LaptopPilot:
             
             # Export data to excel
             #Danae donst understand task manager:
-            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
-            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
+            #self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
+            #self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.extend_data([str(p_robot_truth[0]),str(p_robot_truth[1]),str(p_robot_truth[2])])
             self.ref_pose_worksheet.export_to_excel() 
             print("robot truth data:",p_robot_truth)
