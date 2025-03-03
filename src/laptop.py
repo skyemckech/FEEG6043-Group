@@ -242,10 +242,10 @@ class LaptopPilot:
                 
             # self.sim_time_offset is 0 if not a simulation. Deals with webots dealing in elapse timeself.sim_time_offset
             #print(
-                "Received update from",
-                datetime.utcnow().timestamp() - msg[0] - self.sim_time_offset,
-                "seconds ago",
-            )
+           #     "Received update from",
+         #       datetime.utcnow().timestamp() - msg[0] - self.sim_time_offset,
+         #       "seconds ago",
+         #   )
             time_stamp = msg[0] + self.sim_time_offset                
 
         pose_msg = PoseStamped() 
@@ -286,14 +286,14 @@ class LaptopPilot:
             while True:
                 current_time = datetime.utcnow().timestamp()
                 if time_to_run > 0 and current_time - self.start_time > time_to_run:
-                    #print("Time is up, stopping…")
+                    print("Time is up, stopping…")
                     break
                 self.infinite_loop()
                 r.sleep()
         except KeyboardInterrupt:
-            #print("KeyboardInterrupt received, stopping…")
+            print("KeyboardInterrupt received, stopping…")
         except Exception as e:
-            #print("Exception: ", e)
+            print("Exception: ", e)
         finally:
             self.lidar_sub.stop()
             self.groundtruth_sub.stop()
@@ -543,24 +543,51 @@ class LaptopPilot:
 
             print("the timestamp is:",self.runtime,"sec")         
 
-            if self.runtime <= 5:
+            if self.runtime <= 1:
 
                 wheel_speed_msg = Vector3Stamped()
-                wheel_speed_msg.vector.x = np.pi*1  #q[0,0] # Right wheelspeed rad/s
-                wheel_speed_msg.vector.y = np.pi*1  #q[1,0] # Left wheelspeed rad/s
+                wheel_speed_msg.vector.x = 1*np.pi  #q[0,0] # Right wheelspeed rad/s
+                wheel_speed_msg.vector.y = 1*np.pi  #q[1,0] # Left wheelspeed rad/s
 
                 self.cmd_wheelrate_right = wheel_speed_msg.vector.x
                 self.cmd_wheelrate_left = wheel_speed_msg.vector.y
             
+            elif self.runtime <= 20:
+                
+                wheel_speed_msg = Vector3Stamped()
+                wheel_speed_msg.vector.x = 1*np.pi #q[0,0] # Right wheelspeed rad/s
+                wheel_speed_msg.vector.y = 2*np.pi  #q[1,0] # Left wheelspeed rad/s
+
+                self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+                self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+
             else:
                 
                 wheel_speed_msg = Vector3Stamped()
-                wheel_speed_msg.vector.x = np.pi*0  #q[0,0] # Right wheelspeed rad/s
-                wheel_speed_msg.vector.y = np.pi*0  #q[1,0] # Left wheelspeed rad/s
+                wheel_speed_msg.vector.x = 0*np.pi #q[0,0] # Right wheelspeed rad/s
+                wheel_speed_msg.vector.y = 0*np.pi  #q[1,0] # Left wheelspeed rad/s
 
                 self.cmd_wheelrate_right = wheel_speed_msg.vector.x
                 self.cmd_wheelrate_left = wheel_speed_msg.vector.y
             
+            # if self.runtime <= 0.01:
+
+            #     wheel_speed_msg = Vector3Stamped()
+            #     wheel_speed_msg.vector.x = 1*np.pi  #q[0,0] # Right wheelspeed rad/s
+            #     wheel_speed_msg.vector.y = 1*np.pi  #q[1,0] # Left wheelspeed rad/s
+
+            #     self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+            #     self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+            
+            # else:
+                
+            #     wheel_speed_msg = Vector3Stamped()
+            #     wheel_speed_msg.vector.x = -1*np.pi #q[0,0] # Right wheelspeed rad/s
+            #     wheel_speed_msg.vector.y = 1*np.pi  #q[1,0] # Left wheelspeed rad/s
+
+            #     self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+            #     self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+
             
            # wheel_speed_msg.vector.x
            # wheel_speed_msg.vector.y

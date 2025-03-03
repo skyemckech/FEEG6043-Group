@@ -1,0 +1,18 @@
+
+
+from Libraries.math_feeg6043 import Matrix
+
+
+
+mtx = Matrix(3,3)
+
+vector = []
+vector.append(5)
+vector.append(5)
+
+print("Vector is:",vector)
+print("matrix is:",mtx)
+
+
+
+
