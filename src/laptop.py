@@ -543,7 +543,7 @@ class LaptopPilot:
 
             print("the timestamp is:",self.runtime,"sec")         
 
-            if self.runtime <= 1:
+            if self.runtime <= 7.5:
 
                 wheel_speed_msg = Vector3Stamped()
                 wheel_speed_msg.vector.x = 1*np.pi  #q[0,0] # Right wheelspeed rad/s
@@ -552,11 +552,11 @@ class LaptopPilot:
                 self.cmd_wheelrate_right = wheel_speed_msg.vector.x
                 self.cmd_wheelrate_left = wheel_speed_msg.vector.y
             
-            elif self.runtime <= 20:
+            elif self.runtime <= 25:
                 
                 wheel_speed_msg = Vector3Stamped()
                 wheel_speed_msg.vector.x = 1*np.pi #q[0,0] # Right wheelspeed rad/s
-                wheel_speed_msg.vector.y = 2*np.pi  #q[1,0] # Left wheelspeed rad/s
+                wheel_speed_msg.vector.y = 1.35*np.pi  #q[1,0] # Left wheelspeed rad/s
 
                 self.cmd_wheelrate_right = wheel_speed_msg.vector.x
                 self.cmd_wheelrate_left = wheel_speed_msg.vector.y

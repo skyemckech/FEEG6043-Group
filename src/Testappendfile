@@ -1,17 +1,26 @@
 
 
 from Libraries.math_feeg6043 import Matrix
+import numpy as np
 
 
-
-mtx = Matrix(3,3)
+#np.cov()
+#np.var()
+mtx = Matrix(5,5)
 
 vector = []
 vector.append(5)
-vector.append(5)
+vector.append(10)
+vector.append(16)
+
+cov = np.cov(vector)
+var = np.var(vector)
 
 print("Vector is:",vector)
 print("matrix is:",mtx)
+print("cov is:",cov)
+print("var is:",var)
+
 
 
 
