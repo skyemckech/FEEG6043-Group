@@ -35,7 +35,7 @@ class LaptopPilot:
         # network for sensed pose
         aruco_params = {
             "port": 50000,  # Port to listen to (DO NOT CHANGE)
-            "marker_id": 20,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
+            "marker_id": 21,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
         }
         self.robot_ip = "192.168.90.1"
         
@@ -60,8 +60,8 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,1.4,1.4,0,0]
-        self.eastings_path = [0,0,1.4,1.4,0]      
+        self.northings_path = [1.4,1.4,0]
+        self.eastings_path = [0,1.4,1.4]      
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
         self.runtime = 0
@@ -545,12 +545,12 @@ class LaptopPilot:
             # ##############Linear##########
             # if self.runtime <= 7.5:
 
-            #     wheel_speed_msg = Vector3Stamped()
-            #     wheel_speed_msg.vector.x = 1.5*np.pi  #q[0,0] # Right wheelspeed rad/s #### Different Speeds are 0.5/1.0/1.5
-            #     wheel_speed_msg.vector.y = 1.5*np.pi  #q[1,0] # Left wheelspeed rad/s  #### Different Speeds are 0.5/1.0/1.5
+            # wheel_speed_msg = Vector3Stamped()
+            # wheel_speed_msg.vector.x = 1.5*np.pi  #q[0,0] # Right wheelspeed rad/s #### Different Speeds are 0.5/1.0/1.5
+            # wheel_speed_msg.vector.y = 1.5*np.pi  #q[1,0] # Left wheelspeed rad/s  #### Different Speeds are 0.5/1.0/1.5
 
-            #     self.cmd_wheelrate_right = wheel_speed_msg.vector.x
-            #     self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+            # self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+            # self.cmd_wheelrate_left = wheel_speed_msg.vector.y
             
             # elif self.runtime <= 25:
                 
@@ -571,7 +571,7 @@ class LaptopPilot:
             #     self.cmd_wheelrate_left = wheel_speed_msg.vector.y
 
 
-        ########################Rotational##########################
+        #######################Rotational##########################
 
 
             if self.runtime <= 7.5:
