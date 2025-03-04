@@ -29,8 +29,6 @@ G = 2
 DOTX = 3
 DOTG = 4
 class LaptopPilot:
-
-
     def __init__(self, simulation):
         # network for sensed pose
         aruco_params = {
@@ -60,11 +58,13 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,1.4,1.4,0,0]
-        self.eastings_path = [0,0,1.4,1.4,0]      
+        lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
+        lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
+        self.northings_path = lapx+lapx+lapx
+        self.eastings_path = lapy+lapy+lapy     
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.174 # m 
+        wheel_distance = 0.190 # m 
         wheel_diameter = 0.070 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
@@ -72,7 +72,7 @@ class LaptopPilot:
         self.tau_s = 0.5 # s to remove along track error
         self.L = 0.2 # m distance to remove normal and angular error
         self.v_max = 0.6 # m/s fastest the robot can go
-        self.w_max = np.deg2rad(60) # fastest the robot can turn
+        self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
         
         self.initialise_control = True # False once control gains is initialised 
@@ -361,8 +361,8 @@ class LaptopPilot:
             R = Identity(5)
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
-            R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = 0.01**2
+            R[G, G] = np.deg2rad(0)**2
+            R[DOTX, DOTX] = 0.2**2
             R[DOTG, DOTG] = np.deg2rad(0.05)**2
             return R
 
@@ -457,7 +457,7 @@ class LaptopPilot:
 
              # > Think < #
             ################################################################################
-            ################### Motion Model ##############################
+            ################### Motion Model ####################
             # take current pose estimate and update by twist
 
             R = self.uncertainty.get_process_uncertainty()
