@@ -60,8 +60,10 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,1.4,1.4,0,0]
-        self.eastings_path = [0,0,1.4,1.4,0]      
+        lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
+        lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
+        self.northings_path = lapx+[0]
+        self.eastings_path = lapy+[0]      
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
         wheel_distance = 0.174 # m 
@@ -199,7 +201,6 @@ class LaptopPilot:
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
-        ###############(imported)#########################
         # b to e frame
         p_eb = Vector(3)
         p_eb[0] = self.est_pose_northings_m #robot pose northings (see Task 3)
@@ -548,9 +549,15 @@ class LaptopPilot:
             ################################################################################
 
             # > Act < #
+            # Prep messages
+            p_ref_msg = Vector3Stamped()
+            p_ref_msg.vector.x = p_ref[0]
+
+
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+            self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
