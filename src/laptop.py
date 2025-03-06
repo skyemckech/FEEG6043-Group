@@ -549,14 +549,14 @@ class LaptopPilot:
             ################################################################################
 
             # > Act < #
-            # Prep messages
-            p_ref_msg = Vector3Stamped()
-            p_ref_msg.vector.x = p_ref[0]
-
-
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+
+            # Prep messages
+            p_ref_msg = Vector3Stamped()
+            p_ref_msg.vector.x = p_ref[0,0]
+            p_ref_msg.vector.y = p_ref[1,0]
             self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
             
             # Export data to excel
