@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
 # Path to the JSON file
-file_path = r"C:/Users/danae/Folder/FEEG6043-Group-2/logs/20250303_190632_log.json"
+file_path = r"C:\Users\danae\Folder\FEEG6043-Group-2\logs\20250307_192313_log.json"
 
 # Initialize data storage
 state_data = []
@@ -17,35 +17,39 @@ with open(file_path, 'r') as file:
         data = json.loads(line)
         topic = data.get("topic_name")
 
-        if topic == "/est_pose":
-            pos = data["message"]["pose"]["position"]
-            state_data.append([pos["x"], pos["y"]])
-            if "covariance" in data["message"]:
-                covariance_matrix = np.array(data["message"]["covariance"]).reshape(5, 5)
-                covariance_data.append(covariance_matrix[:2, :2])
+        # Extract estimated state (position and yaw)
+        if topic == "/state":
+            state_vector = data["message"]["vector"]
+            state_data.append([state_vector[0], state_vector[1], state_vector[2]])
 
-        elif topic == "/covariance":
-            covariance_matrix = np.array(data["message"]["covariance"]).reshape(5, 5)
-            covariance_data.append(covariance_matrix[:2, :2])
-
+        # Extract measured position from ArUco markers
         elif topic == "/aruco":
             pos = data["message"]["pose"]["position"]
             measured_data.append([pos["x"], pos["y"]])
 
-# Convert to numpy arrays
+        # Extract covariance matrix for position
+        elif topic == "/covariance_pos":
+            covariance_vector = data["message"]["vector"]
+            covariance_matrix = np.array([
+                [covariance_vector[0], covariance_vector[2]],
+                [covariance_vector[2], covariance_vector[1]]
+            ])
+            covariance_data.append(covariance_matrix)
+
+# Convert data to numpy arrays for easier plotting
 state_data = np.array(state_data)
 measured_data = np.array(measured_data)
 
 # Plotting
-fig, ax = plt.subplots(figsize=(6, 6))
+fig, ax = plt.subplots(figsize=(8, 8))
 
-# Estimated State
+# Plot the estimated state trajectory
 ax.plot(state_data[:, 0], state_data[:, 1], 'ro-', label='Estimated State')
 
-# Measured Position
+# Plot the measured positions from the ArUco markers
 ax.plot(measured_data[:, 0], measured_data[:, 1], 'gx', label='Measured Position', markersize=10)
 
-# Covariance as ellipse (for all logged covariances)
+# Draw covariance ellipses
 for i, cov_matrix in enumerate(covariance_data):
     if cov_matrix.shape == (2, 2):
         eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
@@ -55,10 +59,11 @@ for i, cov_matrix in enumerate(covariance_data):
                           edgecolor='purple', facecolor='none', linestyle='--', alpha=0.7)
         ax.add_patch(ellipse)
 
-# Labels and Legend
+# Set labels, grid, and aspect ratio
 ax.set_xlabel('Eastings (m)')
 ax.set_ylabel('Northings (m)')
 ax.legend()
 ax.set_aspect('equal')
 plt.grid(True)
+plt.title('EKF Estimated Trajectory with Position Covariance Ellipses')
 plt.show()
