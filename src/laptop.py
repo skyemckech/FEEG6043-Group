@@ -343,16 +343,27 @@ class LaptopPilot:
 
         return measurement_vector, sensor_jacobian
 
-    def position_sensor_update(self):
+    def position_sensor_update(self, noise):
         # Sample position data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[N] = self.measured_pose_northings_m
         self.sensor_measurement[E] = self.measured_pose_eastings_m
+        self.sensor_measurement[N] += self.add_noise(noise)
+        self.sensor_measurement[E] += self.add_noise(noise)
 
-    def yaw_sensor_update(self):
+    def yaw_sensor_update(self, noise):
         # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
+        self.sensor_measurement[G] += self.add_noise(noise)
+
+    def add_noise(self, magnitude, mean = 0):
+        # Add random normal noise
+        noise = np.random.normal(0, magnitude, 10) 
+        # first is the mean of the normal distribution you are choosing from
+        # second is the standard deviation of the normal distribution
+        # third is the number of elements you get in array noise
+        return noise
 
 
     class uncertaintyMatrices:  
@@ -467,11 +478,13 @@ class LaptopPilot:
             
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                self.yaw_sensor_update()
+                p_noise = 0.005
+                self.yaw_sensor_update(p_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                self.position_sensor_update()
+                h_noise = 0.005
+                self.position_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
                 
