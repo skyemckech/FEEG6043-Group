@@ -8,7 +8,6 @@ file_path = r"C:/Users/danae/Folder/FEEG6043-Group-2/logs/20250303_190632_log.js
 
 # Initialize data storage
 state_data = []
-groundtruth_data = []
 measured_data = []
 covariance_data = []
 
@@ -18,33 +17,27 @@ with open(file_path, 'r') as file:
         data = json.loads(line)
         topic = data.get("topic_name")
 
-        if topic == "/groundtruth":
-            pos = data["message"]["position"]
-            groundtruth_data.append([pos["x"], pos["y"]])
-
-        elif topic == "/est_pose":
+        if topic == "/est_pose":
             pos = data["message"]["pose"]["position"]
             state_data.append([pos["x"], pos["y"]])
+            if "covariance" in data["message"]:
+                covariance_matrix = np.array(data["message"]["covariance"]).reshape(5, 5)
+                covariance_data.append(covariance_matrix[:2, :2])
+
+        elif topic == "/covariance":
+            covariance_matrix = np.array(data["message"]["covariance"]).reshape(5, 5)
+            covariance_data.append(covariance_matrix[:2, :2])
 
         elif topic == "/aruco":
             pos = data["message"]["pose"]["position"]
             measured_data.append([pos["x"], pos["y"]])
 
-        elif topic == "/covariance":
-            covariance = data["message"]["covariance"]
-            covariance_data.append(covariance)
-
-# Convert to numpy arrays for easier manipulation
+# Convert to numpy arrays
 state_data = np.array(state_data)
-groundtruth_data = np.array(groundtruth_data)
 measured_data = np.array(measured_data)
-covariance_data = np.array(covariance_data)
 
 # Plotting
 fig, ax = plt.subplots(figsize=(6, 6))
-
-# Ground truth
-ax.plot(groundtruth_data[:, 0], groundtruth_data[:, 1], 'bo-', label='Ground Truth')
 
 # Estimated State
 ax.plot(state_data[:, 0], state_data[:, 1], 'ro-', label='Estimated State')
@@ -52,12 +45,14 @@ ax.plot(state_data[:, 0], state_data[:, 1], 'ro-', label='Estimated State')
 # Measured Position
 ax.plot(measured_data[:, 0], measured_data[:, 1], 'gx', label='Measured Position', markersize=10)
 
-# Covariance as ellipses
-for i, cov in enumerate(covariance_data):
-    if i % 10 == 0:  # Reduce the number of ellipses for clarity
-        width, height = 2 * np.sqrt(cov[0][0]), 2 * np.sqrt(cov[1][1])
-        ellipse = Ellipse((state_data[i, 0], state_data[i, 1]), width, height,
-                          edgecolor='pink', facecolor='none', alpha=0.6)
+# Covariance as ellipse (for all logged covariances)
+for i, cov_matrix in enumerate(covariance_data):
+    if cov_matrix.shape == (2, 2):
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+        angle = np.degrees(np.arctan2(*eigenvectors[:, 0][::-1]))
+        width, height = 2 * np.sqrt(np.abs(eigenvalues))
+        ellipse = Ellipse((state_data[i, 0], state_data[i, 1]), width, height, angle,
+                          edgecolor='purple', facecolor='none', linestyle='--', alpha=0.7)
         ax.add_patch(ellipse)
 
 # Labels and Legend
@@ -67,4 +62,3 @@ ax.legend()
 ax.set_aspect('equal')
 plt.grid(True)
 plt.show()
-
