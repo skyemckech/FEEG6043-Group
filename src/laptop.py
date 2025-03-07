@@ -354,6 +354,14 @@ class LaptopPilot:
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
+    def add_noise(self, magnitude, mean = 0):
+        # Add random normal noise
+        noise = np.random.normal(0, magnitude, 10) 
+        # first is the mean of the normal distribution you are choosing from
+        # second is the standard deviation of the normal distribution
+        # third is the number of elements you get in array noise
+        return noise
+
 
     class uncertaintyMatrices:  
         #Class to keep track of model uncertainty
