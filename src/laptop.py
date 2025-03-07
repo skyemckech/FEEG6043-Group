@@ -578,7 +578,7 @@ class LaptopPilot:
             p_KEF_ref_msg.vector.z = d_EKF[2,0]
             self.datalog.log(p_KEF_ref_msg, topic_name = "/EKF_error" )
 
-            # # KF output to mearument noise value (if we trust the measurment more than we will be closer to )
+            # # KF output to mearument noise value (if we trust the measurment more than we will be closer to ) cuc
             d_biast_measurment = Vector3Stamped()
             d_biast_measurment.vector.x = self.sensor_measurement[0,0]
             d_biast_measurment.vector.y = self.sensor_measurement[1,0]
