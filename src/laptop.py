@@ -552,6 +552,37 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
             
+            # # Prep messages
+            # covariance_msg = Vector3Stamped()
+            # covariance_msg.vector.x = self.covariance[0,0]
+            # covariance_msg.vector.y = self.covariance[1,0]
+            # covariance_msg.vector.z = self.covariance[2,0]
+            # self.datalog.log(covariance_msg, topic_name = "/covariance" )
+            
+            # Prepare and log the estimated state for trajectory plotting
+            # This includes Northings (X position), Eastings (Y position), and Yaw (Orientation)
+            state_msg = Vector3Stamped()
+            state_msg.vector.x = self.state[0, 0]  # Northings (X position)
+            state_msg.vector.y = self.state[1, 0]  # Eastings (Y position)
+            state_msg.vector.z = self.state[2, 0]  # Yaw (Orientation)
+            self.datalog.log(state_msg, topic_name="/state")
+
+            # Prepare and log the velocity data
+            # This helps to analyze the robot's speed and direction
+            velocity_msg = Vector3Stamped()
+            velocity_msg.vector.x = self.state[3, 0]  # Velocity in the X direction
+            velocity_msg.vector.y = self.state[4, 0]  # Angular velocity (Yaw rate)
+            self.datalog.log(velocity_msg, topic_name="/velocity")
+
+            # Prepare and log the covariance matrix data
+            # The covariance matrix provides uncertainty in position estimates
+            covariance_msg = Vector3Stamped()
+            covariance_msg.vector.x = self.covariance[N, N]  # Variance in Northings
+            covariance_msg.vector.y = self.covariance[E, E]  # Variance in Eastings
+            covariance_msg.vector.z = self.covariance[N, E]  # Covariance between Northings and Eastings
+            self.datalog.log(covariance_msg, topic_name="/covariance_pos")
+
+
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
