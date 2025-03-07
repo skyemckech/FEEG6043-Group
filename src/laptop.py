@@ -505,6 +505,10 @@ class LaptopPilot:
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
             dp_truth = p_ref - p_robot_truth
+            #finds true error from EKF
+            d_EKF = p_robot_truth - self.state
+            #find distance between EKF output and mearuement nosie
+            d_biast_measurment = self.sensor_measurement -self.state
 
             dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
             dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
@@ -558,11 +562,45 @@ class LaptopPilot:
             p_ref_msg.vector.x = p_ref[0,0]
             p_ref_msg.vector.y = p_ref[1,0]
             self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
+
+
+            # error within the system with ref to EKF
+            p_KEF_ref_msg = Vector3Stamped()
+            p_KEF_ref_msg.vector.x = d_EKF[0,0]
+            p_KEF_ref_msg.vector.y = d_EKF[1,0]
+            p_KEF_ref_msg.vector.z = d_EKF[2,0]
+
+            self.datalog.log(p_KEF_ref_msg, topic_name = "/EKF_error" )
+
+            # KF output to mearument noise value (if we trust the measurment more than we will be closer to )
+            d_biast_measurment = Vector3Stamped()
+            d_biast_measurment.vector.x = self.sensor_measurement[0,0]
+            d_biast_measurment.vector.y = self.sensor_measurement[1,0]
+            d_biast_measurment.vector.z = self.sensor_measurement[2,0]
+            self.datalog.log(d_biast_measurment, topic_name = "/EKF_to_measurment_value")
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.export_to_excel()
+
+            # Sample data
+            # x = [1, 2, 3, 4, 5]
+            # y = [10, 20, 25, 30, 40]
+
+            # # Plot the data
+            # plt.plot(x, y, marker='o', linestyle='-', color='b', label="Data")
+
+            # # Labels and title
+            # plt.xlabel("X-axis Label")
+            # plt.ylabel("Y-axis Label")
+            # plt.title("Simple Line Plot")
+
+            # # Show legend
+            # plt.legend()
+
+            # Show the plot
+            #plt.show()
 
 
 
