@@ -30,14 +30,15 @@ class ImportLog:
                 try:
                     entry = json.loads(line.strip())  # Parse each line as a JSON object
                     # Extract data from the '/groundtruth' topic
-                    if entry['topic_name'] == '/groundtruth':
-                        data['timestamps'].append(float(entry['timestamp']))
-                        data['northings'].append(entry['message']['position']['x'])
-                        data['eastings'].append(entry['message']['position']['y'])
-                        data['headings'].append(entry['message']['orientation']['z'])
+                    if entry['topic_name'] == '/aruco':
+
+                        data['northings'].append(entry['message']['pose']['position']['x'])
+                        data['eastings'].append(entry['message']['pose']['position']['y'])
+                        data['headings'].append(entry['message']['pose']['orientation']['z'])
                     # Extract data from the '/true_wheel_speeds' topic
                     elif entry['topic_name'] == '/true_wheel_speeds':
                         # Append wheel speed data while ensuring alignment with timestamps
+                        data['timestamps'].append(float(entry['timestamp']))
                         if len(data['wheel_right']) < len(data['timestamps']):
                             data['wheel_right'].append(entry['message']['vector']['x'])
                         if len(data['wheel_left']) < len(data['timestamps']):
@@ -68,64 +69,89 @@ def interpolate_logs(logs, common_timestamps):
     return interpolated_logs
 
 # Load data from all log files in the correct directory
-log_directory = 'C:/Users/danae/Folder/FEEG6043-Group-2/logs/'
-filepaths = [os.path.join(log_directory, f) for f in [
-    '20250303_190300_log.json',
-    '20250303_190345_log.json',
-    '20250303_190426_log.json',
-    '20250303_190506_log.json',
-    '20250303_190632_log.json'
+filepaths = [os.path.join(f) for f in [
+    #'logs/20250304_141634_log.json',
+    'logs/20250304_141834_log.json',
+    'logs/20250304_141913_log.json',
+    # 'logs/20250304_141931_log.json',
+    'logs/20250304_142026_log.json'
 ]]
 original_logs = [ImportLog(fp).data for fp in filepaths]
 
-# Generate a common set of timestamps for interpolation
-min_time = max(min(log['timestamps']) for log in original_logs)
-max_time = min(max(log['timestamps']) for log in original_logs)
-dt = 0.5  # Define the interpolation time step
-common_timestamps = np.arange(min_time, max_time, dt)
+# # Generate a common set of timestamps for interpolation
+# min_time = max(min(log['timestamps']) for log in original_logs)
+# max_time = min(max(log['timestamps']) for log in original_logs)
+# dt = 0.5  # Define the interpolation time step
+# common_timestamps = np.arange(min_time, max_time, dt)
 
-# Perform interpolation of logs to align all data on common timestamps
-interpolated_logs = interpolate_logs(original_logs, common_timestamps)
+# # Perform interpolation of logs to align all data on common timestamps
+# interpolated_logs = interpolate_logs(original_logs, common_timestamps)
 
-# Function to pad data arrays with NaN to ensure consistent array shapes
-def pad_data_arrays(logs, key, target_length):
-    padded_data = []
-    for log in logs:
-        data = log[key]
-        if len(data) < target_length:
-            data = np.pad(data, (0, target_length - len(data)), constant_values=np.nan)
-        padded_data.append(data)
-    return np.array(padded_data)
+# # Function to pad data arrays with NaN to ensure consistent array shapes
+# def pad_data_arrays(logs, key, target_length):
+#     padded_data = []
+#     for log in logs:
+#         data = log[key]
+#         if len(data) < target_length:
+#             data = np.pad(data, (0, target_length - len(data)), constant_values=np.nan)
+#         padded_data.append(data)
+#     return np.array(padded_data)
 
-# Plot the original variance data
-plt.figure(figsize=(15, 10))
-for i, key in enumerate(['northings', 'eastings', 'headings', 'wheel_right', 'wheel_left']):
-    plt.subplot(2, 3, i + 1)
-    target_length = max(len(log[key]) for log in original_logs)
-    data_array = pad_data_arrays(original_logs, key, target_length)
-    variance = np.nanvar(data_array, axis=0)  # Compute variance, ignoring NaNs
-    plt.plot(original_logs[0]['timestamps'][:len(variance)], variance, label=f'Original Variance of {key}', linewidth=2)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Variance')
-    plt.title(f'Original Variance of {key.capitalize()} over Time')
-    plt.legend()
+# # Plot the original variance data
+# plt.figure(figsize=(15, 10))
+# for i, key in enumerate(['northings', 'eastings', 'headings', 'wheel_right', 'wheel_left']):
+#     plt.subplot(2, 3, i + 1)
+#     target_length = max(len(log[key]) for log in original_logs)
+#     data_array = pad_data_arrays(original_logs, key, target_length)
+#     variance = np.nanvar(data_array, axis=0)  # Compute variance, ignoring NaNs
+#     plt.plot(original_logs[0]['timestamps'][6:len(variance)], variance[6:len(variance)-1], label=f'Original Variance of {key}', linewidth=2)
+#     plt.xlabel('Time (s)')
+#     plt.ylabel('Variance')
+#     plt.title(f'Original Variance of {key.capitalize()} over Time')
+#     plt.legend()
 
-plt.tight_layout()
+# plt.tight_layout()
+# plt.show()
+# plt.close()
+
+# # Plot the interpolated variance data
+# plt.figure(figsize=(15, 10))
+# for i, key in enumerate(['northings', 'eastings', 'headings', 'wheel_right', 'wheel_left']):
+#     plt.subplot(2, 3, i + 1)
+#     data_array = np.array([log[key] for log in interpolated_logs])
+#     variance = np.nanvar(data_array, axis=0)  # Compute the variance across all logs
+#     plt.plot(common_timestamps, variance, label=f'Interpolated Variance of {key}', linewidth=2)
+#     plt.xlabel('Time (s)')
+#     plt.ylabel('Variance')
+#     plt.title(f'Interpolated Variance of {key.capitalize()} over Time')
+#     plt.legend()
+
+# plt.tight_layout()
+# plt.show()
+# plt.close()
+
+for log in original_logs:
+    log['headings'] = [item - log['headings'][0] for item in log['headings']]
+
+plt.plot(original_logs[0]['timestamps'][:], original_logs[0]['headings'][:])
+plt.plot(original_logs[1]['timestamps'][:], original_logs[1]['headings'][:])
+plt.plot(original_logs[2]['timestamps'][:], original_logs[2]['headings'][:])
 plt.show()
-plt.close()
 
-# Plot the interpolated variance data
-plt.figure(figsize=(15, 10))
-for i, key in enumerate(['northings', 'eastings', 'headings', 'wheel_right', 'wheel_left']):
-    plt.subplot(2, 3, i + 1)
-    data_array = np.array([log[key] for log in interpolated_logs])
-    variance = np.nanvar(data_array, axis=0)  # Compute the variance across all logs
-    plt.plot(common_timestamps, variance, label=f'Interpolated Variance of {key}', linewidth=2)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Variance')
-    plt.title(f'Interpolated Variance of {key.capitalize()} over Time')
-    plt.legend()
+import statistics
 
-plt.tight_layout()
+longest_log = min(len(log['timestamps']) for log in original_logs)
+variance_list = []
+
+
+for i in range(longest_log):
+    data = []
+    for log in original_logs:
+        data.append(log['headings'][i])
+    variance_list.append(statistics.variance(data))
+
+plt.plot(original_logs[0]['timestamps'], variance_list)
 plt.show()
-plt.close()
+
+# plt.plot(original_logs[3]['timestamps'], original_logs[3]['wheel_right'])
+# plt.plot(original_logs[4]['timestamps'][20:], original_logs[4]['wheel_right'][20:])
