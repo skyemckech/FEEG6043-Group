@@ -109,7 +109,7 @@ class Window(QWidget):
 
         self.heading_plot.addItem(measured_heading)
         self.heading_plot.addItem(est_heading)
-        #self.heading_plot.addItem(p_groundtruth_heading)  
+        self.heading_plot.addItem(p_groundtruth_heading)  
 
         self.position_plot.addItem(est_position)
         self.position_plot.addItem(measured_position)
