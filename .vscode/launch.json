@@ -8,7 +8,7 @@
             "name": "Debug laptop",
             "type": "debugpy",
             "request": "launch",
-            "program": "show_laptop.py",
+            "program": "src/show_laptop.py",
             "console": "integratedTerminal",
             "args": [
                 "--simulation"

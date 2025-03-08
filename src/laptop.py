@@ -60,8 +60,10 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        self.northings_path = [0,1.4,1.4,0,0]
-        self.eastings_path = [0,0,1.4,1.4,0]      
+        lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
+        lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
+        self.northings_path = lapx+[0]
+        self.eastings_path = lapy+[0]      
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
         wheel_distance = 0.174 # m 
@@ -199,7 +201,6 @@ class LaptopPilot:
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
-        ###############(imported)#########################
         # b to e frame
         p_eb = Vector(3)
         p_eb[0] = self.est_pose_northings_m #robot pose northings (see Task 3)
@@ -342,16 +343,30 @@ class LaptopPilot:
 
         return measurement_vector, sensor_jacobian
 
-    def position_sensor_update(self):
+    def position_sensor_update(self, noise):
         # Sample position data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[N] = self.measured_pose_northings_m
         self.sensor_measurement[E] = self.measured_pose_eastings_m
+        random_value = self.add_noise(noise)
+        self.sensor_measurement[N] += random_value[N]
+        self.sensor_measurement[E] += random_value[E]
 
-    def yaw_sensor_update(self):
+
+    def yaw_sensor_update(self, noise):
         # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
+        random_value = self.add_noise(noise)
+        self.sensor_measurement[G] += random_value[G]
+
+    def add_noise(self, magnitude, mean = 0):
+        # Add random normal noise
+        noise = np.random.normal(0, magnitude, 10) 
+        # first is the mean of the normal distribution you are choosing from
+        # second is the standard deviation of the normal distribution
+        # third is the number of elements you get in array noise
+        return noise
 
 
     class uncertaintyMatrices:  
@@ -466,11 +481,13 @@ class LaptopPilot:
             
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                self.yaw_sensor_update()
+                p_noise = 0.02
+                self.yaw_sensor_update(p_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                self.position_sensor_update()
+                h_noise = 0.005
+                self.position_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
                 
@@ -551,6 +568,12 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+
+            # Prep messages
+            p_ref_msg = Vector3Stamped()
+            p_ref_msg.vector.x = p_ref[0,0]
+            p_ref_msg.vector.y = p_ref[1,0]
+            self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
