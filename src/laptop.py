@@ -492,7 +492,7 @@ class LaptopPilot:
 
                 self.measured_pose_northings_m = float(self.sensor_measurement[N])
                 self.measured_pose_eastings_m = float(self.sensor_measurement[E])
-                self.measured_pose_yaw_rad = self.sensor_measurement[G]
+                self.measured_pose_yaw_rad = float(self.sensor_measurement[G])
 
             
             #creates measured pose
