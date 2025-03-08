@@ -348,14 +348,17 @@ class LaptopPilot:
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[N] = self.measured_pose_northings_m
         self.sensor_measurement[E] = self.measured_pose_eastings_m
-        self.sensor_measurement[N] += self.add_noise(noise)
-        self.sensor_measurement[E] += self.add_noise(noise)
+        random_value = self.add_noise(noise)
+        self.sensor_measurement[N] += random_value[N]
+        self.sensor_measurement[E] += random_value[E]
+
 
     def yaw_sensor_update(self, noise):
         # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
-        self.sensor_measurement[G] += self.add_noise(noise)
+        random_value = self.add_noise(noise)
+        self.sensor_measurement[G] += random_value[G]
 
     def add_noise(self, magnitude, mean = 0):
         # Add random normal noise
@@ -478,7 +481,7 @@ class LaptopPilot:
             
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                p_noise = 0.005
+                p_noise = 0.02
                 self.yaw_sensor_update(p_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
