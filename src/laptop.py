@@ -73,8 +73,8 @@ class LaptopPilot:
         # control parameters        
         self.tau_s = 0.5 # s to remove along track error
         self.L = 0.2 # m distance to remove normal and angular error
-        self.v_max = 0.6 # m/s fastest the robot can go
-        self.w_max = np.deg2rad(60) # fastest the robot can turn
+        self.v_max = 0.2 # m/s fastest the robot can go
+        self.w_max = np.deg2rad(30) # fastest the robot can turn
         self.timeout = 10 #s
         
         self.initialise_control = True # False once control gains is initialised 
@@ -343,26 +343,26 @@ class LaptopPilot:
 
         return measurement_vector, sensor_jacobian
 
-    def position_sensor_update(self, noise):
+    def position_sensor_update(self, noise_variance):
         # Sample position data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[N] = self.measured_pose_northings_m
         self.sensor_measurement[E] = self.measured_pose_eastings_m
-        random_value = self.add_noise(noise)
+        random_value = self.add_noise(noise_variance)
         self.sensor_measurement[N] += random_value[N]
         self.sensor_measurement[E] += random_value[E]
 
 
-    def yaw_sensor_update(self, noise):
+    def yaw_sensor_update(self, noise_variance):
         # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
-        random_value = self.add_noise(noise)
+        random_value = self.add_noise(noise_variance)
         self.sensor_measurement[G] += random_value[G]
 
-    def add_noise(self, magnitude, mean = 0):
+    def add_noise(self, variance, mean = 0):
         # Add random normal noise
-        noise = np.random.normal(0, magnitude, 10) 
+        noise = np.random.normal(mean, np.sqrt(variance), 100) 
         # first is the mean of the normal distribution you are choosing from
         # second is the standard deviation of the normal distribution
         # third is the number of elements you get in array noise
@@ -385,8 +385,8 @@ class LaptopPilot:
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.0**2
-            Q[E, E] = 0.0**2
+            Q[N, N] = 0.00**2
+            Q[E, E] = 0.00**2
 
             return Q
         
@@ -481,12 +481,12 @@ class LaptopPilot:
             
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                p_noise = 0.02
+                p_noise = 0.01
                 self.yaw_sensor_update(p_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                h_noise = 0.005
+                h_noise = 0.001
                 self.position_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
@@ -569,11 +569,11 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
-            # Prep messages
-            p_ref_msg = Vector3Stamped()
-            p_ref_msg.vector.x = p_ref[0,0]
-            p_ref_msg.vector.y = p_ref[1,0]
-            self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
+            # # Prep messages
+            # p_ref_msg = Vector3Stamped()
+            # p_ref_msg.vector.x = p_ref[0,0]
+            # p_ref_msg.vector.y = p_ref[1,0]
+            # self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
