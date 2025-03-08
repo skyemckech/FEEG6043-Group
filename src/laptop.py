@@ -385,7 +385,7 @@ class LaptopPilot:
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.00**2
+            Q[N, N] = 0.0**2
             Q[E, E] = 0.00**2
 
             return Q
@@ -481,12 +481,12 @@ class LaptopPilot:
             
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                p_noise = 0.01
+                p_noise = 0.0
                 self.yaw_sensor_update(p_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                h_noise = 0.001
+                h_noise = 0.00
                 self.position_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
