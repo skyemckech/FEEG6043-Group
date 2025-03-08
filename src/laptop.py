@@ -385,8 +385,8 @@ class LaptopPilot:
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.0**2
-            Q[E, E] = 0.0**2
+            Q[N, N] = 0.002**2
+            Q[E, E] = 0.002**2
 
             return Q
         
@@ -394,7 +394,7 @@ class LaptopPilot:
             # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[G, G] = np.deg2rad(0.0)**2
+            Q[G, G] = np.deg2rad(0.02)**2
 
             return Q
 
@@ -489,6 +489,8 @@ class LaptopPilot:
                 h_noise = 0.005
                 self.position_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
+
+                
 
                 
             
