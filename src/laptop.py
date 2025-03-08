@@ -603,24 +603,7 @@ class LaptopPilot:
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.export_to_excel()
 
-            # Sample data
-            # x = [1, 2, 3, 4, 5]
-            # y = [10, 20, 25, 30, 40]
-
-            # # # Plot the data
-            # plt.plot(x, , marker='o', linestyle='-', color='b', label="Data")
-
-            # # Labels and title
-            # plt.xlabel("X-axis Label")
-            # plt.ylabel("Y-axis Label")
-            # plt.title("Simple Line Plot")
-
-            # # # Show legend
-            # plt.legend()
-
-            # # Show the plot
-            # plt.show()
-
+    
 
 
 if __name__ == "__main__":
