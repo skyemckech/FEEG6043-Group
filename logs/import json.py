@@ -1,31 +1,52 @@
 import json
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
 
-# Path to the JSON file
-file_path = "logs/20250309_200252_log.json"
+def extract_measured_est_distance_x(file_paths):
+    """
+    Extract the x values from the /measured_est_distance topic in multiple JSONL files.
 
-# Initialize data storage for state, measurements, and covariance matrices
-state_data = []  # To store estimated state vectors [x, y, yaw]
-measured_data = []  # To store measured positions from ArUco markers
-covariance_data = []  # To store covariance matrices for position
+    Args:
+        file_paths (list): List of file paths to JSONL files.
 
-# Read log file and extract relevant data
-with open(file_path, 'r') as file:
-    for line in file:
-        data = json.loads(line)
-        topic = data.get("topic_name")
+    Returns:
+        list: A list of x values under /measured_est_distance.
+    """
+    x_values = []
+    timestamps = []
 
-        # Extract estimated state (position and yaw)
-        if topic == "/state":
-            state_vector = data["message"]["vector"]
-            if isinstance(state_vector, list) and len(state_vector) >= 3:
-                state_data.append([state_vector[0], state_vector[1], state_vector[2]])
+    for file_path in file_paths:
+        with open(file_path, 'r') as f:
+            for line in f:
+                try:
+                    record = json.loads(line)
+                    if record.get("topic_name") == "/measured_est_distance":
+                        x_value = record["message"]["vector"]["x"]
+                        x_values.append(x_value)
+                        timestamp = record
+                except (json.JSONDecodeError, KeyError):
+                    # Ignore lines that are not valid JSON or do not contain expected structure
+                    continue
 
-        # Extract measured position from ArUco markers
-        elif topic == "/measured_est_distance":
-            pos = data["message"]["vector"]
-            if "x" in pos and "y" in pos:
-                measured_data.append([pos["x"], pos["y"]])
+    return x_values
 
+# File paths to the 4 JSONL files
+file_paths = [
+    "file1.jsonl",
+    "file2.jsonl",
+    "file3.jsonl",
+    "file4.jsonl"
+]
+
+# Extract x values
+x_values = extract_measured_est_distance_x(file_paths)
+
+# Print the result
+print("Extracted x values:", x_values)
+
+x_values0, timestamps0 = extract_x_values_and_timestamps("logs/20250309_200252_log.json")
+# x_values1, timestamps1 = extract_x_values_and_timestamps("logs/20250309_202150_log.json")
+# x_values2, timestamps2 = extract_x_values_and_timestamps("logs/20250309_202326_log.json")
+# x_values3, timestamps3 = extract_x_values_and_timestamps("logs/20250309_202513_log.json")
+
+plt.plot(x_values0, timestamps0)
+plt.show()

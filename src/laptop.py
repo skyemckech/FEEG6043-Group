@@ -402,8 +402,8 @@ class LaptopPilot:
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.00
-            Q[E, E] = 0.00
+            Q[N, N] = 0.02
+            Q[E, E] = 0.02
 
             return Q
         
@@ -411,7 +411,7 @@ class LaptopPilot:
             # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[G, G] = np.deg2rad(0.0)
+            Q[G, G] = np.deg2rad(0.2)
 
             return Q
 
