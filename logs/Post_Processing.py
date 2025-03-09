@@ -171,8 +171,8 @@ def extract_variables(filepath):
 
 #%% preparing test files for analysis
 # step 1: load the test files
-filepaths = ["logs/0.1_Scale.json", "logs/0.2_Scale.json",
-             "logs/0.4_Scale.json", "logs/0.8_Scale.json", "logs/1.0_Scale.json", "logs/2.0_Scale.json",  "logs/4.0_Scale.json", "logs/8.0_Scale.json",  "logs/10.0_Scale.json"]
+filepaths = ["logs/scale_0.1.json", "logs/scale_0.2.json",
+             "logs/scale_0.4.json", "logs/scale_0.8.json", "logs/scale_1.json", "logs/scale_2.json",  "logs/scale_8.json", "logs/scale_4.json",  "logs/scale_6.json","logs/scale_10.json"]
 
 n_filepaths = len(filepaths)
     
