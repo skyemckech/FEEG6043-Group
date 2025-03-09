@@ -348,6 +348,7 @@ class LaptopPilot:
         sensor_measurement = Vector(5)
         sensor_measurement[N] = self.measured_pose_northings_m
         sensor_measurement[E] = self.measured_pose_eastings_m
+
         random_value = self.generate_noise(noise_variance)
         sensor_measurement[N] += random_value[N]
         sensor_measurement[E] += random_value[E]
@@ -358,6 +359,7 @@ class LaptopPilot:
         # Sample yaw data from Aruco
         sensor_measurement = Vector(5)
         sensor_measurement[G] = self.measured_pose_yaw_rad
+
         random_value = self.generate_noise(noise_variance)
         sensor_measurement[G] += random_value[G]
 
@@ -386,14 +388,14 @@ class LaptopPilot:
 
     class uncertaintyMatrices:  
         #Class to keep track of model uncertainty
-        def get_process_uncertainty(self):
+        def get_process_uncertainty(self, u):
             # Create process uncertainty matrix
             R = Identity(5)
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
             R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = 0.01**2
-            R[DOTG, DOTG] = np.deg2rad(0.05)**2
+            R[DOTX, DOTX] = np.sqrt((0.005)**2+(0.05*u[0])**2)
+            R[DOTG, DOTG] = np.sqrt((0.005)**2+5*(0.05*u[1])**2)
             return R
 
         def get_p_sensor_uncertainty(self):
@@ -473,7 +475,7 @@ class LaptopPilot:
              # > Receive < #
             #################################################################################
             # convert true wheel speeds in to twist
-            q_noise = 0.02
+            q_noise = 0.0
             q = self.wheel_speed_update(q_noise)
             u = self.ddrive.fwd_kinematics(q)    
             
@@ -489,26 +491,33 @@ class LaptopPilot:
             ################### Motion Model ##############################
             # take current pose estimate and update by twist
 
-            R = self.uncertainty.get_process_uncertainty()
+            R = self.uncertainty.get_process_uncertainty(u)
 
             self.state, self.covariance = extended_kalman_filter_predict(self.state, self.covariance, u, motion_model, R, dt)
             
             if aruco_pose is not None:
+                # Get aurco heading measurement
+                # Then update state and covariance estimates
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                p_noise = 0.02
-                sensor_measurement = self.yaw_sensor_update(p_noise)
+                h_noise = 0.0
+                sensor_measurement = self.yaw_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
+                # Set measured heading for plotting
+                self.measured_pose_yaw_rad = float(sensor_measurement[G])
+
+
+                # Get aruco position measurement
+                # Then update state and covariance estimates
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                h_noise = 0.001
-                sensor_measurement = self.position_sensor_update(h_noise)
+                p_noise = 0.001
+                sensor_measurement = self.position_sensor_update(p_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, sensor_measurement, self.position_sensor_transform, Q)
 
+                # Set measured pose for plotting
+                self.measured_pose_northings_m = float(sensor_measurement[N])
+                self.measured_pose_eastings_m = float(sensor_measurement[E])
                 
-
-                self.measured_pose_northings_m = float(self.sensor_measurement[N])
-                self.measured_pose_eastings_m = float(self.sensor_measurement[E])
-                self.measured_pose_yaw_rad = float(self.sensor_measurement[G])
 
             
             #creates measured pose
