@@ -62,8 +62,8 @@ class LaptopPilot:
         self.accept_radius = 0.2
         lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
         lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
-        self.northings_path = lapx+lapx+[0]
-        self.eastings_path = lapy+lapy+[0]      
+        self.northings_path = lapx+[0]
+        self.eastings_path = lapy+[0]      
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
         wheel_distance = 0.170 # m 
@@ -394,16 +394,16 @@ class LaptopPilot:
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
             R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = (0.005)**2+(0.1*u[0])**2
-            R[DOTG, DOTG] = (0.005)**2+5*(0.1*np.deg2rad(u[1]))**2
+            R[DOTX, DOTX] = (0.005)**2+(0.05*u[0])**2
+            R[DOTG, DOTG] = (0.005)**2+5*(0.05*u[1])**2
             return R
 
         def get_p_sensor_uncertainty(self):
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.001
-            Q[E, E] = 0.001
+            Q[N, N] = 0.00
+            Q[E, E] = 0.00
 
             return Q
         
@@ -411,7 +411,7 @@ class LaptopPilot:
             # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[G, G] = np.deg2rad(0.02)
+            Q[G, G] = np.deg2rad(0.0)
 
             return Q
 
@@ -520,6 +520,14 @@ class LaptopPilot:
                 msg.pose.position.x = self.measured_pose_northings_m
                 msg.pose.position.y = self.measured_pose_eastings_m            
                 self.datalog.log(msg, topic_name="/aruco")
+
+                measured_est_distance = Vector3Stamped()
+                measured_est_distance.vector.x = float(sensor_measurement[N]-self.state[N])  # Variance in Northings
+                measured_est_distance.vector.y = float(sensor_measurement[E]-self.state[E])  # Variance in Eastings
+                self.datalog.log(measured_est_distance, topic_name="/measured_est_distance")
+            
+
+
                 
 
             

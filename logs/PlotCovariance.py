@@ -1,10 +1,10 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Circle
 
 # Path to the JSON file
-file_path = r"C:\Users\danae\Folder\FEEG6043-Group-2\logs\20250308_183838_log.json"
+file_path = "logs/20250309_200252_log.json"
 
 # Initialize data storage
 state_data = []
@@ -60,13 +60,13 @@ if state_data.size > 0 and groundtruth_data.size > 0 and measured_data.size > 0:
     fig, ax = plt.subplots(figsize=(8, 8))
 
     # Plot the estimated state trajectory
-    ax.plot(state_data[:, 0], state_data[:, 1], 'bo-', label='Estimated State', markersize=4)
+    ax.plot(state_data[:800, 1], state_data[:800, 0], 'bo-', label='Estimated State', markersize=4)
 
     # Plot the ground truth trajectory
-    ax.plot(groundtruth_data[:, 0], groundtruth_data[:, 1], 'r-', label='Ground Truth', linewidth=2)
+    # ax.plot(groundtruth_data[:, 1], groundtruth_data[:, 0], 'r-', label='Ground Truth', linewidth=2)
 
     # Plot the measured positions from the ArUco markers
-    ax.plot(measured_data[:, 0], measured_data[:, 1], 'gx', label='Measured Position', markersize=6)
+    ax.plot(measured_data[:80, 1], measured_data[:80, 0], 'gx', label='Measured Position', markersize=6)
 
     # Draw covariance ellipses in the style of the EKF tutorial
     for i, cov_matrix in enumerate(covariance_data):
@@ -75,18 +75,36 @@ if state_data.size > 0 and groundtruth_data.size > 0 and measured_data.size > 0:
             angle = np.degrees(np.arctan2(*eigenvectors[:, 0][::-1]))
             width, height = 2 * np.sqrt(np.abs(eigenvalues))
             print(f"Ellipse {i}: Width={width}, Height={height}, Angle={angle}")
-            ellipse = Ellipse(
-                (state_data[i, 0], state_data[i, 1]),
+            if i == 0:
+                ellipse = Ellipse(
+                    (state_data[i, 0], state_data[i, 1]),
+                    width,
+                    height,
+                    angle=angle,
+                    edgecolor='purple',
+                    facecolor='red',
+                    linestyle='-',
+                    alpha=0.7,
+                    label = 'covariance'
+                )
+            else:
+                ellipse = Ellipse(
+                (state_data[i, 1], state_data[i, 0]),
                 width,
                 height,
                 angle=angle,
                 edgecolor='purple',
-                facecolor='none',
-                linestyle='--',
+                facecolor='red',
+                linestyle='-',
                 alpha=0.7
             )
             ax.add_patch(ellipse)
 
+
+    radius = np.sqrt(0.001)  # Radius of the circle
+    for (xi, yi) in zip(measured_data[:80, 1], measured_data[:80, 0]):
+        circle = Circle((xi, yi), radius, edgecolor='green', facecolor='green', linewidth=2,alpha = 0.3)
+        ax.add_patch(circle)
     # Set labels, grid, and aspect ratio
     ax.set_xlabel('Eastings (m)')
     ax.set_ylabel('Northings (m)')
