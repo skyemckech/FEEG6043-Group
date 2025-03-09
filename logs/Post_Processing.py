@@ -171,10 +171,10 @@ def extract_variables(filepath):
 
 #%% preparing test files for analysis
 # step 1: load the test files
-filepaths = ["logs/scale_0.1.json", "logs/scale_0.2.json",
-             "logs/scale_0.4.json", "logs/scale_0.8.json", "logs/scale_1.json", "logs/scale_2.json",  "logs/scale_8.json", "logs/scale_4.json",  "logs/scale_6.json","logs/scale_10.json"]
+filepaths = ["logs/scale_0.1.json", "logs/scale_1.json","logs/scale_10.json"]
 
-n_filepaths = len(filepaths)
+n_filepaths = 3
+# n_filepaths = len(filepaths)
     
 test_data = [extract_variables(fp) for fp in filepaths]
 
@@ -253,6 +253,8 @@ time_vector = np.linspace(0, n_timestamps - 1, n_timestamps)  # Replace with act
 plt.figure(figsize=(10, 5))
 for j in range(n_tests):  # Loop through tests (columns)
     plt.plot(time_vector, ekf_errors[:, j], label=f'Test {j+1}')
+    averg = sum(ekf_errors[:, j])/len(ekf_errors[:, j])
+    print("EKF Errors",j,":",averg)
 
 # Formatting the plot
 plt.xlabel("Time (s)")
@@ -267,6 +269,9 @@ plt.show()
 
 # Extract ekf to measurement error data (Assuming min_length is the number of timestamps)
 ekf_errors = np.array(aligned_data["EKF_to_measurment_value_tot"])  # Convert to NumPy array for easier handling
+sample_indices = np.arange(0, len(time_vector), 1)  # Indices for every 5th sample
+time_sampled = time_vector[sample_indices]
+ekf_errors_sampled = ekf_errors[sample_indices, :]
 n_timestamps, n_tests = ekf_errors.shape  # Get dimensions
 
 # Generate a time vector (Assuming uniform time steps)
@@ -275,7 +280,9 @@ time_vector = np.linspace(0, n_timestamps - 1, n_timestamps)  # Replace with act
 # Plot each test's error on the same figure
 plt.figure(figsize=(10, 5))
 for j in range(n_tests):  # Loop through tests (columns)
-    plt.plot(time_vector, ekf_errors[:, j], label=f'Test {j+1}')
+    plt.plot(time_sampled, ekf_errors_sampled[:, j], label=f'Test {j+1}',marker='x')
+    averg2 = sum(ekf_errors[:, j])/len(ekf_errors[:, j])
+    print("average D",j,":",averg2)
 
 # Formatting the plot
 plt.xlabel("Time (s)")
@@ -301,12 +308,12 @@ variances = {
 # iterate over the aligned data and compute variance for each variable at each timestamp
 for i in range(min_length):
     # for each timestamp, calculate the variance of each state (e.g., northings, eastings, etc.)
-    northings_values = [aligned_data["northings"][i][j] for j in range(4)]
-    eastings_values = [aligned_data["eastings"][i][j] for j in range(4)]
-    headings_values = [aligned_data["headings"][i][j] for j in range(4)]
-    wheel_right_values = [aligned_data["wheel_right"][i][j] for j in range(4)]
-    wheel_left_values = [aligned_data["wheel_left"][i][j] for j in range(4)]
-    angular_velocity_values = [aligned_data["angular_velocity"][i][j] for j in range(4)]
+    northings_values = [aligned_data["northings"][i][j] for j in range(3)]
+    eastings_values = [aligned_data["eastings"][i][j] for j in range(3)]
+    headings_values = [aligned_data["headings"][i][j] for j in range(3)]
+    wheel_right_values = [aligned_data["wheel_right"][i][j] for j in range(3)]
+    wheel_left_values = [aligned_data["wheel_left"][i][j] for j in range(3)]
+    angular_velocity_values = [aligned_data["angular_velocity"][i][j] for j in range(3)]
     
     # compute variance for each variable
     variances["northings"].append(np.var(northings_values, ddof=1))
