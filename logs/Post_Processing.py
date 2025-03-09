@@ -152,7 +152,7 @@ def extract_variables(filepath):
 
 #%% preparing test files for analysis
 # step 1: load the test files
-filepaths = ["logs/20250303_190632_log.json", "logs/20250303_190506_log.json",
+filepaths = ["0.1_Scale.json", "logs/20250303_190506_log.json",
              "logs/20250303_190426_log.json", "logs/20250303_190345_log.json", "logs/20250303_190300_log.json"]
     
 test_data = [extract_variables(fp) for fp in filepaths]
