@@ -62,8 +62,8 @@ class LaptopPilot:
         self.accept_radius = 0.2
         lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
         lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
-        self.northings_path = lapx+[0]
-        self.eastings_path = lapy+[0]      
+        self.northings_path = lapx+lapx+[0]
+        self.eastings_path = lapy+lapy+[0]      
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
         wheel_distance = 0.174 # m 
@@ -309,9 +309,9 @@ class LaptopPilot:
         self.state[4] = 0
 
         self.covariance = Identity(5) 
-        self.covariance[N,N] = self.state[0]**2
-        self.covariance[E, E] = self.state[1]**2
-        self.covariance[G, G] = self.state[0]**2
+        self.covariance[N,N] = 0.002
+        self.covariance[E, E] = 0.002
+        self.covariance[G, G] = 0.02
         self.covariance[DOTX, DOTX] = 0.0**2
         self.covariance[DOTG, DOTG] = np.deg2rad(0)**2
 
@@ -402,8 +402,8 @@ class LaptopPilot:
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.00**2
-            Q[E, E] = 0.00**2
+            Q[N, N] = 0.002
+            Q[E, E] = 0.002
 
             return Q
         
@@ -411,7 +411,7 @@ class LaptopPilot:
             # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[G, G] = np.deg2rad(0.02)**2
+            Q[G, G] = np.deg2rad(0.02)
 
             return Q
 
@@ -475,7 +475,7 @@ class LaptopPilot:
              # > Receive < #
             #################################################################################
             # convert true wheel speeds in to twist
-            q_noise = 0.0
+            q_noise = 0.02
             q = self.wheel_speed_update(q_noise)
             u = self.ddrive.fwd_kinematics(q)    
             
@@ -499,7 +499,7 @@ class LaptopPilot:
                 # Get aurco heading measurement
                 # Then update state and covariance estimates
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                h_noise = 0.0
+                h_noise = 0.02
                 sensor_measurement = self.yaw_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
