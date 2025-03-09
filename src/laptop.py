@@ -354,15 +354,16 @@ class LaptopPilot:
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
 
+
     class uncertaintyMatrices:  
         #Class to keep track of model uncertainty
         def get_process_uncertainty(self):
             # Create process uncertainty matrix
             R = Identity(5)
-            R[N, N] = 0.001
-            R[E, E] = 0.001
+            R[N, N] = 0
+            R[E, E] = 0
             R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = 0.01
+            R[DOTX, DOTX] = 0.001
             R[DOTG, DOTG] = np.deg2rad(0.05)**2
             return R
 
