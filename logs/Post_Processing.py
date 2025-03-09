@@ -77,10 +77,26 @@ def extract_variables(filepath):
     wheel_left = variables.extract_data("/true_wheel_speeds", ["message", "vector", "y"])
     timestamps = variables.extract_data("/groundtruth", ["timestamp"])
 
+    EKF_error_N = variables.extract_data("/EKF_error", ["message", "vector", "x"])
+    EKF_error_E = variables.extract_data("/EKF_error", ["message", "vector", "y"])
+
+    EKF_to_measurment_value_N = variables.extract_data("/EKF_to_measurment_value", ["message", "vector", "x"])
+    EKF_to_measurment_value_E = variables.extract_data("/EKF_to_measurment_value", ["message", "vector", "y"])
+
     headings = [quaternion_to_heading(w, x, y, z) for w, x, y, z in zip(heading_w, heading_x, heading_y, heading_z)]
     # Convert timestamps from strings to floats
     timestamps = [float(timestamp) for timestamp in timestamps]
+
+    EKF_error_N = np.array(EKF_error_N)
+    EKF_error_E = np.array(EKF_error_E)
     
+    EKF_to_measurment_value_N = np.array(EKF_to_measurment_value_N)
+    EKF_to_measurment_value_E = np.array(EKF_to_measurment_value_E)
+
+    EKF_error_tot = (((EKF_error_N)**2) + ((EKF_error_E)**2))**(0.5)
+    EKF_to_measurment_value_tot = (((EKF_to_measurment_value_N)**2) + ((EKF_to_measurment_value_E)**2))**(0.5)
+
+
     # Compute angular velocity by differentiating heading over time
     angular_velocity = []
     for i in range(1, len(headings)):
@@ -97,7 +113,10 @@ def extract_variables(filepath):
         "headings": headings,
         "wheel_right": wheel_right,
         "wheel_left": wheel_left,
-        "angular_velocity": angular_velocity
+        "angular_velocity": angular_velocity,
+        "EKF_error_tot": EKF_error_tot,
+        "EKF_to_measurment_value_tot":EKF_to_measurment_value_tot
+
     }
 
 
@@ -152,8 +171,10 @@ def extract_variables(filepath):
 
 #%% preparing test files for analysis
 # step 1: load the test files
-filepaths = ["0.1_Scale.json", "logs/20250303_190506_log.json",
-             "logs/20250303_190426_log.json", "logs/20250303_190345_log.json", "logs/20250303_190300_log.json"]
+filepaths = ["logs/0.1_Scale.json", "logs/0.2_Scale.json",
+             "logs/0.4_Scale.json", "logs/0.8_Scale.json", "logs/1.0_Scale.json", "logs/2.0_Scale.json",  "logs/4.0_Scale.json", "logs/8.0_Scale.json",  "logs/10.0_Scale.json"]
+
+n_filepaths = len(filepaths)
     
 test_data = [extract_variables(fp) for fp in filepaths]
 
@@ -177,8 +198,9 @@ for idx, test in enumerate(test_data):
 min_length = min(len(data["timestamps"]) for data in test_data)  # Ensure all tests have the same length
 
 # add checks for other variables, if needed (e.g., angular_velocity, forward_velocity, etc.)
-for key in ["northings_ground", "eastings_ground", "headings", "wheel_right", "wheel_left","angular_velocity"]:
+for key in ["northings_ground", "eastings_ground", "headings", "wheel_right", "wheel_left","angular_velocity", "EKF_error_tot", "EKF_to_measurment_value_tot"]:
     min_length = min(min_length, *[len(data[key]) for data in test_data])
+print("min length is ", min_length)
 
 aligned_data = {  # Dictionary to hold aligned states
     "northings": [],
@@ -186,7 +208,9 @@ aligned_data = {  # Dictionary to hold aligned states
     "headings": [],
     "wheel_right": [],
     "wheel_left": [],
-    "angular_velocity": []
+    "angular_velocity": [],
+    "EKF_error_tot": [],
+    "EKF_to_measurment_value_tot":[]
 }
 
 # check all data is of same length to not throw errors
@@ -199,18 +223,69 @@ for idx, data in enumerate(test_data):
     print(f"  wheel right: {len(data['wheel_right'])}")
     print(f"  Wheel left: {len(data['wheel_left'])}")
     print(f"  Angular Velocity: {len(data['angular_velocity'])}")
+    print(f"  EKF error tot: {len(data['EKF_error_tot'])}")
+    print(f"  EKF to measurement value tot: {len(data['EKF_to_measurment_value_tot'])}")
 
 
 # stack trials together for each state at each timestamp
 for i in range(min_length):
-    aligned_data["northings"].append([test_data[j]["northings_ground"][i] for j in range(4)])
-    aligned_data["eastings"].append([test_data[j]["eastings_ground"][i] for j in range(4)])
-    aligned_data["headings"].append([test_data[j]["headings"][i] for j in range(4)])
-    aligned_data["wheel_right"].append([test_data[j]["wheel_right"][i] for j in range(4)])
-    aligned_data["wheel_left"].append([test_data[j]["wheel_left"][i] for j in range(4)])
-    aligned_data["angular_velocity"].append([test_data[j]["angular_velocity"][i] for j in range(4)])
+    aligned_data["northings"].append([test_data[j]["northings_ground"][i] for j in range(n_filepaths)])
+    aligned_data["eastings"].append([test_data[j]["eastings_ground"][i] for j in range(n_filepaths)])
+    aligned_data["headings"].append([test_data[j]["headings"][i] for j in range(n_filepaths)])
+    aligned_data["wheel_right"].append([test_data[j]["wheel_right"][i] for j in range(n_filepaths)])
+    aligned_data["wheel_left"].append([test_data[j]["wheel_left"][i] for j in range(n_filepaths)])
+    aligned_data["angular_velocity"].append([test_data[j]["angular_velocity"][i] for j in range(n_filepaths)])
+    aligned_data["EKF_error_tot"].append([test_data[j]["EKF_error_tot"][i] for j in range(n_filepaths)])
+    aligned_data["EKF_to_measurment_value_tot"].append([test_data[j]["EKF_to_measurment_value_tot"][i] for j in range(n_filepaths)])
 
 print("Data successfully aligned. Ready for variance computation!")
+
+#%% Plot ekf error against time
+
+# Extract EKF error data (Assuming min_length is the number of timestamps)
+ekf_errors = np.array(aligned_data["EKF_error_tot"])  # Convert to NumPy array for easier handling
+n_timestamps, n_tests = ekf_errors.shape  # Get dimensions
+
+# Generate a time vector (Assuming uniform time steps)
+time_vector = np.linspace(0, n_timestamps - 1, n_timestamps)  # Replace with actual timestamps if available
+
+# Plot each test's error on the same figure
+plt.figure(figsize=(10, 5))
+for j in range(n_tests):  # Loop through tests (columns)
+    plt.plot(time_vector, ekf_errors[:, j], label=f'Test {j+1}')
+
+# Formatting the plot
+plt.xlabel("Time (s)")
+plt.ylabel("EKF Error")
+plt.title("EKF Error vs. Time for Multiple Tests")
+plt.legend()
+plt.grid(True)
+
+# Show the plot
+plt.show()
+#%% Plot ekf to measurement error against time
+
+# Extract ekf to measurement error data (Assuming min_length is the number of timestamps)
+ekf_errors = np.array(aligned_data["EKF_to_measurment_value_tot"])  # Convert to NumPy array for easier handling
+n_timestamps, n_tests = ekf_errors.shape  # Get dimensions
+
+# Generate a time vector (Assuming uniform time steps)
+time_vector = np.linspace(0, n_timestamps - 1, n_timestamps)  # Replace with actual timestamps if available
+
+# Plot each test's error on the same figure
+plt.figure(figsize=(10, 5))
+for j in range(n_tests):  # Loop through tests (columns)
+    plt.plot(time_vector, ekf_errors[:, j], label=f'Test {j+1}')
+
+# Formatting the plot
+plt.xlabel("Time (s)")
+plt.ylabel("EKF to Measurement Error")
+plt.title("EKF to Measurement Error vs. Time for Multiple Tests")
+plt.legend()
+plt.grid(True)
+
+# Show the plot
+plt.show()
 
 #%% analysis and plotting of var
 # initialize a dictionary to store variances for each variable
