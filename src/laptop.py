@@ -394,16 +394,16 @@ class LaptopPilot:
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
             R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = np.sqrt((0.005)**2+(0.05*u[0])**2)
-            R[DOTG, DOTG] = np.sqrt((0.005)**2+5*(0.05*u[1])**2)
+            R[DOTX, DOTX] = (0.005)**2+(0.05*u[0])**2
+            R[DOTG, DOTG] = (0.005)**2+5*(0.05*u[1])**2
             return R
 
         def get_p_sensor_uncertainty(self):
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.002**2
-            Q[E, E] = 0.002**2
+            Q[N, N] = 0.00**2
+            Q[E, E] = 0.00**2
 
             return Q
         
