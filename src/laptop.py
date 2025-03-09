@@ -66,7 +66,7 @@ class LaptopPilot:
         self.eastings_path = lapy+lapy+[0]      
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.174 # m 
+        wheel_distance = 0.170 # m 
         wheel_diameter = 0.070 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
@@ -394,16 +394,16 @@ class LaptopPilot:
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
             R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = (0.005)**2+(0.05*u[0])**2
-            R[DOTG, DOTG] = (0.005)**2+5*(0.05*u[1])**2
+            R[DOTX, DOTX] = (0.005)**2+(0.1*u[0])**2
+            R[DOTG, DOTG] = (0.005)**2+5*(0.1*np.deg2rad(u[1]))**2
             return R
 
         def get_p_sensor_uncertainty(self):
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.002
-            Q[E, E] = 0.002
+            Q[N, N] = 0.001
+            Q[E, E] = 0.001
 
             return Q
         
@@ -440,8 +440,6 @@ class LaptopPilot:
             _, _, self.measured_pose_yaw_rad = msg.pose.orientation.to_euler()        
             self.measured_pose_yaw_rad = self.measured_pose_yaw_rad % (np.pi*2) # manage angle wrapping
 
-            # logs the data            
-            self.datalog.log(msg, topic_name="/aruco")
         
             # initialisation step
             if self.initialise_pose == True:
@@ -517,6 +515,11 @@ class LaptopPilot:
                 # Set measured pose for plotting
                 self.measured_pose_northings_m = float(sensor_measurement[N])
                 self.measured_pose_eastings_m = float(sensor_measurement[E])
+
+                # logs the sensor measurement
+                msg.pose.position.x = self.measured_pose_northings_m
+                msg.pose.position.y = self.measured_pose_eastings_m            
+                self.datalog.log(msg, topic_name="/aruco")
                 
 
             
@@ -632,7 +635,12 @@ class LaptopPilot:
             covariance_msg.vector.y = self.covariance[E, E]  # Variance in Eastings
             covariance_msg.vector.z = self.covariance[N, E]  # Covariance between Northings and Eastings
             self.datalog.log(covariance_msg, topic_name="/covariance_pos")
-
+            
+            # 
+            error_msg = Vector3Stamped()
+            error_msg.vector.x = float(self.state[N]-self.groundtruth_northings)  # Variance in Northings
+            error_msg.vector.y = float(self.state[E]-self.groundtruth_eastings)  # Variance in Eastings
+            self.datalog.log(error_msg, topic_name="/realtime_error")
 
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
