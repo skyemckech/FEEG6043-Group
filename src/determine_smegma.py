@@ -11,4 +11,4 @@ first_term = (wheel_diameter/2/np.sqrt(2)*smegma_wrl)
 print(first_term)
 
 second_term = smegma_diameter/wheel_diameter
-print()
+print(second_term)

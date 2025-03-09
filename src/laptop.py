@@ -345,24 +345,39 @@ class LaptopPilot:
 
     def position_sensor_update(self, noise):
         # Sample position data from Aruco
-        self.sensor_measurement = Vector(5)
-        self.sensor_measurement[N] = self.measured_pose_northings_m
-        self.sensor_measurement[E] = self.measured_pose_eastings_m
-        random_value = self.add_noise(noise)
-        self.sensor_measurement[N] += random_value[N]
-        self.sensor_measurement[E] += random_value[E]
+        sensor_measurement = Vector(5)
+        sensor_measurement[N] = self.measured_pose_northings_m
+        sensor_measurement[E] = self.measured_pose_eastings_m
+        random_value = self.generate_noise(noise)
+        sensor_measurement[N] += random_value[N]
+        sensor_measurement[E] += random_value[E]
 
+        return sensor_measurement
 
     def yaw_sensor_update(self, noise):
         # Sample yaw data from Aruco
-        self.sensor_measurement = Vector(5)
-        self.sensor_measurement[G] = self.measured_pose_yaw_rad
-        random_value = self.add_noise(noise)
-        self.sensor_measurement[G] += random_value[G]
+        sensor_measurement = Vector(5)
+        sensor_measurement[G] = self.measured_pose_yaw_rad
+        random_value = self.generate_noise(noise)
+        sensor_measurement[G] += random_value[G]
 
-    def add_noise(self, magnitude, mean = 0):
+        return sensor_measurement
+
+    def wheel_speed_update(self,noise):
+        # Sample wheel speeds from bot
+        q = Vector(2)            
+        q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
+        q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
+        
+        random_value = self.generate_noise(noise)
+        q[0] += random_value[0]
+        q[1] += random_value[1]
+
+        return q
+
+    def generate_noise(self, magnitude, mean = 0):
         # Add random normal noise
-        noise = np.random.normal(0, magnitude, 10) 
+        noise = np.random.normal(mean, np.sqrt(magnitude), 100) 
         # first is the mean of the normal distribution you are choosing from
         # second is the standard deviation of the normal distribution
         # third is the number of elements you get in array noise
@@ -458,9 +473,8 @@ class LaptopPilot:
              # > Receive < #
             #################################################################################
             # convert true wheel speeds in to twist
-            q = Vector(2)            
-            q[0] = self.measured_wheelrate_right # wheel rate rad/s (measured)
-            q[1] = self.measured_wheelrate_left # wheel rate rad/s (measured)
+            q_noise = 0.02
+            q = self.wheel_speed_update(q_noise)
             u = self.ddrive.fwd_kinematics(q)    
             
             #determine the time step
@@ -482,13 +496,13 @@ class LaptopPilot:
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
                 p_noise = 0.02
-                self.yaw_sensor_update(p_noise)
-                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
+                sensor_measurement = self.yaw_sensor_update(p_noise)
+                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                h_noise = 0.005
-                self.position_sensor_update(h_noise)
-                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
+                h_noise = 0.001
+                sensor_measurement = self.position_sensor_update(h_noise)
+                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, sensor_measurement, self.position_sensor_transform, Q)
 
                 
 
