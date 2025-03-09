@@ -359,8 +359,8 @@ class LaptopPilot:
         def get_process_uncertainty(self):
             # Create process uncertainty matrix
             R = Identity(5)
-            R[N, N] = 0.01
-            R[E, E] = 0.01
+            R[N, N] = 0.001
+            R[E, E] = 0.001
             R[G, G] = np.deg2rad(0.0)**2
             R[DOTX, DOTX] = 0.01
             R[DOTG, DOTG] = np.deg2rad(0.05)**2

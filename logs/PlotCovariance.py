@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
 # Path to the JSON file
-file_path = r"C:\Users\danae\Folder\FEEG6043-Group-2\logs\20250308_191924_log.json"
+file_path = r"C:\Users\danae\Folder\FEEG6043-Group-2\logs\20250309_153300_log.json"
 
 # Initialize data storage
 state_data = []
