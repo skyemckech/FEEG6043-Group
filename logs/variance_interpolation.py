@@ -68,14 +68,11 @@ def interpolate_logs(logs, common_timestamps):
     return interpolated_logs
 
 # Load data from all log files in the correct directory
-log_directory = 'C:/Users/danae/Folder/FEEG6043-Group-2/logs/'
+log_directory = 'C:\Users\conno\OneDrive\Desktop\5th Year\IMB\FEEG6043-Group-1\logs\'
 filepaths = [os.path.join(log_directory, f) for f in [
-    '20250303_190300_log.json',
-    '20250303_190345_log.json',
-    '20250303_190426_log.json',
-    '20250303_190506_log.json',
-    '20250303_190632_log.json'
-]]
+    '0.1_Scale.json',
+    '0.2_Scale.json'
+   ]]
 original_logs = [ImportLog(fp).data for fp in filepaths]
 
 # Generate a common set of timestamps for interpolation
