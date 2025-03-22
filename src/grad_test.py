@@ -118,7 +118,20 @@ sample_scan = np.array([
 #first_sample = Vector(2)
 #first_sample = sample_scan[]
 #print(sample_scan[0])
+sample_scan_cart = np.zeros((len(sample_scan),2))
 
-newdata = rangeangle_to_loc(p,sample_scan[0])
-print("new data is:",newdata)
+
+# converts first sample to cartisian:
+for i in range(len(sample_scan)):
+    sample_scan_cart[i] = rangeangle_to_loc(p,sample_scan[i])
+
+print(sample_scan_cart)
+
+
+#print(vector_container[:,0])
+
+
+
+
+
 
