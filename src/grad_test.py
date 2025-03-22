@@ -10,7 +10,11 @@ t_bl = Vector(2)
 t_bl[0] = x_bl
 t_bl[1] = y_bl
 H_bl = HomogeneousTransformation(t_bl,0)
-
+H_eb_ = HomogeneousTransformation()
+p = Vector(3); 
+p[0] = 0 #Northings
+p[1] = 0 #Eastings
+#p[2] = np.deg2rad(0) #Heading (rad)
 
 def rangeangle_to_loc(p_eb, z_lm):
         
@@ -33,7 +37,7 @@ def rangeangle_to_loc(p_eb, z_lm):
         return t_em
 
 
-bot_pose = [0,0,0]
+#bot_pose = [0,0,0]
 sample_scan = np.array([
     [1.18002099, 0.10605896],
     [1.18773236, 0.10628763],
@@ -111,7 +115,10 @@ sample_scan = np.array([
 #print(lidar_test_data)
 #lidar.rangeangle_to_loc
 #print(sample_scan[:,1])
+#first_sample = Vector(2)
+#first_sample = sample_scan[]
+#print(sample_scan[0])
 
-newdata = rangeangle_to_loc(bot_pose,sample_scan)
-
+newdata = rangeangle_to_loc(p,sample_scan[0])
+print("new data is:",newdata)
 
