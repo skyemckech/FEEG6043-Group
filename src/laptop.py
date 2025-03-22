@@ -577,6 +577,8 @@ class LaptopPilot:
             # p_ref_msg.vector.x = p_ref[0,0]
             # p_ref_msg.vector.y = p_ref[1,0]
             # self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
+            print("This is Lidar Data:", self.lidar_data)
+            print("End of Lidar Data")
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
