@@ -13,8 +13,8 @@ t_bl[1] = y_bl
 H_bl = HomogeneousTransformation(t_bl,0)
 H_eb_ = HomogeneousTransformation()
 p = Vector(3); 
-p[0] = 0 #Northings
-p[1] = 0 #Eastings
+p[0] = 1 #Northings
+p[1] = 2 #Eastings
 #p[2] = np.deg2rad(0) #Heading (rad)
 
 
@@ -66,29 +66,63 @@ def rangeangle_to_loc(p_eb, z_lm):
         return t_em
 
 
-def find_cuner(scan_data, threshold = 0.01):
+def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, uncertainty_limit = 5):
       
     scan_cartizie = np.zeros((len(scan_data),2))
-    scan_grad = np.zeros((len(scan_data)-1,2))
+    scan_differnece_container = np.zeros((len(scan_data),2))
     final_value = len(scan_data)
+    j = 0
 
     #use blairs function to give an inital guess of the corner:
     r, theta, largest_inflection_idx = find_corner(scan_data, threshold)
+    
     infection_point_polar = np.array([r, theta])
 
     ##converts this to cartisian:
-    infection_point_cart = rangeangle_to_loc(p, infection_point_polar)
+    infection_point_cart = rangeangle_to_loc(bot_pose_cart, infection_point_polar)
 
 
     # converts sample to cartisian:
     for i in range(len(scan_data)):
 
+        j += i
         scan_cartizie[i] = rangeangle_to_loc(p,scan_data[i])
+
+    
+
+
+    
+    #1) Finds the closest point to the inflextion point, and set a limit to say data has to be somewhat good for use to make a dessition:
+    for i in range(len(scan_data)):
+         
+         scan_differnece = scan_differnece_container[i] - infection_point_cart[0]
+         hypot = (scan_differnece[0])**2 + (scan_differnece[0])**2 
+         
+         ##scan_differnece = scan_differnece_container[i,i] -  
+         
+         
+
+     
+
+
+
+    ##1.1 make sure data point if close to the one that is furtherst away. protect against strange conditions...
+
+    max_value = np.max(scan_data)  # Get the largest value
+    max_index = np.argmax(scan_data)  # Get the index of the largest value
+
+    #2) Take first and last 5 from each side and compaire grads to get and spread of data
+    ###  2.1) use data to find range of uncertainties for shape// overall slope// angle of the wall
+
+
+
+
     
    # plots data and example point;
     print("scan_cartizie:",scan_cartizie)
     plt.plot(scan_cartizie[:,0], scan_cartizie[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
     plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+    plt.plot(bot_pose_cart[0], bot_pose_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
     # Labels & Title
     plt.xlabel("X-Axis")
     plt.ylabel("Y-Axis")
@@ -183,7 +217,7 @@ sample_scan = np.array([
 
 
 
-a = find_cuner(sample_scan)
+a = find_cuner(sample_scan,p)
 
 
 
