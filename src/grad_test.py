@@ -4,7 +4,6 @@ from matplotlib import pyplot as plt
 from Libraries.math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, interpolate, short_angle, inward_unit_norm, line_intersection, cartesian2polar, polar2cartesian
 from Libraries.plot_feeg6043 import plot_kalman
 import matplotlib.pyplot as plt
-from src.Tutorials.cognition_finished import find_corner
 #from Libraries.model_feeg6043 import rangeangle_to_loc
 
 x_bl = 0; y_bl = 0
@@ -17,6 +16,32 @@ p = Vector(3);
 p[0] = 0 #Northings
 p[1] = 0 #Eastings
 #p[2] = np.deg2rad(0) #Heading (rad)
+
+
+def find_corner(corner_data, threshold = 0.01):
+    # identify the reference coordinate as the inflection point
+    
+    # Step 1: Compute slope
+    slope = np.gradient(corner_data[:, 0])
+    
+    # Step 2: Compute the second derivative (curvature)
+    curvature = np.gradient(slope)
+    
+    # Step 3: Check if criteria is more than threshold    
+    print('Max inflection value is ',np.nanmax(abs(np.gradient(np.gradient(curvature)))), ': Threshold ',threshold)
+    if np.nanmax(abs(np.gradient(np.gradient(curvature)))) > threshold:
+        # compute index of inflection point    
+        largest_inflection_idx = np.nanargmax(abs(np.gradient(np.gradient(curvature))))
+        
+        r = corner_data[largest_inflection_idx, 0]  # Radial distance at the largest curvature
+        theta = corner_data[largest_inflection_idx, 1]  # Angle at the largest curvature
+        return r, theta, largest_inflection_idx
+    
+    else:
+        return None, None, None  # No inflection points found
+
+
+
 
 def rangeangle_to_loc(p_eb, z_lm):
         
@@ -35,24 +60,45 @@ def rangeangle_to_loc(p_eb, z_lm):
         
         # Apply the homogeneous transformation to get from the sensor frame to the body with H_bl, and then to the fixed frame H_eb
         t_em = t2v(H_eb.H@ H_bl.H @v2t(t_lm))
-        
+
+
+
+
         return t_em
 
-def find_cuner(scan_data, threshold = 1):
+
+
+
+def find_cuner(scan_data, threshold = 0.01):
       
     scan_cartizie = np.zeros((len(scan_data),2))
     scan_grad = np.zeros((len(scan_data)-1,2))
     final_value = len(scan_data)
+
+    #use blairs function to give an inital guess of the corner:
+    r, theta, largest_inflection_idx = find_corner(scan_data, threshold)
+    infection_point_polar = np.array([r, theta])
+
+    ##converts this to cartisian:
+    infection_point_cart = rangeangle_to_loc(p, infection_point_polar)
+
 
     # converts sample to cartisian:
     for i in range(len(scan_data)):
 
         scan_cartizie[i] = rangeangle_to_loc(p,sample_scan[i])
     
-   # for i in range(len(scan_data)):
-         
+   # plots data and example point;
 
-    
+    plt.plot(scan_cartizie[:,0], scan_cartizie[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
+    plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+    # Labels & Title
+    plt.xlabel("X-Axis")
+    plt.ylabel("Y-Axis")
+    plt.title("Simple Line Plot")
+    plt.legend()  # Show legend
+    plt.show()
+         
     return scan_data
 
 
@@ -137,24 +183,43 @@ sample_scan = np.array([
 #first_sample = Vector(2)
 #first_sample = sample_scan[]
 #print(sample_scan[0])
-sample_scan_cart = np.zeros((len(sample_scan),2))
-# converts first sample to cartisian:
-for i in range(len(sample_scan)):
-    sample_scan_cart[i] = rangeangle_to_loc(p,sample_scan[i])
 
-print(len(sample_scan_cart))
-print(sample_scan[:,0])
 
-#print(vector_container[:,0])
+
+a = find_cuner(sample_scan)
 
 
 
 
 
-plt.plot(sample_scan[:,0], sample_scan[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
-# Labels & Title
-plt.xlabel("X-Axis")
-plt.ylabel("Y-Axis")
-plt.title("Simple Line Plot")
-plt.legend()  # Show legend
-plt.show()
+# sample_scan_cart = np.zeros((len(sample_scan),2))
+# # converts first sample to cartisian:
+# for i in range(len(sample_scan)):
+#     sample_scan_cart[i] = rangeangle_to_loc(p,sample_scan[i])
+
+# #print(len(sample_scan_cart))
+# #print(sample_scan[:,0])
+# #r, theta, largest_inflection_idx = find_corner(sample_scan_cart)
+# r, theta, largest_inflection_idx = find_corner(sample_scan)
+
+# infection_point_polar = np.array([r, theta])
+# print("infection_point_polar:",infection_point_polar)
+
+# infection_point_cart = rangeangle_to_loc(p, infection_point_polar)
+
+# print("infection_point_cart:",infection_point_cart)
+# print("sample_scan_cart",sample_scan_cart)
+
+
+# print("radis of the infleciton point:", r )
+# print("angle of the infleciton point:", theta )
+# print("largest_inflection_idx of the infleciton point:", largest_inflection_idx )
+
+# plt.plot(sample_scan_cart[:,0], sample_scan_cart[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
+# plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+# # Labels & Title
+# plt.xlabel("X-Axis")
+# plt.ylabel("Y-Axis")
+# plt.title("Simple Line Plot")
+# plt.legend()  # Show legend
+# plt.show()
