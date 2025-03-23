@@ -42,7 +42,6 @@ def find_corner(corner_data, threshold = 0.01):
 
 
 
-
 def rangeangle_to_loc(p_eb, z_lm):
         
         # generate a homogeneous transformation of the robot pose
@@ -67,8 +66,6 @@ def rangeangle_to_loc(p_eb, z_lm):
         return t_em
 
 
-
-
 def find_cuner(scan_data, threshold = 0.01):
       
     scan_cartizie = np.zeros((len(scan_data),2))
@@ -86,10 +83,10 @@ def find_cuner(scan_data, threshold = 0.01):
     # converts sample to cartisian:
     for i in range(len(scan_data)):
 
-        scan_cartizie[i] = rangeangle_to_loc(p,sample_scan[i])
+        scan_cartizie[i] = rangeangle_to_loc(p,scan_data[i])
     
    # plots data and example point;
-
+    print("scan_cartizie:",scan_cartizie)
     plt.plot(scan_cartizie[:,0], scan_cartizie[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
     plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
     # Labels & Title
