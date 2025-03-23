@@ -3,6 +3,7 @@ import copy
 from matplotlib import pyplot as plt
 from Libraries.math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, interpolate, short_angle, inward_unit_norm, line_intersection, cartesian2polar, polar2cartesian
 from Libraries.plot_feeg6043 import plot_kalman
+import matplotlib.pyplot as plt
 #from Libraries.model_feeg6043 import rangeangle_to_loc
 
 x_bl = 0; y_bl = 0
@@ -35,6 +36,23 @@ def rangeangle_to_loc(p_eb, z_lm):
         t_em = t2v(H_eb.H@ H_bl.H @v2t(t_lm))
         
         return t_em
+
+def find_cuner(scan_data, threshold = 1):
+      
+    scan_cartizie = np.zeros((len(scan_data),2))
+    scan_grad = np.zeros((len(scan_data)-1,2))
+    final_value = len(scan_data)
+
+    # converts sample to cartisian:
+    for i in range(len(scan_data)):
+
+        scan_cartizie[i] = rangeangle_to_loc(p,sample_scan[i])
+    
+   # for i in range(len(scan_data)):
+         
+
+    
+    return scan_data
 
 
 #bot_pose = [0,0,0]
@@ -119,14 +137,12 @@ sample_scan = np.array([
 #first_sample = sample_scan[]
 #print(sample_scan[0])
 sample_scan_cart = np.zeros((len(sample_scan),2))
-
-
 # converts first sample to cartisian:
 for i in range(len(sample_scan)):
     sample_scan_cart[i] = rangeangle_to_loc(p,sample_scan[i])
 
-print(sample_scan_cart)
-
+print(len(sample_scan_cart))
+print(sample_scan[:,0])
 
 #print(vector_container[:,0])
 
@@ -134,4 +150,10 @@ print(sample_scan_cart)
 
 
 
-
+plt.plot(sample_scan[:,0], sample_scan[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
+# Labels & Title
+plt.xlabel("X-Axis")
+plt.ylabel("Y-Axis")
+plt.title("Simple Line Plot")
+plt.legend()  # Show legend
+plt.show()
