@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from Libraries.math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, interpolate, short_angle, inward_unit_norm, line_intersection, cartesian2polar, polar2cartesian
 from Libraries.plot_feeg6043 import plot_kalman
 import matplotlib.pyplot as plt
+from src.Tutorials.cognition_finished import find_corner
 #from Libraries.model_feeg6043 import rangeangle_to_loc
 
 x_bl = 0; y_bl = 0
