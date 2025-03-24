@@ -312,6 +312,9 @@ for i in range(40):
     new_observation = GPC_input_output(observation, None)
     
     threshold = 0.005 # can reduce to make less conservative
+
+
+    ### compute observations with noise --------in polar for-------------[Radius, angle]-------
     z_lm[0], z_lm[1], loc = find_corner(new_observation, threshold)
     
     # if the bepoke model says returns a location, add to training data
@@ -319,7 +322,9 @@ for i in range(40):
         # label corner and add to corner training set
         new_observation.label='corner'
         new_observation.ne_representative=z_lm
-        print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')        
+        print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
+
+        ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------      
         corner_training.append(new_observation)
         
         # show pose and landmark 
