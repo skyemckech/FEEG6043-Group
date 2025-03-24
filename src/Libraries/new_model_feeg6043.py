@@ -1,8 +1,8 @@
 import numpy as np
 import copy
 from matplotlib import pyplot as plt
-from math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, interpolate, short_angle, inward_unit_norm, line_intersection, cartesian2polar, polar2cartesian
-from plot_feeg6043 import plot_kalman
+from Libraries.new_math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, interpolate, short_angle, inward_unit_norm, line_intersection, cartesian2polar, polar2cartesian
+from Libraries.new_plot_feeg6043 import plot_kalman
 from numpy.random import randn, random, uniform, multivariate_normal, seed
 from scipy.stats import norm
 from sklearn.neighbors import KernelDensity

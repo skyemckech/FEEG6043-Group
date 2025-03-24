@@ -1,11 +1,12 @@
 import numpy as np
-from Libraries.model_feeg6043 import RangeAngleKinematics, t2v, v2t
+from Libraries.new_model_feeg6043 import RangeAngleKinematics, t2v, v2t
 from Libraries.new_plot_feeg6043 import plot_2dframe, show_observation
-from Libraries.math_feeg6043 import polar2cartesian, cartesian2polar, HomogeneousTransformation, l2m
+from Libraries.new_math_feeg6043 import polar2cartesian, cartesian2polar, HomogeneousTransformation, l2m, Vector,Inverse
 import copy
 from scipy.optimize import minimize
 from sklearn.gaussian_process import GaussianProcessClassifier #####from any python you learn#######
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF
+import matplotlib.pyplot as plt
 
 def lidar_scan(p_eb, environment_map, lidar, sigma_observe):
     """ Gets observations from the robot pose and the map.
@@ -126,7 +127,7 @@ def show_scan(p_eb, lidar, observations, show_lines = True):
     if len(observations) != 0:            
         for z_lm in observations:    
             t_lm[0],t_lm[1] = polar2cartesian(z_lm[0],z_lm[1])
-            #show_observation(H_eb,t2v(lidar.H_bl.H@v2t(t_lm)),Matrix(2,2),None,ax, show_lines)        
+            show_observation(H_eb,t2v(lidar.H_bl.H@v2t(t_lm)),Matrix(2,2),None,ax, show_lines)        
         
     else:        
         cf=plot_2dframe(['pose','b','b'],[H_eb.H,H_eb.H],False,False)
@@ -185,3 +186,42 @@ class GPC_input_output:
         return data_filled
 
 
+######## Simulate environment######################
+
+m_x = []
+m_y = []
+
+for x in np.arange(-1, 1, 0.01):
+    m_x.append(x)
+    m_y.append(-1) #west wall      
+for x in np.arange(-1, 1, 0.01):
+    m_x.append(x)
+    m_y.append(1) #east wall
+for y in np.arange(-1, 1, 0.01):
+    m_x.append(-1)
+    m_y.append(y) #south wall
+for y in np.arange(-1, 1, 0.01):
+    m_x.append(1)
+    m_y.append(y) #north wall
+
+environment_map = l2m([m_x,m_y])
+
+# Create a scatter plot
+plt.figure()
+plt.scatter(m_x, m_y,s=0.1)
+plt.axis('equal')
+plt.title('Environment')
+plt.show() 
+
+
+######################## Observation model ##################
+# locate lidar on robot (keep it simple)
+x_bl = 0; y_bl = 0
+t_bl = Vector(2)
+t_bl[0] = x_bl
+t_bl[1] = y_bl
+H_bl = HomogeneousTransformation(t_bl,0)
+
+# use Class from A1.3
+lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 30)
+#################################################################
