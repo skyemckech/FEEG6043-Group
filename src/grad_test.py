@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from Libraries.math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,HomogeneousTransformation, interpolate, short_angle, inward_unit_norm, line_intersection, cartesian2polar, polar2cartesian
 from Libraries.plot_feeg6043 import plot_kalman
 import matplotlib.pyplot as plt
-#from Libraries.model_feeg6043 import rangeangle_to_loc
+from scipy.signal import argrelextrema
 
 x_bl = 0; y_bl = 0
 t_bl = Vector(2)
@@ -15,7 +15,6 @@ H_eb_ = HomogeneousTransformation()
 p = Vector(3); 
 p[0] = 1 #Northings
 p[1] = 2 #Eastings
-#p[2] = np.deg2rad(0) #Heading (rad)
 
 
 def find_corner(corner_data, threshold = 0.01):
@@ -44,33 +43,52 @@ def find_corner(corner_data, threshold = 0.01):
 
 def rangeangle_to_loc(p_eb, z_lm):
         
-        # generate a homogeneous transformation of the robot pose
-        H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
-        
-        # check that the sensor readings provided are possible
-        #z_lm = check_range(z_lm)
-        
-        # convert the sensor observation in from polar to cartesian coordinates        
-        r = z_lm[0]
-        theta = z_lm[1]
-        
-        
-        t_lm = polar2cartesian(r,theta)
-        
-        # Apply the homogeneous transformation to get from the sensor frame to the body with H_bl, and then to the fixed frame H_eb
-        t_em = t2v(H_eb.H@ H_bl.H @v2t(t_lm))
+    # generate a homogeneous transformation of the robot pose
+    H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
+    
+    # check that the sensor readings provided are possible
+    #z_lm = check_range(z_lm)
+    
+    # convert the sensor observation in from polar to cartesian coordinates        
+    r = z_lm[0]
+    theta = z_lm[1]
+    
+    
+    t_lm = polar2cartesian(r,theta)
+    
+    # Apply the homogeneous transformation to get from the sensor frame to the body with H_bl, and then to the fixed frame H_eb
+    t_em = t2v(H_eb.H@ H_bl.H @v2t(t_lm))
+
+    return t_em
+
+def loc_to_rangeangle(p_eb, t_em):
+
+    # generate a homogeneous transformation of the robot pose
+    H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
+
+    # get the location of the map feature in the body frame using Inverse(H_eb)=H_be, and then to from the body to the sensor frame using Inverse(H_bl)=H_lb
+    t_lm = t2v(Inverse(H_bl.H)@Inverse(H_eb.H)@v2t(t_em))
+
+    # Convert the cartesian vector t_lm in the sensor frame to the equivalent polar coordinates
+    r,theta = cartesian2polar(t_lm[0],t_lm[1])
+
+    z_lm = Vector(2)
+    z_lm[0] = r
+    z_lm[1] = theta   
+    
+    # check that the sensor readings provided are possible
+    #z_lm = check_range(z_lm)        
+
+    return z_lm
 
 
-
-
-        return t_em
-
-
-def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, uncertainty_limit = 5):
+def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, corner_likeness = 10, size_limit = 10):
       
     scan_cartizie = np.zeros((len(scan_data),2))
     scan_differnece_container = np.zeros((len(scan_data),2))
     final_value = len(scan_data)
+    hype_array = np.zeros((len(scan_data))) ####  hype_containter = np.zeros((len(scan_data,1))) maybe
+
     j = 0
 
     #use blairs function to give an inital guess of the corner:
@@ -81,7 +99,6 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, uncertainty_limit = 5)
     ##converts this to cartisian:
     infection_point_cart = rangeangle_to_loc(bot_pose_cart, infection_point_polar)
 
-
     # converts sample to cartisian:
     for i in range(len(scan_data)):
 
@@ -90,26 +107,52 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, uncertainty_limit = 5)
 
     
 
-
-    
     #1) Finds the closest point to the inflextion point, and set a limit to say data has to be somewhat good for use to make a dessition:
     for i in range(len(scan_data)):
          
-         scan_differnece = scan_differnece_container[i] - infection_point_cart[0]
-         hypot = (scan_differnece[0])**2 + (scan_differnece[0])**2 
+         scan_differnece = scan_cartizie[i] - infection_point_cart
+         hype_current = (scan_differnece[0])**2 + (scan_differnece[1])**2 
+         hype_array[i] = hype_current
          
          ##scan_differnece = scan_differnece_container[i,i] -  
          
-         
-
-     
-
-
-
+    
     ##1.1 make sure data point if close to the one that is furtherst away. protect against strange conditions...
+
+    hype_min_value = np.min(hype_array)  # Get the smallest value
+    hype_min_value_index = np.argmin(hype_array) #get the possition of the smallest value
+    max_value = np.max(scan_data)  # Get the largest value
+    max_index = np.argmax(scan_data)  # Get the index of the largest value
+
+    if corner_likeness < hype_min_value:
+         
+         return print("not a corner not enough data around coner location, hype_min_value:",hype_min_value)
 
     max_value = np.max(scan_data)  # Get the largest value
     max_index = np.argmax(scan_data)  # Get the index of the largest value
+
+    # Find local minima
+    local_maximia_indices = argrelextrema(scan_data[:,0], np.greater)[0]
+    print("infection_point_cart:",infection_point_cart)
+    print("infection_point_cart[0]:",infection_point_cart[0])
+    print("local Maxima:",local_maximia_indices)
+    print(" max_index:",max_index)
+    print("max_value:",max_value)
+    print("hype_min_value_index:",hype_min_value_index)
+    print("hype_min_value:",hype_min_value)
+    print("hype_array:",hype_array)
+
+
+
+
+    # if size_limit < hype_array:
+         
+    #      return print("not a corner size limit exeeded: index __")
+    
+    # elif :
+
+
+
 
     #2) Take first and last 5 from each side and compaire grads to get and spread of data
     ###  2.1) use data to find range of uncertainties for shape// overall slope// angle of the wall
@@ -119,7 +162,7 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, uncertainty_limit = 5)
 
     
    # plots data and example point;
-    print("scan_cartizie:",scan_cartizie)
+    #print("scan_cartizie:",scan_cartizie)
     plt.plot(scan_cartizie[:,0], scan_cartizie[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
     plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
     plt.plot(bot_pose_cart[0], bot_pose_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
@@ -134,7 +177,7 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, uncertainty_limit = 5)
 
 
 #bot_pose = [0,0,0]
-sample_scan = np.array([
+sample_scan_cart = np.array([
     [1.18002099, 0.10605896],
     [1.18773236, 0.10628763],
     [1.19562772, 0.10652183],
@@ -206,51 +249,27 @@ sample_scan = np.array([
     [1.92622206, 0.6761935 ],
     [1.92569063, 0.69411502]
 ])
-
-#lidar_test_data = np.zeros((50, 2))
-#print(lidar_test_data)
-#lidar.rangeangle_to_loc
-#print(sample_scan[:,1])
-#first_sample = Vector(2)
-#first_sample = sample_scan[]
-#print(sample_scan[0])
+sample_scan_polar = np.zeros((len(sample_scan_cart),2))
+for i in range(len(sample_scan_cart)):
+    sample_scan_polar[i] = loc_to_rangeangle(p, sample_scan_cart[i])
 
 
+a = find_cuner(sample_scan_polar,p)
 
-a = find_cuner(sample_scan,p)
+# x_sin = np.linspace(0, 4*np.pi, 100)
+# y_sin = 2*np.sin(x_sin) + x_sin
 
+scan_maxima = argrelextrema(sample_scan_polar[:,0], np.greater)[0]
 
+print("scan_maxima:",scan_maxima)
 
-
-
-# sample_scan_cart = np.zeros((len(sample_scan),2))
-# # converts first sample to cartisian:
-# for i in range(len(sample_scan)):
-#     sample_scan_cart[i] = rangeangle_to_loc(p,sample_scan[i])
-
-# #print(len(sample_scan_cart))
-# #print(sample_scan[:,0])
-# #r, theta, largest_inflection_idx = find_corner(sample_scan_cart)
-# r, theta, largest_inflection_idx = find_corner(sample_scan)
-
-# infection_point_polar = np.array([r, theta])
-# print("infection_point_polar:",infection_point_polar)
-
-# infection_point_cart = rangeangle_to_loc(p, infection_point_polar)
-
-# print("infection_point_cart:",infection_point_cart)
-# print("sample_scan_cart",sample_scan_cart)
-
-
-# print("radis of the infleciton point:", r )
-# print("angle of the infleciton point:", theta )
-# print("largest_inflection_idx of the infleciton point:", largest_inflection_idx )
-
-# plt.plot(sample_scan_cart[:,0], sample_scan_cart[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
-# plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
-# # Labels & Title
-# plt.xlabel("X-Axis")
-# plt.ylabel("Y-Axis")
-# plt.title("Simple Line Plot")
-# plt.legend()  # Show legend
-# plt.show()
+plt.plot(sample_scan_polar[:,1], sample_scan_polar[:,0], marker='o', linestyle='-', color='b', label="Line Plot")
+#plt.plot(x_sin[sin_minima], y_sin[sin_minima], marker='o', linestyle='-', color='r', label="Line Plot")
+#plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+#plt.plot(bot_pose_cart[0], bot_pose_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+# Labels & Title
+plt.xlabel("X-Axis")
+plt.ylabel("Y-Axis")
+plt.title("Simple Line Plot")
+plt.legend()  # Show legend
+plt.show()
