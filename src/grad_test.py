@@ -122,8 +122,6 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, corner_likeness = 10, 
          
          return print("not a corner not enough data around coner location, hype_min_value:",hype_min_value)
 
-    max_value = np.max(scan_data)  # Get the largest value
-    max_index = np.argmax(scan_data)  # Get the index of the largest value
 
     # Find local minima
     local_maximia_indices = argrelextrema(scan_data[:,0], np.greater)[0]
@@ -169,6 +167,15 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, corner_likeness = 10, 
 
     plt.plot(scan_data_cart[:,0], scan_data_cart[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
     plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+    # Labels & Title
+    plt.xlabel("X-Axis")
+    plt.ylabel("Y-Axis")
+    plt.title("Simple Line Plot")
+    plt.legend()  # Show legend
+    plt.show()
+
+    plt.plot(range(len(scan_data)),scan_data[:,0], marker='o', linestyle='-', color='b', label="Line Plot")
+    plt.plot(max_index, max_value, marker='o', linestyle='-', color='r', label="Line Plot")
     # Labels & Title
     plt.xlabel("X-Axis")
     plt.ylabel("Y-Axis")
