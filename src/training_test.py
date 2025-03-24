@@ -1,7 +1,7 @@
 import numpy as np
 from Libraries.new_model_feeg6043 import RangeAngleKinematics, t2v, v2t
 from Libraries.new_plot_feeg6043 import plot_2dframe, show_observation
-from Libraries.new_math_feeg6043 import polar2cartesian, cartesian2polar, HomogeneousTransformation, l2m, Vector,Inverse
+from Libraries.new_math_feeg6043 import polar2cartesian, cartesian2polar, HomogeneousTransformation, l2m, Vector,Inverse, Matrix
 import copy
 from scipy.optimize import minimize
 from sklearn.gaussian_process import GaussianProcessClassifier #####from any python you learn#######
@@ -225,3 +225,64 @@ H_bl = HomogeneousTransformation(t_bl,0)
 # use Class from A1.3
 lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 30)
 #################################################################
+
+
+
+######################## Set the robot pose b in the e frame ################## all preset within webots code from blaire
+p = Vector(3); 
+
+p[0] = -0.7 #Northings
+p[1] = -0.1 #Eastings
+p[2] = np.deg2rad(270) #Heading (rad)
+print('3x1 state vector:\n',p,'\n')
+H_eb = HomogeneousTransformation(p[0:2],p[2])
+
+#########observation model linear noise with range###############
+sigma_observe = Matrix(2,2)
+sigma_observe[0,0] = 0.01 #1% of range
+sigma_observe[0,1] = 0
+sigma_observe[1,0] = np.deg2rad(0.1) #0.1 degree per metre range      range and angle are uncerain within matrix
+sigma_observe[1,1] = 0
+print('2x2 measurement noise model:\n',sigma_observe,'\n')
+#############################################################################
+
+# compute observations with noise --------in polar for-----[Radius, angle]-------
+observation, _ = lidar_scan(p, environment_map, lidar, sigma_observe)
+print(observation)
+
+# store the data as an example of a 'corner' (label) ----------HERE LIDAR OBSEVATION!!!!!-----------
+corner_example = GPC_input_output(observation, 'corner')
+
+
+###--------------Z_lm is the corner------------#########
+z_lm = Vector(2)
+z_lm[0], z_lm[1], loc = find_corner(corner_example)
+
+# update the landmark locations 
+corner_example.ne_representative = lidar.rangeangle_to_loc(p,z_lm)
+print('Map observation made at, Northings = ',corner_example.ne_representative[0],'m, Eastings =',corner_example.ne_representative[1],'m')
+
+# Show the landmark in the e-frame
+H_el = HomogeneousTransformation()
+H_el.H = H_eb.H@lidar.H_bl.H
+
+
+##### Plotting Funcitons:##########
+# plot scan in the environment frame
+fig,ax = plt.subplots()
+show_scan(p, lidar, observation)
+ax.scatter(m_y, m_x,s=0.01)
+plt.show()
+
+# plot the raw sensor readings in polar coordinates
+plt.plot(np.rad2deg(observation[:, 1]), observation[:, 0], 'g.', label='Observations')
+plt.plot(np.rad2deg(observation[loc, 1]), observation[loc, 0], 'ro', label='Corner landmark')
+plt.xlabel('Bearing (sensor frame), degrees')
+plt.ylabel('Range, m')
+plt.show()
+
+# use the plot_2dframe function in plot_feeg6043
+plot_2dframe(['observation','b','l','m'],[H_eb.H,H_el.H,z_lm],True)
+plt.scatter(m_x, m_y,s=0.1)
+plt.axis('equal')
+plt.show()
