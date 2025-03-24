@@ -8,6 +8,9 @@ from sklearn.gaussian_process import GaussianProcessClassifier #####from any pyt
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 import matplotlib.pyplot as plt
 
+pos_noise_std = 0.1
+heading_noise_std = 10
+
 def lidar_scan(p_eb, environment_map, lidar, sigma_observe):
     """ Gets observations from the robot pose and the map.
     
@@ -246,43 +249,115 @@ sigma_observe[1,1] = 0
 print('2x2 measurement noise model:\n',sigma_observe,'\n')
 #############################################################################
 
-# compute observations with noise --------in polar for-----[Radius, angle]-------
+# compute observations with noise --------in polar for-------------[Radius, angle]-------
 observation, _ = lidar_scan(p, environment_map, lidar, sigma_observe)
 print(observation)
 
 # store the data as an example of a 'corner' (label) ----------HERE LIDAR OBSEVATION!!!!!-----------
-corner_example = GPC_input_output(observation, 'corner')
+corner_scan = GPC_input_output(observation, 'corner')
 
 
 ###--------------Z_lm is the corner------------#########
 z_lm = Vector(2)
-z_lm[0], z_lm[1], loc = find_corner(corner_example)
+z_lm[0], z_lm[1], loc = find_corner(corner_scan)
 
 # update the landmark locations 
-corner_example.ne_representative = lidar.rangeangle_to_loc(p,z_lm)
-print('Map observation made at, Northings = ',corner_example.ne_representative[0],'m, Eastings =',corner_example.ne_representative[1],'m')
+corner_scan.ne_representative = lidar.rangeangle_to_loc(p,z_lm)
+print('Map observation made at, Northings = ',corner_scan.ne_representative[0],'m, Eastings =',corner_scan.ne_representative[1],'m')
 
 # Show the landmark in the e-frame
 H_el = HomogeneousTransformation()
 H_el.H = H_eb.H@lidar.H_bl.H
 
 
+# create a containor to store the GPC training data
+corner_example = GPC_input_output(observation, None)
+corner_training = [corner_example]
+
+
+for i in range(40):    
+    # determine basic pose for each corner
+    if i<=10: # southwest corner
+        p[0] = -0.5
+        p[1] = -0.5
+        p[2] = np.deg2rad(225)
+    elif i<=20: # northwest corner
+        p[0] = 0.5
+        p[1] = -0.5
+        p[2] = np.deg2rad(315)
+    elif i<=30: # northwest corner
+        p[0] = 0.5
+        p[1] = 0.5
+        p[2] = np.deg2rad(45)
+    else:
+        p[0] = -0.5
+        p[1] = 0.5
+        p[2] = np.deg2rad(135)
+
+    # add random offsets
+    p[0] += np.random.normal(-pos_noise_std, pos_noise_std)
+    p[1] += np.random.normal(-pos_noise_std, pos_noise_std)
+    p[2] += np.deg2rad(np.random.normal(-heading_noise_std, heading_noise_std))
+    
+    # compute observations with noise
+    observation, _ = lidar_scan(p, environment_map, lidar, sigma_observe)
+
+    ##Plotting the corner situation:
+    fig,ax = plt.subplots()
+    show_scan(p, lidar, observation)
+    ax.scatter(m_y, m_x,s=0.01)
+    #plt.show()
+
+    # check if it is a corner with the inflection point
+    new_observation = GPC_input_output(observation, None)
+    
+    threshold = 0.005 # can reduce to make less conservative
+    z_lm[0], z_lm[1], loc = find_corner(new_observation, threshold)
+    
+    # if the bepoke model says returns a location, add to training data
+    if loc is not None:
+        # label corner and add to corner training set
+        new_observation.label='corner'
+        new_observation.ne_representative=z_lm
+        print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')        
+        corner_training.append(new_observation)
+        
+        # show pose and landmark 
+        H_eb = HomogeneousTransformation(p[0:2],p[2])
+        H_el.H = H_eb.H@lidar.H_bl.H  
+
+        ##Plotting the non corner situation      
+        # plot_2dframe(['observation','b','l','m'],[H_eb.H,H_el.H,z_lm],True)
+        # plt.scatter(m_x, m_y,s=0.1)
+        # plt.axis('equal')
+        # plt.show()
+
+for i in range(len(corner_training)):
+    print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
+    print('Data 0:',corner_training[i].data_filled[:,0])
+    print('Data 1',corner_training[i].data_filled[:,1])
+
+
+
+
+
+
 ##### Plotting Funcitons:##########
-# plot scan in the environment frame
-fig,ax = plt.subplots()
-show_scan(p, lidar, observation)
-ax.scatter(m_y, m_x,s=0.01)
-plt.show()
+# # plot scan in the environment frame
+# fig,ax = plt.subplots()
+# show_scan(p, lidar, observation)
+# ax.scatter(m_y, m_x,s=0.01)
+# plt.show()
 
-# plot the raw sensor readings in polar coordinates
-plt.plot(np.rad2deg(observation[:, 1]), observation[:, 0], 'g.', label='Observations')
-plt.plot(np.rad2deg(observation[loc, 1]), observation[loc, 0], 'ro', label='Corner landmark')
-plt.xlabel('Bearing (sensor frame), degrees')
-plt.ylabel('Range, m')
-plt.show()
+# # plot the raw sensor readings in polar coordinates
+# plt.plot(np.rad2deg(observation[:, 1]), observation[:, 0], 'g.', label='Observations')
+# plt.plot(np.rad2deg(observation[loc, 1]), observation[loc, 0], 'ro', label='Corner landmark')
+# plt.xlabel('Bearing (sensor frame), degrees')
+# plt.ylabel('Range, m')
+# plt.show()
 
-# use the plot_2dframe function in plot_feeg6043
-plot_2dframe(['observation','b','l','m'],[H_eb.H,H_el.H,z_lm],True)
-plt.scatter(m_x, m_y,s=0.1)
-plt.axis('equal')
-plt.show()
+# # use the plot_2dframe function in plot_feeg6043
+# plot_2dframe(['observation','b','l','m'],[H_eb.H,H_el.H,z_lm],True)
+# plt.scatter(m_x, m_y,s=0.1)
+# plt.axis('equal')
+# plt.show()
