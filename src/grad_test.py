@@ -83,46 +83,40 @@ def loc_to_rangeangle(p_eb, t_em):
 
 
 def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, corner_likeness = 10, size_limit = 10):
-      
-    scan_cartizie = np.zeros((len(scan_data),2))
-    scan_differnece_container = np.zeros((len(scan_data),2))
-    final_value = len(scan_data)
+      ### takes cartisian as an input:
+    scan_data_polar = np.zeros((len(scan_data),2))
     hype_array = np.zeros((len(scan_data))) ####  hype_containter = np.zeros((len(scan_data,1))) maybe
 
     j = 0
 
-    #use blairs function to give an inital guess of the corner:
-    r, theta, largest_inflection_idx = find_corner(scan_data, threshold)
-    
-    infection_point_polar = np.array([r, theta])
+                                                                                                                        
+    ##Convierts sample to polar:
+    for i in range(len(scan_data)):
+        scan_data_polar[i] = loc_to_rangeangle(p,scan_data[i]).ravel()
 
+
+
+    #use blairs function to give an inital guess of the corner (from cart to polar):
+    r, theta, largest_inflection_idx = find_corner(scan_data, threshold)
+    infection_point_polar = np.array([r, theta])
     ##converts this to cartisian:
     infection_point_cart = rangeangle_to_loc(bot_pose_cart, infection_point_polar)
-
-    # converts sample to cartisian:
-    for i in range(len(scan_data)):
-
-        j += i
-        scan_cartizie[i] = rangeangle_to_loc(p,scan_data[i])
 
     
 
     #1) Finds the closest point to the inflextion point, and set a limit to say data has to be somewhat good for use to make a dessition:
     for i in range(len(scan_data)):
          
-         scan_differnece = scan_cartizie[i] - infection_point_cart
+         scan_differnece = scan_data[i] - infection_point_cart
          hype_current = (scan_differnece[0])**2 + (scan_differnece[1])**2 
-         hype_array[i] = hype_current
+         hype_array[i] = hype_current 
          
-         ##scan_differnece = scan_differnece_container[i,i] -  
-         
-    
     ##1.1 make sure data point if close to the one that is furtherst away. protect against strange conditions...
 
     hype_min_value = np.min(hype_array)  # Get the smallest value
     hype_min_value_index = np.argmin(hype_array) #get the possition of the smallest value
-    max_value = np.max(scan_data)  # Get the largest value
-    max_index = np.argmax(scan_data)  # Get the index of the largest value
+    max_value = np.max(scan_data_polar[:,0])  # Get the largest value
+    max_index = np.argmax(scan_data_polar[:,0])  # Get the index of the largest value
 
     if corner_likeness < hype_min_value:
          
@@ -132,7 +126,8 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, corner_likeness = 10, 
     max_index = np.argmax(scan_data)  # Get the index of the largest value
 
     # Find local minima
-    local_maximia_indices = argrelextrema(scan_data[:,0], np.greater)[0]
+    local_maximia_indices = argrelextrema(scan_data_polar[:,0], np.greater)[0]
+
     print("infection_point_cart:",infection_point_cart)
     print("infection_point_cart[0]:",infection_point_cart[0])
     print("local Maxima:",local_maximia_indices)
@@ -163,20 +158,30 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, corner_likeness = 10, 
     
    # plots data and example point;
     #print("scan_cartizie:",scan_cartizie)
-    plt.plot(scan_cartizie[:,0], scan_cartizie[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
-    plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
-    plt.plot(bot_pose_cart[0], bot_pose_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+    plt.plot(scan_data[:,0], scan_data[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
+    plt.plot(infection_point_polar[0], infection_point_polar[1], marker='o', linestyle='-', color='r', label="Line Plot")
     # Labels & Title
     plt.xlabel("X-Axis")
     plt.ylabel("Y-Axis")
     plt.title("Simple Line Plot")
     plt.legend()  # Show legend
     plt.show()
+
+    plt.plot(scan_data_polar[:,0], scan_data_polar[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
+    plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
+    # Labels & Title
+    plt.xlabel("X-Axis")
+    plt.ylabel("Y-Axis")
+    plt.title("Simple Line Plot")
+    plt.legend()  # Show legend
+    plt.show()
+
+
+
          
     return scan_data
 
 
-#bot_pose = [0,0,0]
 sample_scan_cart = np.array([
     [1.18002099, 0.10605896],
     [1.18773236, 0.10628763],
@@ -249,27 +254,35 @@ sample_scan_cart = np.array([
     [1.92622206, 0.6761935 ],
     [1.92569063, 0.69411502]
 ])
-sample_scan_polar = np.zeros((len(sample_scan_cart),2))
-for i in range(len(sample_scan_cart)):
-    sample_scan_polar[i] = loc_to_rangeangle(p, sample_scan_cart[i])
 
+# takes cartizian data and turns it polar:
+# sample_scan_polar = np.zeros((len(sample_scan_cart),2))
+# for i in range(len(sample_scan_cart)):
 
-a = find_cuner(sample_scan_polar,p)
+#     sample_scan_polar[i] = loc_to_rangeangle(p,sample_scan_cart[i]).ravel()
+
+# print("sample_scan_polar",sample_scan_polar)
+# print("sample_scan_cart",sample_scan_cart)
+
+#r, theta, __ = find_corner(sample_scan_cart)
+
+a = find_cuner(sample_scan_cart,p)
 
 # x_sin = np.linspace(0, 4*np.pi, 100)
 # y_sin = 2*np.sin(x_sin) + x_sin
 
-scan_maxima = argrelextrema(sample_scan_polar[:,0], np.greater)[0]
+#scan_maxima = argrelextrema(sample_scan_polar[:,0], np.greater)[0]
 
-print("scan_maxima:",scan_maxima)
+#print("scan_maxima:",scan_maxima)
 
-plt.plot(sample_scan_polar[:,1], sample_scan_polar[:,0], marker='o', linestyle='-', color='b', label="Line Plot")
+#plt.plot(sample_scan_cart[:,1], sample_scan_polar[:,0], marker='o', linestyle='-', color='b', label="Line Plot")
+#plt.plot(sample_scan_cart[:,0], sample_scan_cart[:,1], marker='o', linestyle='-', color='b', label="Line Plot")
 #plt.plot(x_sin[sin_minima], y_sin[sin_minima], marker='o', linestyle='-', color='r', label="Line Plot")
 #plt.plot(infection_point_cart[0], infection_point_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
 #plt.plot(bot_pose_cart[0], bot_pose_cart[1], marker='o', linestyle='-', color='r', label="Line Plot")
 # Labels & Title
-plt.xlabel("X-Axis")
-plt.ylabel("Y-Axis")
-plt.title("Simple Line Plot")
-plt.legend()  # Show legend
-plt.show()
+# plt.xlabel("X-Axis")
+# plt.ylabel("Y-Axis")
+# plt.title("Simple Line Plot")
+# plt.legend()  # Show legend
+# plt.show()
