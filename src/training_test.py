@@ -338,16 +338,83 @@ for i in range(40):
         # plt.axis('equal')
         # plt.show()
 
+####### CREATING DATA FOR NON-CORNER:###
+for i in range(40):    
+    # determine basic pose for each wall
+    if i<=10: # west wall
+        p[0] = -0.2
+        p[1] = -0.6
+        p[2] = np.deg2rad(0)
+    elif i<=20: # north wall
+        p[0] = 0.6
+        p[1] = -0.2
+        p[2] = np.deg2rad(90)
+    elif i<=30: # east
+        p[0] = 0.2
+        p[1] = 0.6
+        p[2] = np.deg2rad(180)
+    else:
+        p[0] = -0.6
+        p[1] = 0.2
+        p[2] = np.deg2rad(270)
+
+    # add random offsets
+    p[0] += np.random.normal(-pos_noise_std, pos_noise_std)
+    p[1] += np.random.normal(-pos_noise_std, pos_noise_std)
+    p[2] += np.deg2rad(np.random.normal(-heading_noise_std, heading_noise_std))
+    
+    # compute observations with noise
+    observation, _ = lidar_scan(p, environment_map, lidar, sigma_observe)
+    fig,ax = plt.subplots()
+    show_scan(p, lidar, observation)
+    ax.scatter(m_y, m_x,s=0.01)
+    # plt.show()
+
+    # check if it is a corner with the inflection point
+    new_observation = GPC_input_output(observation, None)    
+    threshold = 0.01 # can reduce to make less conservative
+    _, _, loc = find_corner(new_observation, threshold)    
+
+    # if no corner is found, register as a not corner for the training
+    if loc is None:        
+        new_observation.label='not corner'        
+        corner_training.append(new_observation)
+
+
+
+# for i in range(len(corner_training)):
+#     print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
+#     print('Data 0:',corner_training[i].data_filled[:,0])
+#     #print('Data 1',corner_training[i].data_filled[:,1])
+
+
+
+
+####################################################################TRAINING THE CLASSIFER!!!!########################################
+# preallocate memory for the training data, inputs are each scan, outputs are the class
+
+ ##### X_train is the training data ----- Y_train is the lable
+X_train = np.full((len(corner_training), corner_training[0].data_filled[:,0].size), None)
+y_train = np.full(len(corner_training), None, dtype=object)
+
+# populate with the training data
 for i in range(len(corner_training)):
-    print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
-    print('Data 0:',corner_training[i].data_filled[:,0])
-    #print('Data 1',corner_training[i].data_filled[:,1])
+    X_train[i,:]= corner_training[i].data_filled[:,0]
+    y_train[i]= corner_training[i].label
 
+# gpc_corner is the instnace of the classifier which we used with the weighting comands
+kernel = 1.0 * RBF(1.0)
+gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train, y_train)
 
+### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
+print("Score",gpc_corner.score(X_train, y_train))
+print("classes",gpc_corner.classes_)
 
+# Obtain optimized kernel parameters
+sklearn_theta_1 = gpc_corner.kernel_.k2.get_params()['length_scale']
+sklearn_theta_0 = np.sqrt(gpc_corner.kernel_.k1.get_params()['constant_value'])
 
-
-
+print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
 
 
 
