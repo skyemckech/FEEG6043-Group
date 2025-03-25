@@ -273,8 +273,9 @@ H_el.H = H_eb.H@lidar.H_bl.H
 # create a containor to store the GPC training data
 corner_example = GPC_input_output(observation, None)
 corner_training = [corner_example]
+print("corner_training before looooooooooooooop:",corner_training)
 
-
+#####Creates test data for 40 examples:
 for i in range(40):    
     # determine basic pose for each corner
     if i<=10: # southwest corner
@@ -340,7 +341,7 @@ for i in range(40):
 for i in range(len(corner_training)):
     print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
     print('Data 0:',corner_training[i].data_filled[:,0])
-    print('Data 1',corner_training[i].data_filled[:,1])
+    #print('Data 1',corner_training[i].data_filled[:,1])
 
 
 

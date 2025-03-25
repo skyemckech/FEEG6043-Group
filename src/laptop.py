@@ -572,13 +572,17 @@ class LaptopPilot:
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
+            self.datalog.log(self.lidar_data[:,0], topic_name="/lidar_data_R")
+            self.datalog.log(self.lidar_data[:,1], topic_name="/lidar_data_Theta")
+
+            
             # # Prep messages
             # p_ref_msg = Vector3Stamped()
             # p_ref_msg.vector.x = p_ref[0,0]
             # p_ref_msg.vector.y = p_ref[1,0]
             # self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
-            print("This is Lidar Data:", self.lidar_data)
-            print("End of Lidar Data")
+            # print("This is Lidar Data:", self.lidar_data)
+            # print("End of Lidar Data")
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
