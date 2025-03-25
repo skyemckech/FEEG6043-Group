@@ -1,4 +1,7 @@
 import numpy as np      
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
+
 
 class LidarObjectClassifier:
     # This class processes Lidar points and extracts features from them
@@ -57,11 +60,37 @@ class LidarObjectClassifier:
     
 #training example
 
-def training_example(self,points,label):
+    def training_example(self,points,label):
         # Extract features from the points
         r, d, angle, fit_error = self.extract_features(points)
         # Store the features and label
         self.X_train.append([r, d, angle, fit_error])
         self.y_train.append(label)
 
+    def train_classifier(self):
+        # Train a classifier using the features and labels
         
+        #convert list to np array
+        X = np.array(self.X_train)
+        y = np.array(self.y_train)
+
+        # defining a radial basis function kernel (need to double check this not entirely sure)
+        kernel = 1.0 * RBF(1.0)
+
+        # defining the classifier
+        self.classifier = GaussianProcessClassifier(kernel=kernel)
+        self.classifier.fit(X, y)
+
+    def classify(self, points):
+        # Extract features from the points
+        r, d, angle, fit_error = self.extract_features(points)
+
+        # Predict the label using the trained classifier
+        label = self.classifier.predict([[r, d, angle, fit_error]])
+
+        return label[0]  # Return the predicted label
+
+
+
+
+
