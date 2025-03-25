@@ -135,17 +135,11 @@ def find_cuner(scan_data,bot_pose_cart, threshold = 0.01, corner_likeness = 10, 
     print("hype_min_value:",hype_min_value)
     print("hype_array:",hype_array)
 
-
-
-
     # if size_limit < hype_array:
          
     #      return print("not a corner size limit exeeded: index __")
     
     # elif :
-
-
-
 
     #2) Take first and last 5 from each side and compaire grads to get and spread of data
     ###  2.1) use data to find range of uncertainties for shape// overall slope// angle of the wall
