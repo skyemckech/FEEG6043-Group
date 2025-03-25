@@ -570,12 +570,12 @@ class LaptopPilot:
             # > Act < #
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
-            self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+            #self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
-            self.datalog.log(self.lidar_data[:,0], topic_name="/lidar_data_R")
-            self.datalog.log(self.lidar_data[:,1], topic_name="/lidar_data_Theta")
+            self.datalog.log(self.lidar_data, topic_name="/lidar_data")
+            #self.datalog.log(self.lidar_data[:,1], topic_name="/lidar_data_Theta")
 
-            
+
             # # Prep messages
             # p_ref_msg = Vector3Stamped()
             # p_ref_msg.vector.x = p_ref[0,0]
