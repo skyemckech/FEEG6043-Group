@@ -559,8 +559,20 @@ class LaptopPilot:
             q = self.ddrive.inv_kinematics(u)            
 
             wheel_speed_msg = Vector3Stamped()
-            wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
-            wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
+            # wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
+            # wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
+
+            ##for straight test
+            # wheel_speed_msg.vector.x = 1*np.pi # Right wheelspeed rad/s
+            # wheel_speed_msg.vector.y = 1*np.pi # Left wheelspeed rad/s
+
+            #for static test
+            # wheel_speed_msg.vector.x = 0*np.pi # Right wheelspeed rad/s
+            # wheel_speed_msg.vector.y = 0*np.pi # Left wheelspeed rad/s
+
+            ##for rotational test
+            wheel_speed_msg.vector.x = 0.5*np.pi # Right wheelspeed rad/s
+            wheel_speed_msg.vector.y = 1*np.pi # Left wheelspeed rad/s
 
             self.cmd_wheelrate_right = wheel_speed_msg.vector.x
             self.cmd_wheelrate_left = wheel_speed_msg.vector.y
@@ -570,9 +582,9 @@ class LaptopPilot:
             # > Act < #
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
-            #self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+            self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
-            self.datalog.log(self.lidar_data, topic_name="/lidar_data")
+            #self.datalog.log(self.lidar_data, topic_name="/lidar_data")
             #self.datalog.log(self.lidar_data[:,1], topic_name="/lidar_data_Theta")
 
 
