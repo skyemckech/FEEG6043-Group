@@ -373,8 +373,8 @@ class LaptopPilot:
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.0**2
-            Q[E, E] = 0.0**2
+            Q[N, N] = 0.00**2
+            Q[E, E] = 0.00**2
 
             return Q
         
@@ -385,6 +385,15 @@ class LaptopPilot:
             Q[G, G] = np.deg2rad(0.0)**2
 
             return Q
+        
+        def get_lidar_uncertainty(self):
+            # Get lidar uncertainty
+            Ql = Identity(2)
+
+            Ql[N,N] = 0.1**2
+            Ql[E,N] = np.deg2rad(5)**2
+
+            return Ql
 
     def update_estimated_pose(self):
         # Update estimate variable for logging
