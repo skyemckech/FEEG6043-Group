@@ -571,7 +571,7 @@ class LaptopPilot:
             # wheel_speed_msg.vector.y = 0*np.pi # Left wheelspeed rad/s
 
             ##for rotational test
-            wheel_speed_msg.vector.x = 0.5*np.pi # Right wheelspeed rad/s
+            wheel_speed_msg.vector.x = 1*np.pi # Right wheelspeed rad/s
             wheel_speed_msg.vector.y = 1*np.pi # Left wheelspeed rad/s
 
             self.cmd_wheelrate_right = wheel_speed_msg.vector.x

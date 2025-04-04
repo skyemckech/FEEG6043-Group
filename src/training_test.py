@@ -275,7 +275,7 @@ corner_example = GPC_input_output(observation, None)
 corner_training = [corner_example]
 print("corner_training before looooooooooooooop:",corner_training)
 
-#####Creates test data for 40 examples:
+#####Creates test data for 40 examples for coners:
 for i in range(40):    
     # determine basic pose for each corner
     if i<=10: # southwest corner
@@ -390,6 +390,8 @@ for i in range(40):
 
 
 
+
+
 ####################################################################TRAINING THE CLASSIFER!!!!########################################
 # preallocate memory for the training data, inputs are each scan, outputs are the class
 
@@ -397,17 +399,36 @@ for i in range(40):
 X_train = np.full((len(corner_training), corner_training[0].data_filled[:,0].size), None)
 y_train = np.full(len(corner_training), None, dtype=object)
 
+for i in range(len(corner_training)):
+    print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
+    print('Data 0:',corner_training[i].data_filled[:,0])
+    print('Data 1',corner_training[i].data_filled[:,1])
+
 # populate with the training data
 for i in range(len(corner_training)):
     X_train[i,:]= corner_training[i].data_filled[:,0]
     y_train[i]= corner_training[i].label
 
+X_train_clean = []
+y_train_clean = []
+
+for i in range(len(y_train)):
+    if y_train[i] is not None:
+        X_train_clean.append(X_train[i])
+        y_train_clean.append(y_train[i])
+
+X_train_clean = np.array(X_train_clean)
+y_train_clean = np.array(y_train_clean)
+
+print(len(X_train_clean))
+print(len(y_train_clean))
+
 # gpc_corner is the instnace of the classifier which we used with the weighting comands
 kernel = 1.0 * RBF(1.0)
-gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train, y_train)
+gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
 
 ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
-print("Score",gpc_corner.score(X_train, y_train))
+print("Score",gpc_corner.score(X_train_clean, y_train_clean))
 print("classes",gpc_corner.classes_)
 
 # Obtain optimized kernel parameters
