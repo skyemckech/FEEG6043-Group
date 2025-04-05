@@ -48,7 +48,7 @@ class ImportLog:
     
         return extracted_data
     
-logFile = ImportLog("logs/20250306_145835_log.json")
+logFile = ImportLog("logs/20250404_114101_log.json")
 p_ref_0 = logFile.extract_data("/p_ref",["message","vector","x"])
 p_ref_1 = logFile.extract_data("/p_ref",["message","vector","y"])
 print(type(p_ref_0))

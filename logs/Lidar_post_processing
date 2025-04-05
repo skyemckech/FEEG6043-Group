@@ -1,0 +1,236 @@
+import json
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+from Libraries.new_model_feeg6043 import RangeAngleKinematics, t2v, v2t
+from Libraries.new_plot_feeg6043 import plot_2dframe, show_observation
+from Libraries.new_math_feeg6043 import polar2cartesian, cartesian2polar, HomogeneousTransformation, l2m, Vector,Inverse, Matrix
+import copy
+from scipy.optimize import minimize
+from sklearn.gaussian_process import GaussianProcessClassifier #####from any python you learn#######
+from sklearn.gaussian_process.kernels import ConstantKernel, RBF
+import matplotlib.pyplot as plt
+
+p = Vector(3); 
+
+p[0] = 0 #Northings
+p[1] = 0 #Eastings
+p[2] = 0 #Heading (rad)
+
+def show_scan(p_eb, lidar, observations, show_lines = True):
+    """ Plots observations, field of view and robot pose
+    """
+
+    ######################## Calculate FOV    
+    range_max = lidar.distance_range[1]
+    range_min = lidar.distance_range[0]    
+    fov = lidar.scan_fov
+        
+    r_ = []
+    theta_ = []    
+    
+    # for field of view
+    theta = np.linspace(-fov / 2, fov / 2, 30)    
+        
+    for i in theta:
+        r_.append(range_max)
+        theta_.append(i)        
+    for i in reversed(theta):
+        r_.append(range_min)
+        theta_.append(i)    
+    r_.append(range_max)
+    theta_.append(-fov/2)
+
+    fov = l2m([r_,theta_])
+    ######################## Plot the FOV        
+    
+    t_lm = Vector(2) # lidar frame measurement placeholder    
+    t_em = Vector(2) # environment frame measurement
+    
+    fov_x = []
+    fov_y = []
+
+    H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
+        
+    for z_fov in fov:    
+        t_lm[0],t_lm[1] = polar2cartesian(z_fov[0],z_fov[1])      
+        t_em = t2v((H_eb.H@lidar.H_bl.H)@v2t(t_lm))
+    
+        fov_x.append(t_em[0])
+        fov_y.append(t_em[1])  
+        
+    if show_lines == True: plt.plot(fov_y, fov_x,'orange')
+
+    if len(observations) != 0:            
+        for z_lm in observations:    
+            t_lm[0],t_lm[1] = polar2cartesian(z_lm[0],z_lm[1])
+            show_observation(H_eb,t2v(lidar.H_bl.H@v2t(t_lm)),Matrix(2,2),None,ax, show_lines)        
+        
+    else:        
+        cf=plot_2dframe(['pose','b','b'],[H_eb.H,H_eb.H],False,False)
+        
+    plt.xlabel('Eastings, m')
+    plt.ylabel('Northings, m')
+    plt.axis('equal')
+
+def show_scan(p_eb, lidar, observations, show_lines = True):
+    """ Plots observations, field of view and robot pose
+    """
+
+    ######################## Calculate FOV    
+    range_max = lidar.distance_range[1]
+    range_min = lidar.distance_range[0]    
+    fov = lidar.scan_fov
+        
+    r_ = []
+    theta_ = []    
+    
+    # for field of view
+    theta = np.linspace(-fov / 2, fov / 2, 30)    
+        
+    for i in theta:
+        r_.append(range_max)
+        theta_.append(i)        
+    for i in reversed(theta):
+        r_.append(range_min)
+        theta_.append(i)    
+    r_.append(range_max)
+    theta_.append(-fov/2)
+
+    fov = l2m([r_,theta_])
+    ######################## Plot the FOV        
+    
+    t_lm = Vector(2) # lidar frame measurement placeholder    
+    t_em = Vector(2) # environment frame measurement
+    
+    fov_x = []
+    fov_y = []
+
+    H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
+        
+    for z_fov in fov:    
+        t_lm[0],t_lm[1] = polar2cartesian(z_fov[0],z_fov[1])      
+        t_em = t2v((H_eb.H@lidar.H_bl.H)@v2t(t_lm))
+    
+        fov_x.append(t_em[0])
+        fov_y.append(t_em[1])  
+        
+    if show_lines == True: plt.plot(fov_y, fov_x,'orange')
+
+    if len(observations) != 0:            
+        for z_lm in observations:    
+            t_lm[0],t_lm[1] = polar2cartesian(z_lm[0],z_lm[1])
+            show_observation(H_eb,t2v(lidar.H_bl.H@v2t(t_lm)),Matrix(2,2),None,ax, show_lines)        
+        
+    else:        
+        cf=plot_2dframe(['pose','b','b'],[H_eb.H,H_eb.H],False,False)
+        
+    plt.xlabel('Eastings, m')
+    plt.ylabel('Northings, m')
+    plt.axis('equal')
+
+def find_corner(corner, threshold = 0.01):
+    # identify the reference coordinate as the inflection point
+    
+    # Step 1: Compute slope
+    slope = np.gradient(corner.data[:, 0])
+    
+    # Step 2: Compute the second derivative (curvature)
+    curvature = np.gradient(slope)
+    
+    # Step 3: Check if criteria is more than threshold    
+    print('Max inflection value is ',np.nanmax(abs(np.gradient(np.gradient(curvature)))), ': Threshold ',threshold)
+    if np.nanmax(abs(np.gradient(np.gradient(curvature)))) > threshold:
+        # compute index of inflection point    
+        largest_inflection_idx = np.nanargmax(abs(np.gradient(np.gradient(curvature))))  ####wheres the larges inflection point#### for finding corners
+        
+        r = corner.data[largest_inflection_idx, 0]  # Radial distance at the largest curvature
+        theta = corner.data[largest_inflection_idx, 1]  # Angle at the largest curvature
+        return r, theta, largest_inflection_idx
+    
+    else:
+        return None, None, None  # No inflection points found
+
+class GPC_input_output:
+    def __init__(self, data, label):
+        """
+        Initializes an observation with data and a label.
+
+        Parameters:
+        data (matrix): The observation data (e.g., a matrix).
+        data_filled (matrix): The observation data after zero offset and making nan's mean
+        label (str): The label associated with the observation.
+        ne_representative: representative northings and eastings location
+        """
+        self.data = data
+        self.data_filled = self._fill_nan(data)
+        self.label = label
+        self.ne_representative = None 
+        # make filled and zero offset version        
+        
+    def _fill_nan(self,data):
+        data_filled = np.copy(data)
+        mean=np.nanmean(data[:,0])  
+        for i in range(len(data[:,1])):
+            if np.isnan(data[i,0]):
+                data_filled[i,0]=0
+            else: 
+                data_filled[i,0]=data[i,0]-mean
+        return data_filled
+
+
+
+class ImportLog:
+    def __init__(self, filepath):
+        # Expecting a file path to initialize
+        self.filepath = filepath
+        self.data = {}
+        self._parse_log()
+
+    def _parse_log(self):
+        """Reads the JSON log file and organizes data by topic name."""
+        with open(self.filepath, 'r') as file:
+            for line in file:
+                try:
+                    entry = json.loads(line.strip())
+                    topic = entry.get("topic_name", "unknown")
+                    if topic not in self.data:
+                        self.data[topic] = []
+                    self.data[topic].append(entry)
+                except json.JSONDecodeError:
+                    print(f"Skipping invalid JSON line: {line.strip()}")
+
+    def get_data_by_topic(self, topic_name):
+        """Returns all log entries for a specific topic."""
+        return self.data.get(topic_name, [])
+
+    def extract_data(self, topic_name, nested_keys):
+        """
+        Extracts specified data from a given topic.
+        
+        :param topic_name: The name of the topic to extract from (e.g., "/est_pose").
+        :param nested_keys: A list of keys specifying the path to the desired data.
+                            Example: ["message", "pose", "position"]
+        :return: A list of extracted values.
+        """
+        extracted_data = []
+        for entry in self.get_data_by_topic(topic_name):        
+            data = entry
+            for key in nested_keys:
+                data = data.get(key, {})  # Keep traversing down the dictionary
+            if isinstance(data, dict):  # If it's a dict, extract values as tuple
+                extracted_data.append(tuple(data.get(k) for k in data))
+            else:  # If it's a single value, just append it
+                extracted_data.append(data)
+    
+        return extracted_data
+    
+
+    
+variables = ImportLog("logs/all_static_corners_&_walls_20250325_135405_log.json")
+r = variables.extract_data("/lidar", ["message", "ranges"])
+theta = variables.extract_data("/lidar", ["message", "angles"])
+timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+#print("This is theta:",theta[0])
+for i in range(len(r)):
+    print("This is r:",i,r[i])
