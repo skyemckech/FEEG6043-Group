@@ -7,6 +7,8 @@ from Libraries.new_math_feeg6043 import polar2cartesian, cartesian2polar, Homoge
 import matplotlib.pyplot as plt
 import copy
 from sklearn.decomposition import PCA
+from sklearn.linear_model import LinearRegression
+
 
 
 class LidarObjectClassifier:
@@ -112,26 +114,26 @@ def polar_to_cartesian(polar_data):
     return np.array(cartesian_points)
 
 
-classifier = LidarObjectClassifier()
+# classifier = LidarObjectClassifier()
 
-# Example Lidar data in polar coordinates (r, theta) format
-lidar_data = np.array([
-    [0.2595, -1.04474318],
-    [0.2585, -1.04447047],
-    [0.2600, -1.02619906],
-    [0.2600, -1.01174555],
-    [0.2610, -0.98883810],
-])
+# # Example Lidar data in polar coordinates (r, theta) format
+# lidar_data = np.array([
+#     [0.2595, -1.04474318],
+#     [0.2585, -1.04447047],
+#     [0.2600, -1.02619906],
+#     [0.2600, -1.01174555],
+#     [0.2610, -0.98883810],
+# ])
 
-# Convert to Cartesian
-cartesian_points = polar_to_cartesian(lidar_data)
+# # Convert to Cartesian
+# cartesian_points = polar_to_cartesian(lidar_data)
 
-# Label the points as a wall for training
-classifier.training_example(cartesian_points, 'wall')
+# # Label the points as a wall for training
+# classifier.training_example(cartesian_points, 'wall')
 
-# Train the classifier
-classifier.train_classifier()
+# # Train the classifier
+# classifier.train_classifier()
 
-# Classify a new set of points
-label = classifier.classify(cartesian_points)
-print(f'Classified as: {label}')
+# # Classify a new set of points
+# label = classifier.classify(cartesian_points)
+# print(f'Classified as: {label}')
