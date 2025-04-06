@@ -301,7 +301,7 @@ class ImportLog:
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
 
 
-def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05, fit_error_tolerance_wall = 0.5):
+def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_error_tolerance_wall = 0.5):
 
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
