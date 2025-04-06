@@ -7,7 +7,7 @@ from Libraries.new_plot_feeg6043 import plot_2dframe, show_observation
 from Libraries.new_math_feeg6043 import polar2cartesian, cartesian2polar, HomogeneousTransformation, l2m, Vector,Inverse, Matrix
 import copy
 from scipy.optimize import minimize
-from sklearn.gaussian_process import GaussianProcessClassifier #####from any python you learn#######
+from sklearn.gaussian_process import GaussianProcessClassifier,LinearRegression #####from any python you learn#######
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 import matplotlib.pyplot as plt
 
@@ -23,6 +23,21 @@ t_bl[0] = x_bl
 t_bl[1] = y_bl
 H_bl = HomogeneousTransformation(t_bl,0)
 lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 30)
+
+
+def fit_line_to_points(self, points):
+    model = LinearRegression().fit(points[:, 0].reshape(-1, 1), points[:, 1])
+    predictions = model.predict(points[:, 0].reshape(-1, 1))
+
+    # # Calculate MSE (Mean Squared Error)
+    # mse = mean_squared_error(points[:, 1], predictions)
+
+    # # Calculate R² Score
+    # r2 = r2_score(points[:, 1], predictions)
+
+    # Line fit error is now a combination of MSE and R²
+    fit_error = np.mean(np.abs(predictions - points[:, 1])) 
+    return fit_error
 
 def fit_circle_to_points(points,fit_error_tolerance = 0.5):
         # Fit a circle to the given 2D points using the least squares method
