@@ -43,26 +43,50 @@ def fit_line_to_points(points,fit_error_tolerance = 0.5 ):
     else:
         return None
 
-def fit_circle_to_points(points,fit_error_tolerance = 0.5):
-        # Fit a circle to the given 2D points using the least squares method
-        x = points[:, 0]
-        y = points[:, 1]
+def fit_circle_to_points(points, fit_error_tolerance=0.5):
+    """
+    Fits a circle directly using polar coordinates [r, theta].
+    
+    Parameters:
+    - points: N x 2 numpy array where each row is [r, theta].
+    - fit_error_tolerance: Maximum acceptable fit error (optional).
+    
+    Returns:
+    - r0: Estimated radius of the circle.
+    - theta0: Estimated angle of the circle's center (in radians).
+    - radius: Estimated radius of the circle.
+    """
+    # Extract r and theta from the polar coordinates
+    r = points[:, 0]
+    theta = points[:, 1]
 
-        A = np.c_[2 * x, 2 * y, np.ones(x.shape)]
-        B = x**2 + y**2
+    # Convert Polar to Cartesian coordinates internally for calculation
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
 
-        C = np.linalg.lstsq(A, B, rcond=None)[0]
-        x0, y0, c = C
-        r = np.sqrt(x0**2 + y0**2 + c)
+    # Circle fitting using least squares method (same as your original code)
+    A = np.c_[2 * x, 2 * y, np.ones(x.shape)]
+    B = x**2 + y**2
 
-        distances = np.sqrt((x - x0)**2 + (y - y0)**2)
-        fit_error = np.sqrt(np.mean((distances - r)**2))
+    # Solving for circle parameters
+    C = np.linalg.lstsq(A, B, rcond=None)[0]
+    x0, y0, c = C
 
-        if fit_error < fit_error_tolerance:
-            return x0, y0, r
-        
-        else:
-            return None,None,None
+    # Convert the center (x0, y0) back to polar coordinates
+    r0 = np.sqrt(x0**2 + y0**2)
+    theta0 = np.arctan2(y0, x0)
+    radius = np.sqrt(x0**2 + y0**2 + c)
+    
+    # Calculate fit error directly in polar space
+    estimated_r = np.sqrt((x - x0)**2 + (y - y0)**2)
+    fit_error = np.sqrt(np.mean((estimated_r - radius)**2))
+
+    # Check if the fit error is within the tolerance
+    if fit_error < fit_error_tolerance:
+        return r0, theta0, radius
+    else:
+        return None, None, None
+
 
 def show_scan(p_eb, lidar, observations, show_lines = True):
     """ Plots observations, field of view and robot pose
