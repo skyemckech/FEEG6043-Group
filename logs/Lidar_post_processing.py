@@ -301,80 +301,90 @@ class ImportLog:
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
 
 
-def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05,fit_error_tolerance_wall = 0.5):
-
+def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05, fit_error_tolerance_wall = 0.5):
 
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
     theta = variables.extract_data("/lidar", ["message", "angles"])
     timestamps = variables.extract_data("/groundtruth", ["timestamp"])
-    
+
     ###########________initilise corner_training_______###########
-    observation = l2m([r[0],theta[0]])
+
+    if not isinstance(r, list):
+        raise TypeError("Expected r to be a list, got {} instead.".format(type(r)))
+    if not isinstance(theta, list):
+        raise TypeError("Expected theta to be a list, got {} instead.".format(type(theta)))
+
+    if len(r) == 0 or len(theta) == 0:
+        raise ValueError("Extracted r or theta is empty. Ensure your logs have valid data.")
+
+    if isinstance(r[0], list) or isinstance(r[0], np.ndarray):
+        r[0] = np.array(r[0])
+    else:
+        r = [np.array(r)]  # Wrap in a list if it is a single array
+
+    if isinstance(theta[0], list) or isinstance(theta[0], np.ndarray):
+        theta[0] = np.array(theta[0])
+    else:
+        theta = [np.array(theta)]  # Wrap in a list if it is a single array
+
+    observation = np.column_stack((r[0], theta[0]))  # Properly format the data
     corner_example = GPC_input_output(observation, None)
     corner_training = [corner_example]
 
     for i in range(len(r)):
-        ############turn the scan data from the lidar into the format needed for find_corner
-        observation = l2m([r[i],theta[i]])
-        #print(observation)
+        if isinstance(r[i], list) or isinstance(r[i], np.ndarray):
+            r[i] = np.array(r[i])
+        else:
+            print(f"Warning: Unexpected type for r[{i}]. Skipping.")
+            continue
+
+        if isinstance(theta[i], list) or isinstance(theta[i], np.ndarray):
+            theta[i] = np.array(theta[i])
+        else:
+            print(f"Warning: Unexpected type for theta[{i}]. Skipping.")
+            continue
+
+        observation = np.column_stack((r[i], theta[i]))  # Ensure column stacking works
         z_lm = Vector(2)
 
         ##z_lm[0] = r, z_lm[1]= theta, loc  = its index within the scan 
         z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
         print(z_lm, loc)
 
-        #fig,ax = plt.subplots()
-        #show_scan(p, lidar, observation)
-        #plt.show()
-
         new_observation = GPC_input_output(observation, None)
-        
-        # if the bepoke model says returns a location, add to training data
-        if loc is not None:
-            # label corner and add to corner training set
-            new_observation.label='corner'
-            new_observation.ne_representative=z_lm
-            print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
 
-            ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------     
+        if loc is not None:
+            new_observation.label = 'corner'
+            new_observation.ne_representative = z_lm
+            print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
+
             corner_training.append(new_observation)
 
         else: 
-            z_lm[0], z_lm[1], r = fit_circle_to_points(new_observation, fit_error_tolerance)
+            z_lm[0], z_lm[1], r_val = fit_circle_to_points(new_observation, fit_error_tolerance)
 
-            if r is not None:
-                # label corner and add to corner training set
-                new_observation.label='object'
-                ###z_lm is not in cartizian
-                new_observation.ne_representative=z_lm
-                print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
+            if r_val is not None:
+                new_observation.label = 'object'
+                new_observation.ne_representative = z_lm
+                print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
 
-                ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------     
                 corner_training.append(new_observation)
 
             else:
-                error = fit_line_to_points(new_observation,fit_error_tolerance_wall = 0.5)
+                error = fit_line_to_points(new_observation, fit_error_tolerance_wall)
 
                 if error is not None:
-                    # label corner and add to corner training set
-                    new_observation.label='Wall'
-                    ###z_lm is not in cartizian
-                    new_observation.ne_representative=z_lm
-                    print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
+                    new_observation.label = 'Wall'
+                    new_observation.ne_representative = z_lm
+                    print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
 
-                    ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------     
                     corner_training.append(new_observation)
 
-
-
-        
-    
-    ##prints data
     for i in range(len(corner_training)):
-        print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
-        print('Data type: Radius',corner_training[i].data_filled[:,0])
-        print('Data type:Theta',corner_training[i].data_filled[:,1])
+        print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
+        print('Data type: Radius', corner_training[i].data_filled[:, 0])
+        print('Data type:Theta', corner_training[i].data_filled[:, 1])
 
 
 format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
