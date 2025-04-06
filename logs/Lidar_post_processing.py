@@ -288,12 +288,15 @@ class ImportLog:
             data = entry
             for key in nested_keys:
                 data = data.get(key, {})  # Keep traversing down the dictionary
-            if isinstance(data, dict):  # If it's a dict, extract values as tuple
-                extracted_data.append(tuple(data.get(k) for k in data))
+            if isinstance(data, list):
+                extracted_data.append(np.array(data))  # Convert to numpy array for consistency
+            elif isinstance(data, dict):  # If it's a dict, extract values as tuple
+                extracted_data.append(np.array(tuple(data.get(k, np.nan) for k in data)))
             else:  # If it's a single value, just append it
-                extracted_data.append(data)
-    
+                extracted_data.append(np.array([data]))
+
         return extracted_data
+
     
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
 
