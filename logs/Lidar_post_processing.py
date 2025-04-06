@@ -301,7 +301,7 @@ class ImportLog:
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
 
 
-def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_error_tolerance_wall = 0.5):
+def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05, fit_error_tolerance_wall = 0.5):
 
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
@@ -321,14 +321,14 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
     if isinstance(r[0], list) or isinstance(r[0], np.ndarray):
         r[0] = np.array(r[0])
     else:
-        r = [np.array(r)]  # Wrap in a list if it is a single array
+        r = [np.array(r)]  
 
     if isinstance(theta[0], list) or isinstance(theta[0], np.ndarray):
         theta[0] = np.array(theta[0])
     else:
-        theta = [np.array(theta)]  # Wrap in a list if it is a single array
+        theta = [np.array(theta)]  
 
-    observation = np.column_stack((r[0], theta[0]))  # Properly format the data
+    observation = np.column_stack((r[0], theta[0]))  
     corner_example = GPC_input_output(observation, None)
     corner_training = [corner_example]
 
@@ -345,10 +345,9 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
             print(f"Warning: Unexpected type for theta[{i}]. Skipping.")
             continue
 
-        observation = np.column_stack((r[i], theta[i]))  # Ensure column stacking works
+        observation = np.column_stack((r[i], theta[i]))  
         z_lm = Vector(2)
 
-        ##z_lm[0] = r, z_lm[1]= theta, loc  = its index within the scan 
         z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
         print(z_lm, loc)
 
@@ -372,7 +371,7 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
                 corner_training.append(new_observation)
 
             else:
-                error = fit_line_to_points(new_observation, fit_error_tolerance_wall)
+                error = fit_line_to_points(new_observation.data_filled, fit_error_tolerance_wall)
 
                 if error is not None:
                     new_observation.label = 'Wall'
