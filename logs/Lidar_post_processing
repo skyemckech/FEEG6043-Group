@@ -245,7 +245,8 @@ timestamps = variables.extract_data("/groundtruth", ["timestamp"])
 #print("This is theta:",theta[0])
 # for i in range(len(r)):
 #     print("This is r:",i,r[i])
-
+observation = l2m([r[4],theta[4]])
+print(observation)
 
 for i in range(len(r)):
 
@@ -260,7 +261,7 @@ for i in range(len(r)):
 
     fig,ax = plt.subplots()
     show_scan(p, lidar, observation)
-    plt.show()
+    #plt.show()
 
 
 
