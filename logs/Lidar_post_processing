@@ -276,6 +276,7 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05,):
     theta = variables.extract_data("/lidar", ["message", "angles"])
     timestamps = variables.extract_data("/groundtruth", ["timestamp"])
     
+<<<<<<< HEAD
     ###########________initilise corner_training_______###########
     observation = l2m([r[0],theta[0]])
     corner_example = GPC_input_output(observation, None)
@@ -332,6 +333,33 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05,):
         print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
         print('Data type: Radius',corner_training[i].data_filled[:,0])
         print('Data type:Theta',corner_training[i].data_filled[:,1])
+=======
+variables = ImportLog("logs/all_static_corners_&_walls_20250325_135405_log.json")
+r = variables.extract_data("/lidar", ["message", "ranges"])
+theta = variables.extract_data("/lidar", ["message", "angles"])
+timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+#r= 6
+#print("This is theta:",theta[0])
+# for i in range(len(r)):
+#     print("This is r:",i,r[i])
+observation = l2m([r[4],theta[4]])
+print(observation)
+
+for i in range(len(r)):
+
+    ############turn the scan data from the lidar into the format needed for find_corner
+    observation = l2m([r[i],theta[i]])
+    #print(observation)
+    z_lm = Vector(2)
+
+    ##z_lm[0] = r, z_lm[1]= theta, loc  = its index within the scan 
+    z_lm[0], z_lm[1], loc = find_corner(observation, 0.001)
+    print(z_lm, loc)
+
+    fig,ax = plt.subplots()
+    show_scan(p, lidar, observation)
+    #plt.show()
+>>>>>>> d6a80d53b253bfb6148283dca9ec7c870714b416
 
 
 format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
