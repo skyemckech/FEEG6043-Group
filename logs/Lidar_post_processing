@@ -22,10 +22,28 @@ t_bl = Vector(2)
 t_bl[0] = x_bl
 t_bl[1] = y_bl
 H_bl = HomogeneousTransformation(t_bl,0)
-
-
-# use Class from A1.3
 lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 30)
+
+def fit_circle_to_points(points,fit_error_tolerance = 0.5):
+        # Fit a circle to the given 2D points using the least squares method
+        x = points[:, 0]
+        y = points[:, 1]
+
+        A = np.c_[2 * x, 2 * y, np.ones(x.shape)]
+        B = x**2 + y**2
+
+        C = np.linalg.lstsq(A, B, rcond=None)[0]
+        x0, y0, c = C
+        r = np.sqrt(x0**2 + y0**2 + c)
+
+        distances = np.sqrt((x - x0)**2 + (y - y0)**2)
+        fit_error = np.sqrt(np.mean((distances - r)**2))
+
+        if fit_error < fit_error_tolerance:
+            return x0, y0, r
+        
+        else:
+            return None,None,None
 
 def show_scan(p_eb, lidar, observations, show_lines = True):
     """ Plots observations, field of view and robot pose
@@ -236,13 +254,12 @@ class ImportLog:
         return extracted_data
     
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
-def format_scan(filepath):
+def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05,):
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
     theta = variables.extract_data("/lidar", ["message", "angles"])
     timestamps = variables.extract_data("/groundtruth", ["timestamp"])
-    threshold = 0.001 # can reduce to make less conservative
-
+    
     ###########________initilise corner_training_______###########
     observation = l2m([r[0],theta[0]])
     corner_example = GPC_input_output(observation, None)
@@ -274,7 +291,24 @@ def format_scan(filepath):
             ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------     
             corner_training.append(new_observation)
 
-        #else:
+        else: 
+            z_lm[0], z_lm[1], r = fit_circle_to_points(new_observation, fit_error_tolerance)
+
+            if r is not None:
+                # label corner and add to corner training set
+                new_observation.label='object'
+                ###z_lm is not in cartizian
+                new_observation.ne_representative=z_lm
+                print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
+
+                ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------     
+                corner_training.append(new_observation)
+
+            ##else:
+
+        
+
+
         
     
     ##prints data
