@@ -52,8 +52,8 @@ class LidarObjectClassifier:
         r2 = r2_score(points[:, 1], predictions)
 
         # Line fit error is now a combination of MSE and R²
-        line_fit_error = mse / (1 - r2 + 1e-6)  # Adding a small number to prevent division by zero
-        return line_fit_error
+        fit_error = np.mean(np.abs(predictions - points[:, 1])) 
+        return fit_error
 
     def find_corner(self, points, threshold=0.01):
         # Identify a corner by detecting inflection points using curvature analysis
