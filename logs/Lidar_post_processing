@@ -17,6 +17,16 @@ p[0] = 0 #Northings
 p[1] = 0 #Eastings
 p[2] = 0 #Heading (rad)
 
+x_bl = 0; y_bl = 0
+t_bl = Vector(2)
+t_bl[0] = x_bl
+t_bl[1] = y_bl
+H_bl = HomogeneousTransformation(t_bl,0)
+
+
+# use Class from A1.3
+lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 30)
+
 def show_scan(p_eb, lidar, observations, show_lines = True):
     """ Plots observations, field of view and robot pose
     """
@@ -133,7 +143,7 @@ def find_corner(corner, threshold = 0.01):
     # identify the reference coordinate as the inflection point
     
     # Step 1: Compute slope
-    slope = np.gradient(corner.data[:, 0])
+    slope = np.gradient(corner[:, 0])
     
     # Step 2: Compute the second derivative (curvature)
     curvature = np.gradient(slope)
@@ -144,8 +154,8 @@ def find_corner(corner, threshold = 0.01):
         # compute index of inflection point    
         largest_inflection_idx = np.nanargmax(abs(np.gradient(np.gradient(curvature))))  ####wheres the larges inflection point#### for finding corners
         
-        r = corner.data[largest_inflection_idx, 0]  # Radial distance at the largest curvature
-        theta = corner.data[largest_inflection_idx, 1]  # Angle at the largest curvature
+        r = corner[largest_inflection_idx, 0]  # Radial distance at the largest curvature
+        theta = corner[largest_inflection_idx, 1]  # Angle at the largest curvature
         return r, theta, largest_inflection_idx
     
     else:
@@ -231,6 +241,43 @@ variables = ImportLog("logs/all_static_corners_&_walls_20250325_135405_log.json"
 r = variables.extract_data("/lidar", ["message", "ranges"])
 theta = variables.extract_data("/lidar", ["message", "angles"])
 timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+#r= 6
 #print("This is theta:",theta[0])
+# for i in range(len(r)):
+#     print("This is r:",i,r[i])
+
+
 for i in range(len(r)):
-    print("This is r:",i,r[i])
+
+    ############turn the scan data from the lidar into the format needed for find_corner
+    observation = l2m([r[i],theta[i]])
+    #print(observation)
+    z_lm = Vector(2)
+
+    ##z_lm[0] = r, z_lm[1]= theta, loc  = its index within the scan 
+    z_lm[0], z_lm[1], loc = find_corner(observation, 0.001)
+    print(z_lm, loc)
+
+    fig,ax = plt.subplots()
+    show_scan(p, lidar, observation)
+    plt.show()
+
+
+
+
+# new_observation = GPC_input_output(observation, None)
+# threshold = 0.005 # can reduce to make less conservative
+
+
+# ### compute observations with noise --------in polar for-------------[Radius, angle]-------
+# z_lm = Vector(2)
+# z_lm[0], z_lm[1], loc = find_corner(new_observation, threshold)
+
+# if loc is not None:
+#     # label corner and add to corner training set
+#     new_observation.label='corner'
+#     new_observation.ne_representative=z_lm
+#     print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
+
+#     ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------      
+#     corner_training.append(new_observation)
