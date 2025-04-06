@@ -30,18 +30,12 @@ def fit_line_to_points(points,fit_error_tolerance = 0.5 ):
     model = LinearRegression().fit(points[:, 0].reshape(-1, 1), points[:, 1])
     predictions = model.predict(points[:, 0].reshape(-1, 1))
 
-    # # Calculate MSE (Mean Squared Error)
-    # mse = mean_squared_error(points[:, 1], predictions)
-
-    # # Calculate R² Score
-    # r2 = r2_score(points[:, 1], predictions)
-
-    # Line fit error is now a combination of MSE and R²
     fit_error = np.mean(np.abs(predictions - points[:, 1])) 
     if fit_error < fit_error_tolerance:
         return fit_error
     else:
         return None
+
 
 def fit_circle_to_points(points, fit_error_tolerance=0.5):
     """
@@ -56,6 +50,11 @@ def fit_circle_to_points(points, fit_error_tolerance=0.5):
     - theta0: Estimated angle of the circle's center (in radians).
     - radius: Estimated radius of the circle.
     """
+
+    # Check if the input is a GPC_input_output object
+    if isinstance(points, GPC_input_output):
+        points = points.data_filled  # Extract the actual data if it's wrapped in an object
+
     # Extract r and theta from the polar coordinates
     r = points[:, 0]
     theta = points[:, 1]
@@ -76,7 +75,7 @@ def fit_circle_to_points(points, fit_error_tolerance=0.5):
     r0 = np.sqrt(x0**2 + y0**2)
     theta0 = np.arctan2(y0, x0)
     radius = np.sqrt(x0**2 + y0**2 + c)
-    
+
     # Calculate fit error directly in polar space
     estimated_r = np.sqrt((x - x0)**2 + (y - y0)**2)
     fit_error = np.sqrt(np.mean((estimated_r - radius)**2))
