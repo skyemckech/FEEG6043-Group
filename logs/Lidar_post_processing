@@ -235,46 +235,54 @@ class ImportLog:
     
         return extracted_data
     
+#"logs/all_static_corners_&_walls_20250325_135405_log.json"
+def format_scan(filepath):
+    variables = ImportLog(filepath)
+    r = variables.extract_data("/lidar", ["message", "ranges"])
+    theta = variables.extract_data("/lidar", ["message", "angles"])
+    timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+    threshold = 0.001 # can reduce to make less conservative
 
+    ###########________initilise corner_training_______###########
+    observation = l2m([r[0],theta[0]])
+    corner_example = GPC_input_output(observation, None)
+    corner_training = [corner_example]
+
+    for i in range(len(r)):
+        ############turn the scan data from the lidar into the format needed for find_corner
+        observation = l2m([r[i],theta[i]])
+        #print(observation)
+        z_lm = Vector(2)
+
+        ##z_lm[0] = r, z_lm[1]= theta, loc  = its index within the scan 
+        z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
+        print(z_lm, loc)
+
+        #fig,ax = plt.subplots()
+        #show_scan(p, lidar, observation)
+        #plt.show()
+
+        new_observation = GPC_input_output(observation, None)
+        
+        # if the bepoke model says returns a location, add to training data
+        if loc is not None:
+            # label corner and add to corner training set
+            new_observation.label='corner'
+            new_observation.ne_representative=z_lm
+            print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
+
+            ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------     
+            corner_training.append(new_observation)
+
+        #else:
+        
     
-variables = ImportLog("logs/all_static_corners_&_walls_20250325_135405_log.json")
-r = variables.extract_data("/lidar", ["message", "ranges"])
-theta = variables.extract_data("/lidar", ["message", "angles"])
-timestamps = variables.extract_data("/groundtruth", ["timestamp"])
-threshold = 0.001 # can reduce to make less conservative
+    ##prints data
+    for i in range(len(corner_training)):
+        print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
+        print('Data type: Radius',corner_training[i].data_filled[:,0])
+        print('Data type:Theta',corner_training[i].data_filled[:,1])
 
-###########________initilise corner_training_______###########
-observation = l2m([r[0],theta[0]])
-corner_example = GPC_input_output(observation, None)
-corner_training = [corner_example]
 
-for i in range(len(r)):
-    ############turn the scan data from the lidar into the format needed for find_corner
-    observation = l2m([r[i],theta[i]])
-    #print(observation)
-    z_lm = Vector(2)
-
-    ##z_lm[0] = r, z_lm[1]= theta, loc  = its index within the scan 
-    z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
-    print(z_lm, loc)
-
-    #fig,ax = plt.subplots()
-    #show_scan(p, lidar, observation)
-    #plt.show()
-
-    new_observation = GPC_input_output(observation, None)
-    
-    # if the bepoke model says returns a location, add to training data
-    if loc is not None:
-        # label corner and add to corner training set
-        new_observation.label='corner'
-        new_observation.ne_representative=z_lm
-        print('Map observation made at, Northings = ',new_observation.ne_representative[0],'m, Eastings =',new_observation.ne_representative[1],'m')  
-
-        ###--------APPENDS THE NEW OBSERVATION INTO THE  corner_training LIST!!!!!!!-------------     
-        corner_training.append(new_observation)
-
-for i in range(len(corner_training)):
-    print('Entry:',i,', Class',corner_training[i].label, ', Size',corner_training[i].data_filled[:,0].size)
-    print('Data type: Radius',corner_training[i].data_filled[:,0])
-    print('Data type:Theta',corner_training[i].data_filled[:,1])
+format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
+format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
