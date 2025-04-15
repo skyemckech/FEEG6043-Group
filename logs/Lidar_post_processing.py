@@ -37,7 +37,7 @@ def fit_line_to_points(points,fit_error_tolerance = 0.5 ):
         return None
 
 
-def fit_circle_to_points(points, fit_error_tolerance=0.5):
+def fit_circle_to_points(points, fit_error_tolerance=0.005):
     """
     Fits a circle directly using polar coordinates [r, theta].
     
@@ -51,6 +51,7 @@ def fit_circle_to_points(points, fit_error_tolerance=0.5):
     - radius: Estimated radius of the circle.
     """
 
+
     # Check if the input is a GPC_input_output object
     if isinstance(points, GPC_input_output):
         points = points.data_filled  # Extract the actual data if it's wrapped in an object
@@ -58,10 +59,13 @@ def fit_circle_to_points(points, fit_error_tolerance=0.5):
     # Extract r and theta from the polar coordinates
     r = points[:, 0]
     theta = points[:, 1]
+    x = np.zeros_like(r)
+    y = np.zeros_like(r)
 
     # Convert Polar to Cartesian coordinates internally for calculation
-    x = r * np.cos(theta)
-    y = r * np.sin(theta)
+    for i in range(len(r)):
+        x[i] = r[i] * np.cos(theta[i])
+        y[i] = r[1] * np.sin(theta[i])
 
     # Circle fitting using least squares method (same as your original code)
     A = np.c_[2 * x, 2 * y, np.ones(x.shape)]
@@ -82,9 +86,9 @@ def fit_circle_to_points(points, fit_error_tolerance=0.5):
 
     # Check if the fit error is within the tolerance
     if fit_error < fit_error_tolerance:
-        return r0, theta0, radius
+        return r0, theta0, radius, fit_error
     else:
-        return None, None, None
+        return None, None, None, None
 
 
 def show_scan(p_eb, lidar, observations, show_lines = True):
@@ -302,7 +306,7 @@ class ImportLog:
 
 
 def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_error_tolerance_wall = 0.005):
-
+    fit_error = None
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
     theta = variables.extract_data("/lidar", ["message", "angles"])
@@ -349,13 +353,13 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
         z_lm = Vector(2)
 
         z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
-        print(z_lm, loc)
+        #print(z_lm, loc)
 
         new_observation = GPC_input_output(observation, None)
         values = new_observation.data
-        print(values)
+        #print(values)
 
-        if np.count_nonzero(np.isnan(values)) < 0.5 * len(values):
+        if np.count_nonzero(~np.isnan(values[0])) > 0.3 * len(values[0]):
 
             if loc is not None:
                 new_observation.label = 'corner'
@@ -365,14 +369,16 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
                 corner_training.append(new_observation)
 
             else: 
-                z_lm[0], z_lm[1], r_val = fit_circle_to_points(new_observation, fit_error_tolerance)
+                z_lm[0], z_lm[1], r_val, fit_error = fit_circle_to_points(new_observation, fit_error_tolerance)
+                print("object fit error is here::::::--------",fit_error)
 
                 if r_val is not None:
                     new_observation.label = 'object'
                     new_observation.ne_representative = z_lm
                     print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
-
+                    print("---------------------------------print1---------------------------------")
                     corner_training.append(new_observation)
+                    print(values)
 
                 else:
                     error = fit_line_to_points(new_observation.data_filled, fit_error_tolerance_wall)
@@ -381,21 +387,25 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
                         new_observation.label = 'Wall'
                         new_observation.ne_representative = z_lm
                         print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
-
+                        print("---------------------------------print2---------------------------------")
                         corner_training.append(new_observation)
         else:
             print("skipped this scan lol")
 
 
-    for i in range(len(corner_training)):
-        print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
-        print('Data type: Radius', corner_training[i].data_filled[:, 0])
-        print('Data type:Theta', corner_training[i].data_filled[:, 1])
+    # for i in range(len(corner_training)):
+    #     print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
+    #     print('Data type: Radius', corner_training[i].data_filled[:, 0])
+    #     print('Data type:Theta', corner_training[i].data_filled[:, 1])
     
     return corner_training
 
 
-a = format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
+a = format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json", 0.00001)
+#a = format_scan("logs/2_lap_square_complete_20250325_140938_log.json")
+#a = format_scan("logs/static_cylinder_20250325_141536_log.json")
+
+
 
 for i in range(len(a)):
      print('Entry:', i, ', Class', a[i].label)
