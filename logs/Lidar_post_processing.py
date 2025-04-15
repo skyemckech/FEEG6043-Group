@@ -25,6 +25,28 @@ t_bl[1] = y_bl
 H_bl = HomogeneousTransformation(t_bl,0)
 lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 30)
 
+m_x = []
+m_y = []
+
+for x in np.arange(-1, 1, 0.01):
+    m_x.append(x)
+    m_y.append(-1) #west wall      
+for x in np.arange(-1, 1, 0.01):
+    m_x.append(x)
+    m_y.append(1) #east wall
+for y in np.arange(-1, 1, 0.01):
+    m_x.append(-1)
+    m_y.append(y) #south wall
+for y in np.arange(-1, 1, 0.01):
+    m_x.append(1)
+    m_y.append(y) #north wall
+
+environment_map = l2m([m_x,m_y])
+H_eb = HomogeneousTransformation(p[0:2],p[2])
+H_el = HomogeneousTransformation()
+H_el.H = H_eb.H@lidar.H_bl.H
+fig,ax = plt.subplots()
+
 
 def fit_line_to_points(points,fit_error_tolerance = 0.5 ):
     model = LinearRegression().fit(points[:, 0].reshape(-1, 1), points[:, 1])
@@ -91,61 +113,61 @@ def fit_circle_to_points(points, fit_error_tolerance=0.005):
         return None, None, None, None
 
 
-def show_scan(p_eb, lidar, observations, show_lines = True):
-    """ Plots observations, field of view and robot pose
-    """
+# def show_scan(p_eb, lidar, observations, show_lines = True):
+#     """ Plots observations, field of view and robot pose
+#     """
 
-    ######################## Calculate FOV    
-    range_max = lidar.distance_range[1]
-    range_min = lidar.distance_range[0]    
-    fov = lidar.scan_fov
+#     ######################## Calculate FOV    
+#     range_max = lidar.distance_range[1]
+#     range_min = lidar.distance_range[0]    
+#     fov = lidar.scan_fov
         
-    r_ = []
-    theta_ = []    
+#     r_ = []
+#     theta_ = []    
     
-    # for field of view
-    theta = np.linspace(-fov / 2, fov / 2, 30)    
+#     # for field of view
+#     theta = np.linspace(-fov / 2, fov / 2, 30)    
         
-    for i in theta:
-        r_.append(range_max)
-        theta_.append(i)        
-    for i in reversed(theta):
-        r_.append(range_min)
-        theta_.append(i)    
-    r_.append(range_max)
-    theta_.append(-fov/2)
+#     for i in theta:
+#         r_.append(range_max)
+#         theta_.append(i)        
+#     for i in reversed(theta):
+#         r_.append(range_min)
+#         theta_.append(i)    
+#     r_.append(range_max)
+#     theta_.append(-fov/2)
 
-    fov = l2m([r_,theta_])
-    ######################## Plot the FOV        
+#     fov = l2m([r_,theta_])
+#     ######################## Plot the FOV        
     
-    t_lm = Vector(2) # lidar frame measurement placeholder    
-    t_em = Vector(2) # environment frame measurement
+#     t_lm = Vector(2) # lidar frame measurement placeholder    
+#     t_em = Vector(2) # environment frame measurement
     
-    fov_x = []
-    fov_y = []
+#     fov_x = []
+#     fov_y = []
 
-    H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
+#     H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
         
-    for z_fov in fov:    
-        t_lm[0],t_lm[1] = polar2cartesian(z_fov[0],z_fov[1])      
-        t_em = t2v((H_eb.H@lidar.H_bl.H)@v2t(t_lm))
+#     for z_fov in fov:    
+#         t_lm[0],t_lm[1] = polar2cartesian(z_fov[0],z_fov[1])      
+#         t_em = t2v((H_eb.H@lidar.H_bl.H)@v2t(t_lm))
     
-        fov_x.append(t_em[0])
-        fov_y.append(t_em[1])  
+#         fov_x.append(t_em[0])
+#         fov_y.append(t_em[1])  
         
-    if show_lines == True: plt.plot(fov_y, fov_x,'orange')
+#     if show_lines == True: plt.plot(fov_y, fov_x,'orange')
 
-    if len(observations) != 0:            
-        for z_lm in observations:    
-            t_lm[0],t_lm[1] = polar2cartesian(z_lm[0],z_lm[1])
-            show_observation(H_eb,t2v(lidar.H_bl.H@v2t(t_lm)),Matrix(2,2),None,ax, show_lines)        
+#     if len(observations) != 0:            
+#         for z_lm in observations:    
+#             t_lm[0],t_lm[1] = polar2cartesian(z_lm[0],z_lm[1])
+#             show_observation(H_eb,t2v(lidar.H_bl.H@v2t(t_lm)),Matrix(2,2),None,ax, show_lines)        
         
-    else:        
-        cf=plot_2dframe(['pose','b','b'],[H_eb.H,H_eb.H],False,False)
+#     else:        
+#         cf=plot_2dframe(['pose','b','b'],[H_eb.H,H_eb.H],False,False)
         
-    plt.xlabel('Eastings, m')
-    plt.ylabel('Northings, m')
-    plt.axis('equal')
+#     plt.xlabel('Eastings, m')
+#     plt.ylabel('Northings, m')
+#     plt.axis('equal')
 
 def show_scan(p_eb, lidar, observations, show_lines = True):
     """ Plots observations, field of view and robot pose
@@ -305,7 +327,7 @@ class ImportLog:
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
 
 
-def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_error_tolerance_wall = 0.005):
+def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_error_tolerance_wall = 0.005):
     fit_error = None
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
@@ -357,12 +379,18 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
 
         new_observation = GPC_input_output(observation, None)
         values = new_observation.data
-        #print(values)
+        print(values)
         #values = values.astype(float)
         #print("Values[0]:",values[:,0],"Values[1]:",values[:,1],)
 
+        ####plotting funcitons####
+        # fig,ax = plt.subplots()
+        # show_scan(p, lidar, observation)
+        # ax.scatter(m_y, m_x,s=0.01)
+        # plt.show()
+
             ####if the number of nan's is more than X of the total size then pass#######
-        if np.count_nonzero(~np.isnan(values[:,0])) > 0.5 * len(values[:,0]):
+        if np.count_nonzero(~np.isnan(values[:,0])) > 0.1 * len(values[:,0]):
 
             if loc is not None:
                 new_observation.label = 'corner'
@@ -397,17 +425,18 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
             print("skipped this scan lol")
 
 
-    # for i in range(len(corner_training)):
-    #     print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
-    #     print('Data type: Radius', corner_training[i].data_filled[:, 0])
-    #     print('Data type:Theta', corner_training[i].data_filled[:, 1])
+    for i in range(len(corner_training)):
+        print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
+        print('Data type: Radius', corner_training[i].data_filled[:, 0])
+        print('Data type:Theta', corner_training[i].data_filled[:, 1])
     
     return corner_training
 
 
-a = format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json", 0.00001)
-#a = format_scan("logs/2_lap_square_complete_20250325_140938_log.json")
-#a = format_scan("logs/static_cylinder_20250325_141536_log.json")
+#a = format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json", 0.0005,0.1)
+#a = format_scan("logs/2_lap_square_complete_20250325_140938_log.json", 0.0005,0.1)
+#a = format_scan("logs/static_cylinder_20250325_141536_log.json",0.0005,15.0)
+a = format_scan("logs/static_10_cm_wall_20250325_131922_log.json", 0.01,0.01,1)
 
 
 
