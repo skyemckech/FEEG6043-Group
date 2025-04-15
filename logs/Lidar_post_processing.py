@@ -391,7 +391,12 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
         print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
         print('Data type: Radius', corner_training[i].data_filled[:, 0])
         print('Data type:Theta', corner_training[i].data_filled[:, 1])
+    
+    return corner_training
 
 
-format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
-format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
+a = format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json")
+
+for i in range(len(a)):
+     print('Entry:', i, ', Class', a[i].label)
+
