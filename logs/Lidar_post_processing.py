@@ -358,13 +358,17 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
         new_observation = GPC_input_output(observation, None)
         values = new_observation.data
         #print(values)
+        #values = values.astype(float)
+        #print("Values[0]:",values[:,0],"Values[1]:",values[:,1],)
 
-        if np.count_nonzero(~np.isnan(values[0])) > 0.3 * len(values[0]):
+            ####if the number of nan's is more than X of the total size then pass#######
+        if np.count_nonzero(~np.isnan(values[:,0])) > 0.5 * len(values[:,0]):
 
             if loc is not None:
                 new_observation.label = 'corner'
                 new_observation.ne_representative = z_lm
                 print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
+                print("corner")
 
                 corner_training.append(new_observation)
 
@@ -376,9 +380,9 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_er
                     new_observation.label = 'object'
                     new_observation.ne_representative = z_lm
                     print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
-                    print("---------------------------------print1---------------------------------")
+                    print("object")
                     corner_training.append(new_observation)
-                    print(values)
+                    #print(values)
 
                 else:
                     error = fit_line_to_points(new_observation.data_filled, fit_error_tolerance_wall)
