@@ -334,7 +334,7 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_err
     theta = variables.extract_data("/lidar", ["message", "angles"])
     timestamps = variables.extract_data("/groundtruth", ["timestamp"])
 
-    ###########________initilise corner_training_______###########
+    ###########________random bull shit which fixes formating_______###########
 
     if not isinstance(r, list):
         raise TypeError("Expected r to be a list, got {} instead.".format(type(r)))
@@ -433,13 +433,154 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_err
     return corner_training
 
 
-#a = format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json", 0.0005,0.1)
-#a = format_scan("logs/2_lap_square_complete_20250325_140938_log.json", 0.0005,0.1)
-#a = format_scan("logs/static_cylinder_20250325_141536_log.json",0.0005,15.0)
-a = format_scan("logs/static_10_cm_wall_20250325_131922_log.json", 0.01,0.01,1)
+
+
+def find_thetas(a):
+
+    target_size = a[0].data_filled[:, 0].size  # or define manually
+    X_train = []
+    y_train = []
+
+    #makes clean data for any size array: (clean data is the data without the first instance will all zeros in it)
+    for i in range(len(a)):
+        data = a[i].data_filled[:, 0]
+        if a[i].label is not None:
+            if data.size < target_size:
+                # pad with NaNs or zeros
+                padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan)
+            else:
+                # trim to target size
+                padded = data[:target_size]
+            X_train.append(padded)
+            y_train.append(a[i].label)
+
+    X_train = np.array(X_train)
+    y_train = np.array(y_train)
+
+    X_train_clean = []
+    y_train_clean = []
+
+    for i in range(len(y_train)):
+        if y_train[i] is not None:
+            X_train_clean.append(X_train[i])
+            y_train_clean.append(y_train[i])
+
+    X_train_clean = np.array(X_train_clean)
+    y_train_clean = np.array(y_train_clean)
+
+    # gpc_corner is the instnace of the classifier which we used with the weighting comands
+    kernel = 1.0 * RBF(1.0)
+    gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
+
+    ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
+    print("Score",gpc_corner.score(X_train_clean, y_train_clean))
+    print("classes",gpc_corner.classes_)
+
+    # Obtain optimized kernel parameters
+    sklearn_theta_1 = gpc_corner.kernel_.k2.get_params()['length_scale']
+    sklearn_theta_0 = np.sqrt(gpc_corner.kernel_.k1.get_params()['constant_value'])
+
+    print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
+
+    return sklearn_theta_1,sklearn_theta_0
+
+
+
+###WORK IN PROGRESS!!!!########
+def combine_test_data(q,w,e,r):
+
+    size_example = np.column_stack((corner_training[i].data_filled[:, 0], corner_training[i].data_filled[:, 1]))
+    corner_example = GPC_input_output(q[0], None)
+    corner_training = [corner_example]
+
+
+####name of the values
+    for i in range(len(corner_training)):
+        print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
+        print('Data type: Radius', corner_training[i].data_filled[:, 0])
+        print('Data type:Theta', corner_training[i].data_filled[:, 1])
+
+        ##funciton which appends data to big ass variable:
+    new_observation.label = 'corner'
+    new_observation.ne_representative = z_lm
+    print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
+    print("corner")
+
+    corner_training.append(new_observation)
+
+    return 
+
+
+
+a = format_scan("logs/all_static_corners_&_walls_20250325_135405_log.json", 0.0005,0.1)
+b = format_scan("logs/2_lap_square_complete_20250325_140938_log.json", 0.001,0.1)
+c = format_scan("logs/static_cylinder_20250325_141536_log.json",0.0005,15.0)
+d = format_scan("logs/static_10_cm_wall_20250325_131922_log.json", 0.01,0.01,1)
+
+
+
+
+#theta1, theta2 = find_thetas(a)
+
+
+
+# target_size = a[0].data_filled[:, 0].size  # or define manually
+# X_train = []
+# y_train = []
+
+# #makes clean data for any size array: (clean data is the data without the first instance will all zeros in it)
+# for i in range(len(a)):
+#     data = a[i].data_filled[:, 0]
+#     if a[i].label is not None:
+#         if data.size < target_size:
+#             # pad with NaNs or zeros
+#             padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan)
+#         else:
+#             # trim to target size
+#             padded = data[:target_size]
+#         X_train.append(padded)
+#         y_train.append(a[i].label)
+
+# X_train = np.array(X_train)
+# y_train = np.array(y_train)
+
+# X_train_clean = []
+# y_train_clean = []
+
+# for i in range(len(y_train)):
+#     if y_train[i] is not None:
+#         X_train_clean.append(X_train[i])
+#         y_train_clean.append(y_train[i])
+
+# X_train_clean = np.array(X_train_clean)
+# y_train_clean = np.array(y_train_clean)
+
+# # gpc_corner is the instnace of the classifier which we used with the weighting comands
+# kernel = 1.0 * RBF(1.0)
+# gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
+
+# ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
+# print("Score",gpc_corner.score(X_train_clean, y_train_clean))
+# print("classes",gpc_corner.classes_)
+
+# # Obtain optimized kernel parameters
+# sklearn_theta_1 = gpc_corner.kernel_.k2.get_params()['length_scale']
+# sklearn_theta_0 = np.sqrt(gpc_corner.kernel_.k1.get_params()['constant_value'])
+
+# print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
+
+
 
 
 
 for i in range(len(a)):
-     print('Entry:', i, ', Class', a[i].label)
+      print('Entry:', i, ', Class', a[i].label)
 
+for i in range(len(b)):
+      print('Entry:', i, ', Class', b[i].label)
+
+for i in range(len(c)):
+      print('Entry:', i, ', Class', c[i].label)
+    
+for i in range(len(d)):
+      print('Entry:', i, ', Class', d[i].label)
