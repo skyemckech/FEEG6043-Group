@@ -17,7 +17,7 @@ warnings.simplefilter("ignore")
 import numpy as np 
 import copy
 
-
+from Libraries import *
 from PyQt5.QtWidgets import QWidget, QApplication, QGridLayout
 from pglive.sources.data_connector import DataConnector
 from pglive.sources.live_plot import LiveLinePlot
@@ -26,6 +26,7 @@ from pglive.sources.live_plot_widget import LivePlotWidget
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt
 from laptop import LaptopPilot #imports LaptopPilot from `./laptop.py`. If you want to run another version, change laptop on this line to whatever you have called the file you want to run. You don't need to include the py
+
 
 class Window(QWidget):
     running = False

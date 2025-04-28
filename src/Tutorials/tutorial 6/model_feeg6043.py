@@ -106,7 +106,7 @@ def rigid_body_kinematics(mu,u,dt=0.1):
     mu_[1] = H_eb_.t[1]
     mu_[2] = H_eb_.gamma % (2 * np.pi ) #(H_eb_.gamma + np.pi) % (2 * np.pi ) - np.pi 
     
-    return mu_
+    return mu_, sigma_xy, dmu_, mu_gt
 
 class ActuatorConfiguration:
 

@@ -15,7 +15,6 @@ def Inverse(m): return np.linalg.inv(m)
 def v2t(x): return np.insert(x, len(x), 1, axis=0)
 def t2v(x): return x[0:len(x)-1]
 
-
 class HomogeneousTransformation:
     """Class to handle homogeneous transformations
     H = [R t; 0 1] where R is a 2x2 rotation matrix and t is a 2x1 translation vector
@@ -271,21 +270,6 @@ def l2m(nlist):
                 N[j,i] = nlist[i][j]                            
     return N
 
-# m2l converts a matrix to a flattened list
-def m2l(m): return [element for row in m for element in row]
-
-def change_to_list(data):
-    if type(data) == type(np.array([])):
-        return m2l(data)
-    if type(data) == type(2.0):
-        return [data]
-    if type(data) == type([]):
-        return data
-    if type(data) == type("string"):
-        return [data]
-    else:
-        return TypeError
-
 def fill_timegaps(dt_max,T):
     add_timestamp = []
     t_prev=T[0]
@@ -339,4 +323,3 @@ def complex_observation_function(mu,sigma,k,x):
 def rbf_kernel(X1, X2, l=1.0, sigma_f=1.0):
     sqdist = np.sum(X1**2, 1).reshape(-1, 1) + np.sum(X2**2, 1) - 2 * np.dot(X1, X2.T)
     return sigma_f**2 * np.exp(-0.5 / l**2 * sqdist)
-

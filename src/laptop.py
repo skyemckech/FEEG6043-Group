@@ -5,7 +5,7 @@ All rights reserved.
 Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
-from Libraries.plot_feeg6043 import plot_trajectory
+from Libraries import *
 import numpy as np
 import argparse
 import time
@@ -17,11 +17,10 @@ from zeroros import Subscriber, Publisher
 from zeroros.messages import LaserScan, Vector3Stamped, Pose, PoseStamped, Header, Quaternion
 from zeroros.datalogger import DataLogger
 from zeroros.rate import Rate
-from Libraries.model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, motion_model, extended_kalman_filter_predict, extended_kalman_filter_update
-from Libraries.math_feeg6043 import Vector, Inverse, HomogeneousTransformation, Identity, l2m, m2l, change_to_list, Matrix
-from Libraries.plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe
+
 from matplotlib import pyplot as plt
 from openpyxl import load_workbook
+
 # add more libraries here
 N = 0
 E = 1
@@ -131,6 +130,7 @@ class LaptopPilot:
         # Create variable for plotting ground truth and reference position
         self.p_reference_tracker = None
         self.p_groundtruth_tracker = None
+        self.p_gt_path = []
 
         
         ###############################################################        
@@ -232,6 +232,14 @@ class LaptopPilot:
         self.groundtruth_eastings = msg.position.y 
         _, _, self.groundtruth_yaw = msg.orientation.to_euler()  
         self.datalog.log(msg, topic_name="/groundtruth")
+
+    def groundtruth_update(self):
+            p_gt = Vector(3)
+            p_gt[0] = self.groundtruth_northings
+            p_gt[1] = self.groundtruth_eastings
+            p_gt[2] = self.groundtruth_yaw
+
+            return p_gt
     
     def pose_parse(self, msg, aruco = False):
         # parser converts pose data to a standard format for logging
@@ -303,21 +311,13 @@ class LaptopPilot:
     
     def initialise_robot(self):
         # Create initial state, covariance and position estimate
-        self.state = Vector(5)
+        self.state = Vector(3)
         self.state[0] = self.measured_pose_northings_m 
         self.state[1] = self.measured_pose_eastings_m  
         self.state[2] = self.measured_pose_yaw_rad
-        self.state[3] = 0 
-        self.state[4] = 0
-
-        self.covariance = Identity(5) 
-        self.covariance[N,N] = self.state[0]**2
-        self.covariance[E, E] = self.state[1]**2
-        self.covariance[G, G] = self.state[0]**2
-        self.covariance[DOTX, DOTX] = 0.0**2
-        self.covariance[DOTG, DOTG] = np.deg2rad(0)**2
-
         self.update_estimated_pose()
+
+
 
     def position_sensor_transform(self, sensor_measurement):
         # Create transformation matrix from sensor reading to measured position
@@ -347,27 +347,39 @@ class LaptopPilot:
 
     def position_sensor_update(self):
         # Sample position data from Aruco
-        self.sensor_measurement = Vector(5)
+        self.sensor_measurement = Vector(3)
         self.sensor_measurement[N] = self.measured_pose_northings_m
         self.sensor_measurement[E] = self.measured_pose_eastings_m
-
-    def yaw_sensor_update(self):
-        # Sample yaw data from Aruco
-        self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
-
 
     class uncertaintyMatrices:  
         #Class to keep track of model uncertainty
-        def get_process_uncertainty(self):
+        def get_initial_uncertainty(self):
             # Create process uncertainty matrix
-            R = Identity(5)
-            R[N, N] = 0.0**2
-            R[E, E] = 0.0**2
-            R[G, G] = np.deg2rad(0)**2
-            R[DOTX, DOTX] = 0.2**2
-            R[DOTG, DOTG] = np.deg2rad(0.05)**2
-            return R
+            sigma = Matrix(3,3) 
+            sigma[0,0]=0.1
+            sigma[0,1]=0.01
+            sigma[1,0]=0.01
+            sigma[1,1]=0.1
+            sigma[0,2]=0.01
+            sigma[1,2]=0.01
+            sigma[2,0]=0.01
+            sigma[2,1]=0.01
+            sigma[2,2]=0.1
+
+            return sigma
+
+        def get_process_uncertainty3x3(self):
+            #Motion model linear noise due to v and w
+            sigma_motion=Matrix(3,2)
+            sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
+            sigma_motion[0,1]= np.deg2rad(0.1)**2 # impact of w angular velocity on x
+            sigma_motion[1,0]=0.3**2 # impact of v linear velocity on y
+            sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
+            sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
+
+            return sigma_motion
 
         def get_p_sensor_uncertainty(self):
             # Create position sensor uncertainty matrix
@@ -428,6 +440,10 @@ class LaptopPilot:
                 # set initial measurements
                 self.initialise_robot()
                 self.uncertainty = LaptopPilot.uncertaintyMatrices()
+                self.covariance = self.uncertainty.get_initial_uncertainty()
+
+                self.graph = graphslam_frontend()
+                self.graph.anchor(self.uncertainty.get_initial_uncertainty)
 
                 # Add headers
                 self.ref_pose_worksheet.extend_data(["Elapsed Time",
@@ -472,21 +488,54 @@ class LaptopPilot:
             ################### Motion Model ####################
             # take current pose estimate and update by twist
 
-            R = self.uncertainty.get_process_uncertainty()
-
-            self.state, self.covariance = extended_kalman_filter_predict(self.state, self.covariance, u, motion_model, R, dt)
+            # Get current pose to pose uncertainty
+            sigma_motion = self.uncertainty.get_process_uncertainty3x3()
             
-            if aruco_pose is not None:
-                Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                self.yaw_sensor_update()
-                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
+            # Save previous pose and smegma
+            p_ = self.state
+            sigma_ = self.covariance
 
-                Q = self.uncertainty.get_p_sensor_uncertainty()
-                self.position_sensor_update()
-                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
+            #gwound twuth pwotter
+            if self.simulation:
+                p_gt = self.groundtruth_update()
+            else: 
+                p_gt = self.position_sensor_update()
+            
+            self.p_gt_path.append(p_gt)
 
+            # Motion model update
+            self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            
+            if self.t > 10:
+                self.graph.motion(self.state,self.covariance,Vector(3),final=True)
+                print('Finish graph data association')
+                print('*************************************************')
+
+                self.graph.construct_graph()
+
+                pose_ground_truth = self.p_gt_path
+                em = Vector(2)
+                H_em = HomogeneousTransformation(em,0)  
+                m_e0 = Vector(2)
+                m_e0[0] = -0
+                m_e0[1] = 2
+
+                m_e1 = Vector(2)
+                m_e1[0] = 2
+                m_e1[1] = 5
+
+                m_e2 = Vector(2)
+                m_e2[0] = 1.0
+                m_e2[1] = 5.5
+                map_ground_truth = [m_e0, m_e1, m_e2]
+                map_labels = ['m1', 'm2', 'm3']
+                plot_graph(self.graph, pose_ground_truth, H_em, map_ground_truth, map_labels)
                 
-            
+                visualise_flag = True
+                self.graph.construct_graph(visualise_flag = visualise_flag)
+            else:
+                self.graph.motion(p_,sigma_, dp ,final=False)   # Task
+
 
                                 
             #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
