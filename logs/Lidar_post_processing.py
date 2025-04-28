@@ -405,7 +405,7 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_err
                 print("object fit error is here::::::--------",fit_error)
 
                 if r_val is not None:
-                    new_observation.label = 'object'
+                    new_observation.label = 'not corner'
                     new_observation.ne_representative = z_lm
                     print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
                     print("object")
@@ -416,13 +416,17 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_err
                     error = fit_line_to_points(new_observation.data_filled, fit_error_tolerance_wall)
 
                     if error is not None:
-                        new_observation.label = 'Wall'
+                        new_observation.label = 'not corner'
                         new_observation.ne_representative = z_lm
                         print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
                         print("---------------------------------print2---------------------------------")
                         corner_training.append(new_observation)
         else:
-            print("skipped this scan lol")
+            new_observation.label = 'not corner'
+            new_observation.ne_representative = z_lm
+            print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
+            print("---------------------------------print2---------------------------------")
+            corner_training.append(new_observation)
 
 
     for i in range(len(corner_training)):
@@ -493,8 +497,7 @@ def combine_test_data(q,w,e,r):
     corner_example = GPC_input_output(q[0], None)
     corner_training = [corner_example]
 
-
-####name of the values
+    ####name of the values
     for i in range(len(corner_training)):
         print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
         print('Data type: Radius', corner_training[i].data_filled[:, 0])
@@ -509,6 +512,22 @@ def combine_test_data(q,w,e,r):
     corner_training.append(new_observation)
 
     return 
+
+def combine_scans(*scans):
+    """
+    Combines multiple lists of GPC_input_output objects into a single list.
+
+    Args:
+        scans: Variable number of scan lists (each output from format_scan).
+
+    Returns:
+        combined_scans: A single list containing all GPC_input_output entries.
+    """
+    combined_scans = []
+    for scan in scans:
+        combined_scans.extend(scan)
+
+    return combined_scans
 
 
 
@@ -571,16 +590,30 @@ d = format_scan("logs/static_10_cm_wall_20250325_131922_log.json", 0.01,0.01,1)
 
 
 
+r = combine_scans(a,b,c,d)
+
+theta1, theta2 = find_thetas(r)
 
 
-for i in range(len(a)):
-      print('Entry:', i, ', Class', a[i].label)
 
-for i in range(len(b)):
-      print('Entry:', i, ', Class', b[i].label)
+# print("a")
+# for i in range(len(a)):
+#       print('Entry:', i, ', Class', a[i].label)
 
-for i in range(len(c)):
-      print('Entry:', i, ', Class', c[i].label)
+# print("b")
+# for i in range(len(b)):
+#       print('Entry:', i, ', Class', b[i].label)
+
+# print("c")
+# for i in range(len(c)):
+#       print('Entry:', i, ', Class', c[i].label)
     
-for i in range(len(d)):
-      print('Entry:', i, ', Class', d[i].label)
+# print("d")
+# for i in range(len(d)):
+#       print('Entry:', i, ', Class', d[i].label)
+
+print("r")
+for i in range(len(r)):
+      print('Entry:', i, ', Class', r[i].label)
+
+print(theta1,theta2)
