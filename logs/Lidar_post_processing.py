@@ -771,7 +771,7 @@ wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 15,
 #wall_e = format_scan_wall("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
 
-
+#dd
 
 #theta1, theta2 = find_thetas(a)
 
