@@ -548,7 +548,7 @@ def format_scan_object(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
     
     return corner_training
 
-def format_scan_wall(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_error_tolerance_wall = 0.005):
+def format_scan_wall(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_error_tolerance_wall = 0.005): #corner/object/wall, how to chose value for object/wall ?
     fit_error = None
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
