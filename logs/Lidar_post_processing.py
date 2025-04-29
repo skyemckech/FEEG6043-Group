@@ -301,7 +301,7 @@ class ImportLog:
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
 
 
-def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05, fit_error_tolerance_wall = 0.5):
+def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.005, fit_error_tolerance_wall = 0.005):
 
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
@@ -352,33 +352,40 @@ def format_scan(filepath, threshold = 0.001, fit_error_tolerance = 0.05, fit_err
         print(z_lm, loc)
 
         new_observation = GPC_input_output(observation, None)
+        values = new_observation.data
+        print(values)
 
-        if loc is not None:
-            new_observation.label = 'corner'
-            new_observation.ne_representative = z_lm
-            print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
+        if np.count_nonzero(np.isnan(values)) < 0.5 * len(values):
 
-            corner_training.append(new_observation)
-
-        else: 
-            z_lm[0], z_lm[1], r_val = fit_circle_to_points(new_observation, fit_error_tolerance)
-
-            if r_val is not None:
-                new_observation.label = 'object'
+            if loc is not None:
+                new_observation.label = 'corner'
                 new_observation.ne_representative = z_lm
                 print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
 
                 corner_training.append(new_observation)
 
-            else:
-                error = fit_line_to_points(new_observation.data_filled, fit_error_tolerance_wall)
+            else: 
+                z_lm[0], z_lm[1], r_val = fit_circle_to_points(new_observation, fit_error_tolerance)
 
-                if error is not None:
-                    new_observation.label = 'Wall'
+                if r_val is not None:
+                    new_observation.label = 'object'
                     new_observation.ne_representative = z_lm
                     print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
 
                     corner_training.append(new_observation)
+
+                else:
+                    error = fit_line_to_points(new_observation.data_filled, fit_error_tolerance_wall)
+
+                    if error is not None:
+                        new_observation.label = 'Wall'
+                        new_observation.ne_representative = z_lm
+                        print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
+
+                        corner_training.append(new_observation)
+        else:
+            print("skipped this scan lol")
+
 
     for i in range(len(corner_training)):
         print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
