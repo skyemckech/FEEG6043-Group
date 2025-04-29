@@ -33,7 +33,7 @@ class LaptopPilot:
         # network for sensed pose
         aruco_params = {
             "port": 50000,  # Port to listen to (DO NOT CHANGE)
-            "marker_id": 20,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
+            "marker_id": 21,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
         }
         self.robot_ip = "192.168.90.1"
         
@@ -543,35 +543,142 @@ class LaptopPilot:
                 if self.inprogress == False:
                     self.startime = self.t
                     self.inprogress = True
-                if self.t < self.startime + 5:
-                    u = [0.2, 0]
-                    q = self.ddrive.inv_kinematics(u)  
-                    wheel_speed_msg = Vector3Stamped()
-                    wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
-                    wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
 
-                    self.cmd_wheelrate_right = wheel_speed_msg.vector.x
-                    self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+                if self.t is not None and self.t < self.startime + 5:
+                    u = [1/5, 0]
+                    q = self.ddrive.inv_kinematics(u)  
+                    self.wheel_speed_msg = Vector3Stamped()
+                    self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+
+                    self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
                 else: 
-                    self.pathstage += 1
-                    self.inprogress == False
+                    self.inprogress = False
+                    self.pathstage = 1
             
             if self.pathstage == 1:
                 
                 if self.inprogress == False:
+
                     self.startime = self.t
+
                     self.inprogress = True
                 if self.t < self.startime + 5:
                     u = [0, np.pi/2/5]
-                    q = self.ddrive.inv_kinematics(u)  
-                    wheel_speed_msg = Vector3Stamped()
-                    wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
-                    wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+                    q = self.ddrive.inv_kinematics(u)
+                    self.wheel_speed_msg = Vector3Stamped()  
+                    self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
 
-                    self.cmd_wheelrate_right = wheel_speed_msg.vector.x
-                    self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+                    self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
                 else: 
+                    self.inprogress = False
                     self.pathstage += 1   
+
+            if self.pathstage == 2:
+                
+                if self.inprogress == False:
+                    self.startime = self.t
+                    self.inprogress = True
+
+                if self.t is not None and self.t < self.startime + 5:
+                    u = [1/5, 0]
+                    q = self.ddrive.inv_kinematics(u)  
+                    self.wheel_speed_msg = Vector3Stamped()
+                    self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+
+                    self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
+                else: 
+                    self.inprogress = False
+                    self.pathstage += 1
+
+            if self.pathstage == 3:
+                
+                if self.inprogress == False:
+
+                    self.startime = self.t
+
+                    self.inprogress = True
+                if self.t < self.startime + 5:
+                    u = [0, np.pi/2/5]
+                    q = self.ddrive.inv_kinematics(u)
+                    self.wheel_speed_msg = Vector3Stamped()  
+                    self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+
+                    self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
+                else: 
+                    self.inprogress = False
+                    self.pathstage += 1
+
+            if self.pathstage == 4:
+                
+                if self.inprogress == False:
+                    self.startime = self.t
+                    self.inprogress = True
+
+                if self.t is not None and self.t < self.startime + 5:
+                    u = [1/5, 0]
+                    q = self.ddrive.inv_kinematics(u)  
+                    self.wheel_speed_msg = Vector3Stamped()
+                    self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+
+                    self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
+                else: 
+                    self.inprogress = False
+                    self.pathstage += 1
+
+            if self.pathstage == 5:
+                
+                if self.inprogress == False:
+
+                    self.startime = self.t
+
+                    self.inprogress = True
+                if self.t < self.startime + 5:
+                    u = [0, np.pi/2/5]
+                    q = self.ddrive.inv_kinematics(u)
+                    self.wheel_speed_msg = Vector3Stamped()  
+                    self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+
+                    self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
+                else: 
+                    self.inprogress = False
+                    self.pathstage += 1
+
+            if self.pathstage == 6:
+                
+                if self.inprogress == False:
+                    self.startime = self.t
+                    self.inprogress = True
+
+                if self.t is not None and self.t < self.startime + 5:
+                    u = [1/5, 0]
+                    q = self.ddrive.inv_kinematics(u)  
+                    self.wheel_speed_msg = Vector3Stamped()
+                    self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+
+                    self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
+                else: 
+                    self.inprogress = False
+                    self.pathstage += 1
+
+            if self.pathstage == 7:
+                
+                    self.wheel_speed_msg.vector.x = 0  #q[0,0] # Right wheelspeed rad/s
+                    self.wheel_speed_msg.vector.y = 0  #q[1,0] # Left wheelspeed rad/s  
+
 
             # wheel_speed_msg = Vector3Stamped()
             # wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
@@ -584,8 +691,8 @@ class LaptopPilot:
 
             # > Act < #
             # Send commands to the robot        
-            self.wheel_speed_pub.publish(wheel_speed_msg)
-            self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+            self.wheel_speed_pub.publish(self.wheel_speed_msg)
+            self.datalog.log(self.wheel_speed_msg, topic_name="/wheel_speeds_cmd")
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
