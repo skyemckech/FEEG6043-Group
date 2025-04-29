@@ -29,8 +29,6 @@ G = 2
 DOTX = 3
 DOTG = 4
 class LaptopPilot:
-
-
     def __init__(self, simulation):
         # network for sensed pose
         aruco_params = {
@@ -43,10 +41,13 @@ class LaptopPilot:
         self.sim_time_offset = 0 #used to deal with webots timestamps
         self.sim_init = False #used to deal with webots timestamps
         self.simulation = simulation
+        self.plotGroundtruth = None
+
         if self.simulation:
             self.robot_ip = "127.0.0.1"          
             aruco_params['marker_id'] = 0  #Ovewrites Aruco marker ID to 0 (needed for simulation)
             self.sim_init = True #used to deal with webots timestamps
+            self.plotGroundtruth = True
         
         print("Connecting to robot with IP", self.robot_ip)
         self.aruco_driver = ArUcoUDPDriver(aruco_params, parent=self)
@@ -62,19 +63,19 @@ class LaptopPilot:
         self.accept_radius = 0.2
         lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
         lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
-        self.northings_path = lapx+[0]
-        self.eastings_path = lapy+[0]      
+        self.northings_path = lapx+lapx+lapx
+        self.eastings_path = lapy+lapy+lapy     
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.174 # m 
+        wheel_distance = 0.190 # m 
         wheel_diameter = 0.070 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
         # control parameters        
         self.tau_s = 0.5 # s to remove along track error
         self.L = 0.2 # m distance to remove normal and angular error
-        self.v_max = 0.2 # m/s fastest the robot can go
-        self.w_max = np.deg2rad(30) # fastest the robot can turn
+        self.v_max = 0.6 # m/s fastest the robot can go
+        self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
         
         self.initialise_control = True # False once control gains is initialised 
@@ -201,6 +202,7 @@ class LaptopPilot:
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
+        ###############(imported)#########################
         # b to e frame
         p_eb = Vector(3)
         p_eb[0] = self.est_pose_northings_m #robot pose northings (see Task 3)
@@ -343,30 +345,16 @@ class LaptopPilot:
 
         return measurement_vector, sensor_jacobian
 
-    def position_sensor_update(self, noise_variance):
+    def position_sensor_update(self):
         # Sample position data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[N] = self.measured_pose_northings_m
         self.sensor_measurement[E] = self.measured_pose_eastings_m
-        random_value = self.add_noise(noise_variance)
-        self.sensor_measurement[N] += random_value[N]
-        self.sensor_measurement[E] += random_value[E]
 
-
-    def yaw_sensor_update(self, noise_variance):
+    def yaw_sensor_update(self):
         # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
-        random_value = self.add_noise(noise_variance)
-        self.sensor_measurement[G] += random_value[G]
-
-    def add_noise(self, variance, mean = 0):
-        # Add random normal noise
-        noise = np.random.normal(mean, np.sqrt(variance), 100) 
-        # first is the mean of the normal distribution you are choosing from
-        # second is the standard deviation of the normal distribution
-        # third is the number of elements you get in array noise
-        return noise
 
 
     class uncertaintyMatrices:  
@@ -376,8 +364,8 @@ class LaptopPilot:
             R = Identity(5)
             R[N, N] = 0.0**2
             R[E, E] = 0.0**2
-            R[G, G] = np.deg2rad(0.0)**2
-            R[DOTX, DOTX] = 0.01**2
+            R[G, G] = np.deg2rad(0)**2
+            R[DOTX, DOTX] = 0.2**2
             R[DOTG, DOTG] = np.deg2rad(0.05)**2
             return R
 
@@ -385,8 +373,8 @@ class LaptopPilot:
             # Create position sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[N, N] = 0.002**2
-            Q[E, E] = 0.002**2
+            Q[N, N] = 0.0**2
+            Q[E, E] = 0.0**2
 
             return Q
         
@@ -394,7 +382,7 @@ class LaptopPilot:
             # Create yaw sensor uncertainty matrix
             Q = Identity(5)
 
-            Q[G, G] = np.deg2rad(0.02)**2
+            Q[G, G] = np.deg2rad(0.0)**2
 
             return Q
 
@@ -472,7 +460,7 @@ class LaptopPilot:
 
              # > Think < #
             ################################################################################
-            ################### Motion Model ##############################
+            ################### Motion Model ####################
             # take current pose estimate and update by twist
 
             R = self.uncertainty.get_process_uncertainty()
@@ -481,26 +469,16 @@ class LaptopPilot:
             
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                p_noise = 0.002
-                self.yaw_sensor_update(p_noise)
+                self.yaw_sensor_update()
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                h_noise = 0.002
-                self.position_sensor_update(h_noise)
+                self.position_sensor_update()
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
-                self.measured_pose_northings_m = float(self.sensor_measurement[N])
-                self.measured_pose_eastings_m = float(self.sensor_measurement[E])
-                self.measured_pose_yaw_rad = float(self.sensor_measurement[G])
-
+                
             
-            #creates measured pose
-            p_robot_truth = Vector(3)
-            p_robot_truth[0,0] = self.groundtruth_northings
-            p_robot_truth[1,0] = self.groundtruth_eastings
-            p_robot_truth[2,0] = self.groundtruth_yaw
-            self.p_groundtruth_tracker = p_robot_truth[0:3,0]
+
                                 
             #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
 
@@ -523,10 +501,8 @@ class LaptopPilot:
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
-            dp_truth = p_ref - p_robot_truth
 
             dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
-            dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
             H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
             ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
@@ -571,18 +547,23 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
-
-            # # Prep messages
-            # p_ref_msg = Vector3Stamped()
-            # p_ref_msg.vector.x = p_ref[0,0]
-            # p_ref_msg.vector.y = p_ref[1,0]
-            # self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
             
             # Export data to excel
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.export_to_excel()
 
+            # Groundtruth
+            if self.plotGroundtruth is not None:
+                p_robot_truth = Vector(3)
+                p_robot_truth[0,0] = self.groundtruth_northings
+                p_robot_truth[1,0] = self.groundtruth_eastings
+                p_robot_truth[2,0] = self.groundtruth_yaw
+                self.p_groundtruth_tracker = p_robot_truth[0:3,0]
+
+                dp_truth = p_ref - p_robot_truth
+                
+                dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
 
 if __name__ == "__main__":
