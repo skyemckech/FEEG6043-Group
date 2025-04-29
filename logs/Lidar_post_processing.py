@@ -762,101 +762,100 @@ corner_g = format_scan_corner("logs/StraightLinePlusCorner.json",0.001,0.1,1)
 corner_h = format_scan_corner("logs/StraightLinePlusCorner2.json", 0.001,0.01,1)
 #corner_i = format_scan_corner("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
-object_a = format_scan_object("logs/MovingCircle.json", 15,0.01,1)
-object_b = format_scan_object("logs/MovingCircleFast.json", 15,0.1)
-object_c = format_scan_object("logs/RoundObject.json",15,0.1)
-object_d = format_scan_object("logs/StaticCorner.json", 15,0.1,1)
-object_e = format_scan_object("logs/StaticRoundObject.json", 15,0.01,1)
-object_f = format_scan_object("logs/StaticWall.json", 15,0.1)
-object_g = format_scan_object("logs/StraightLinePlusCorner.json",15,0.1)
-object_h = format_scan_object("logs/StraightLinePlusCorner2.json", 15,0.1,1)
+#object_a = format_scan_object("logs/MovingCircle.json", 15,1,1)
+object_b = format_scan_object("logs/MovingCircleFast.json", 15,1,1)
+# object_c = format_scan_object("logs/RoundObject.json",15,1,1)
+# object_d = format_scan_object("logs/StaticCorner.json", 15,1,1)
+# object_e = format_scan_object("logs/StaticRoundObject.json", 15,1,1)
+# object_f = format_scan_object("logs/StaticWall.json", 15,1,1)
+# object_g = format_scan_object("logs/StraightLinePlusCorner.json",15,1,1)
+# object_h = format_scan_object("logs/StraightLinePlusCorner2.json", 15,1,1)
 #object_i = format_scan_object("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
-wall_a = format_scan_wall("logs/MovingCircle.json", 15,0.0001,1)
+#wall_a = format_scan_wall("logs/MovingCircle.json", 15,0.0001,1)
 wall_b = format_scan_wall("logs/MovingCircleFast.json", 15,0.0001,1)
-wall_c = format_scan_wall("logs/RoundObject.json",15,0.0001,1)
-wall_d = format_scan_wall("logs/StaticCorner.json", 15,0.0001,1)
-wall_e = format_scan_wall("logs/StaticRoundObject.json", 15,0.0001,1)
-wall_f = format_scan_wall("logs/StaticWall.json", 15,0.0001,1)
-wall_g = format_scan_wall("logs/StraightLinePlusCorner.json",15,0.0001,1)
-wall_h = format_scan_wall("logs/StraightLinePlusCorner2.json", 15,0.0001,1)
+# wall_c = format_scan_wall("logs/RoundObject.json",15,0.0001,1)
+# wall_d = format_scan_wall("logs/StaticCorner.json", 15,0.0001,1)
+# wall_e = format_scan_wall("logs/StaticRoundObject.json", 15,0.0001,1)
+# wall_f = format_scan_wall("logs/StaticWall.json", 15,0.0001,1)
+# wall_g = format_scan_wall("logs/StraightLinePlusCorner.json",15,0.0001,1)
+# wall_h = format_scan_wall("logs/StraightLinePlusCorner2.json", 15,0.0001,1)
 #wall_i = format_scan_wall("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
 
 
-# target_size = a[0].data_filled[:, 0].size  # or define manually
-# X_train = []
-# y_train = []
-
-# #makes clean data for any size array: (clean data is the data without the first instance will all zeros in it)
-# for i in range(len(a)):
-#     data = a[i].data_filled[:, 0]
-#     if a[i].label is not None:
-#         if data.size < target_size:
-#             # pad with NaNs or zeros
-#             padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan)
-#         else:
-#             # trim to target size
-#             padded = data[:target_size]
-#         X_train.append(padded)
-#         y_train.append(a[i].label)
-
-# X_train = np.array(X_train)
-# y_train = np.array(y_train)
-
-# X_train_clean = []
-# y_train_clean = []
-
-# for i in range(len(y_train)):
-#     if y_train[i] is not None:
-#         X_train_clean.append(X_train[i])
-#         y_train_clean.append(y_train[i])
-
-# X_train_clean = np.array(X_train_clean)
-# y_train_clean = np.array(y_train_clean)
-
-# # gpc_corner is the instnace of the classifier which we used with the weighting comands
-# kernel = 1.0 * RBF(1.0)
-# gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
-
-# ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
-# print("Score",gpc_corner.score(X_train_clean, y_train_clean))
-# print("classes",gpc_corner.classes_)
-
-# # Obtain optimized kernel parameters
-# sklearn_theta_1 = gpc_corner.kernel_.k2.get_params()['length_scale']
-# sklearn_theta_0 = np.sqrt(gpc_corner.kernel_.k1.get_params()['constant_value'])
-
-# print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
 
 
+print("-----------------------test1----------------")
+# object_r = combine_scans(object_a,object_b,object_c,object_d,object_e,object_f,object_g,object_h)
+# object_theta1, object_theta2 = find_thetas(object_r)
 
-object_r = combine_scans(object_a,object_b,object_c,object_d,object_e,object_f,object_g,object_h)
+# print("object_r")
+# for i in range(len(object_r)):
+#       print('Entry:', i, ', Class', object_r[i].label)
+
+
+# corner_r = combine_scans(corner_a,corner_b,corner_c,corner_d,corner_e,corner_f,corner_g,corner_h)
+# corner_theta1, corner_theta2 = find_thetas(corner_r)
+
+# print("corner_r")
+# for i in range(len(corner_r)):
+#       print('Entry:', i, ', Class', corner_r[i].label)
+
+# wall_r = combine_scans(wall_a,wall_b,wall_c,wall_d,wall_e,wall_f,wall_g,wall_h)
+# wall_theta1, wall_theta2 = find_thetas(wall_r)
+
+# print("wall_r")
+# for i in range(len(wall_r)):
+#       print('Entry:', i, ', Class', wall_r[i].label)
+for i in range(len(corner_a)):
+      print('Entry:', i, ', Class', corner_a[i].label)
+print("corner_a")
+for i in range(len(corner_b)):
+      print('Entry:', i, ', Class', corner_b[i].label)
+print("corner_a")
+for i in range(len(corner_c)):
+      print('Entry:', i, ', Class', corner_c[i].label)
+print("corner_a")
+for i in range(len(corner_d)):
+      print('Entry:', i, ', Class', corner_d[i].label)
+print("corner_a")
+for i in range(len(corner_e)):
+      print('Entry:', i, ', Class', corner_e[i].label)
+print("corner_a")
+for i in range(len(corner_f)):
+      print('Entry:', i, ', Class', corner_f[i].label)
+print("corner_a")
+for i in range(len(corner_g)):
+      print('Entry:', i, ', Class', corner_g[i].label)
+print("corner_a")
+for i in range(len(corner_h)):
+      print('Entry:', i, ', Class', corner_h[i].label)
+
+print("-----------------------test2----------------")
+object_r = combine_scans(object_b)#,object_c,object_d,object_e,object_f,object_g,object_h)
 object_theta1, object_theta2 = find_thetas(object_r)
 
-corner_r = combine_scans(corner_a,corner_b,corner_c,corner_d,corner_e,corner_f,corner_g,corner_h)
+print("object_r")
+for i in range(len(object_r)):
+      print('Entry:', i, ', Class', object_r[i].label)
+
+
+corner_r = combine_scans(corner_b)#,corner_b,corner_c,corner_d,corner_e,corner_f,corner_g,corner_h)
 corner_theta1, corner_theta2 = find_thetas(corner_r)
 
-wall_r = combine_scans(wall_a,wall_b,wall_c,wall_d,wall_e,wall_f,wall_g,wall_h)
+print("corner_r")
+for i in range(len(corner_r)):
+      print('Entry:', i, ', Class', corner_r[i].label)
+
+wall_r = combine_scans(wall_b)#,wall_b,wall_c,wall_d,wall_e,wall_f,wall_g,wall_h)
 wall_theta1, wall_theta2 = find_thetas(wall_r)
 
+print("wall_r")
+for i in range(len(wall_r)):
+      print('Entry:', i, ', Class', wall_r[i].label)
 
 
-# print("a")
-# for i in range(len(a)):
-#       print('Entry:', i, ', Class', a[i].label)
-
-# print("b")
-# for i in range(len(b)):
-#       print('Entry:', i, ', Class', b[i].label)
-
-# print("c")
-# for i in range(len(c)):
-#       print('Entry:', i, ', Class', c[i].label)
-    
-# print("d")
-# for i in range(len(d)):
-#       print('Entry:', i, ', Class', d[i].label)
 
 print("object_r")
 for i in range(len(object_r)):
