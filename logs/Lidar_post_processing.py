@@ -711,7 +711,7 @@ def find_thetas(a):
 
 
 
-###WORK IN PROGRESS!!!!########
+###WORK PROGRESSED!!!!########
 def combine_test_data(q,w,e,r):
 
     size_example = np.column_stack((corner_training[i].data_filled[:, 0], corner_training[i].data_filled[:, 1]))
