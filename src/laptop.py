@@ -132,6 +132,10 @@ class LaptopPilot:
         self.p_reference_tracker = None
         self.p_groundtruth_tracker = None
 
+        self.pathstage = 0
+        self.inprogress = False
+        self.starttime = None
+
         
         ###############################################################        
 
@@ -467,79 +471,114 @@ class LaptopPilot:
 
             self.state, self.covariance = extended_kalman_filter_predict(self.state, self.covariance, u, motion_model, R, dt)
             
-            if aruco_pose is not None:
-                Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                self.yaw_sensor_update()
-                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
+            # if aruco_pose is not None:
+            #     Q = self.uncertainty.get_yaw_sensor_uncertainty()
+            #     self.yaw_sensor_update()
+            #     self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
-                Q = self.uncertainty.get_p_sensor_uncertainty()
-                self.position_sensor_update()
-                self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
+            #     Q = self.uncertainty.get_p_sensor_uncertainty()
+            #     self.position_sensor_update()
+            #     self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
                 
             
 
                                 
-            #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
+            # #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
 
-            #################### Trajectory sample #################################    
+            # #################### Trajectory sample #################################    
 
-            # feedforward control: check wp progress and sample reference trajectory
-            self.path.wp_progress(self.t, self.state[0:3],self.accept_radius,2,self.timeout) # fill turning radius
-            p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
-            self.p_reference_tracker = p_ref[0:2,0]
+            # # feedforward control: check wp progress and sample reference trajectory
+            # self.path.wp_progress(self.t, self.state[0:3],self.accept_radius,2,self.timeout) # fill turning radius
+            # p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
+            # self.p_reference_tracker = p_ref[0:2,0]
             
-            # update for show_laptop.py            
-            self.update_estimated_pose()
+            # # update for show_laptop.py            
+            # self.update_estimated_pose()
             
-            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
-            self.datalog.log(msg, topic_name="/est_pose")
+            # msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
+            # self.datalog.log(msg, topic_name="/est_pose")
 
 
 
-            # > Control < #
-            ################################################################################
-            # feedback control: get pose change to desired trajectory from body
-            dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
+            # # > Control < #
+            # ################################################################################
+            # # feedback control: get pose change to desired trajectory from body
+            # dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
 
-            dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+            # dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
-            H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
-            ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
+            # H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
+            # ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
 
-            # compute control gains for the initial condition (where the robot is stationalry)
-            self.k_s = 1/self.tau_s #ks
-            if self.initialise_control == True:
-                self.k_n = 0 #kn
-                self.k_g = 0 #kg
-                self.initialise_control = False # maths changes a bit after the first iteration
+            # # compute control gains for the initial condition (where the robot is stationalry)
+            # self.k_s = 1/self.tau_s #ks
+            # if self.initialise_control == True:
+            #     self.k_n = 0 #kn
+            #     self.k_g = 0 #kg
+            #     self.initialise_control = False # maths changes a bit after the first iteration
 
-            # update the controls
-            du = feedback_control(ds, self.k_s, self.k_n, self.k_g)
+            # # update the controls
+            # du = feedback_control(ds, self.k_s, self.k_n, self.k_g)
 
-            # total control
-            #u = u_ref + du # combine feedback and feedforward control twist components
-            u = u_ref + du
+            # # total control
+            # #u = u_ref + du # combine feedback and feedforward control twist components
+            # u = u_ref + du
 
-            # update control gains for the next timestep
-            self.k_n = 2*u[0]/(self.L**2) #kn
-            self.k_g = u[0]/self.L #kg
+            # # update control gains for the next timestep
+            # self.k_n = 2*u[0]/(self.L**2) #kn
+            # self.k_g = u[0]/self.L #kg
 
-            # ensure within performance limitation
-            if u[0] > self.v_max: u[0] = self.v_max
-            if u[0] < -self.v_max: u[0] = -self.v_max
-            if u[1] > self.w_max: u[1] = self.w_max
-            if u[1] < -self.w_max: u[1] = -self.w_max
+            # # ensure within performance limitation
+            # if u[0] > self.v_max: u[0] = self.v_max
+            # if u[0] < -self.v_max: u[0] = -self.v_max
+            # if u[1] > self.w_max: u[1] = self.w_max
+            # if u[1] < -self.w_max: u[1] = -self.w_max
 
-            # actuator commands                 
-            q = self.ddrive.inv_kinematics(u)            
+            # # actuator commands                 
+            # q = self.ddrive.inv_kinematics(u)         
 
-            wheel_speed_msg = Vector3Stamped()
-            wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
-            wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
+            if self.pathstage == 0:
+                
+                if self.inprogress == False:
+                    self.startime = self.t
+                    self.inprogress = True
+                if self.t < self.startime + 5:
+                    u = [0.2, 0]
+                    q = self.ddrive.inv_kinematics(u)  
+                    wheel_speed_msg = Vector3Stamped()
+                    wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
 
-            self.cmd_wheelrate_right = wheel_speed_msg.vector.x
-            self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+                    self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+                else: 
+                    self.pathstage += 1
+                    self.inprogress == False
+            
+            if self.pathstage == 1:
+                
+                if self.inprogress == False:
+                    self.startime = self.t
+                    self.inprogress = True
+                if self.t < self.startime + 5:
+                    u = [0, np.pi/2/5]
+                    q = self.ddrive.inv_kinematics(u)  
+                    wheel_speed_msg = Vector3Stamped()
+                    wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
+                    wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+
+                    self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+                    self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+                else: 
+                    self.pathstage += 1   
+
+            # wheel_speed_msg = Vector3Stamped()
+            # wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
+            # wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
+
+            # self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+            # self.cmd_wheelrate_left = wheel_speed_msg.vector.y
             
             ################################################################################
 
@@ -553,17 +592,17 @@ class LaptopPilot:
             self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
             self.ref_pose_worksheet.export_to_excel()
 
-            # Groundtruth
-            if self.plotGroundtruth is not None:
-                p_robot_truth = Vector(3)
-                p_robot_truth[0,0] = self.groundtruth_northings
-                p_robot_truth[1,0] = self.groundtruth_eastings
-                p_robot_truth[2,0] = self.groundtruth_yaw
-                self.p_groundtruth_tracker = p_robot_truth[0:3,0]
+            # # Groundtruth
+            # if self.plotGroundtruth is not None:
+            #     p_robot_truth = Vector(3)
+            #     p_robot_truth[0,0] = self.groundtruth_northings
+            #     p_robot_truth[1,0] = self.groundtruth_eastings
+            #     p_robot_truth[2,0] = self.groundtruth_yaw
+            #     self.p_groundtruth_tracker = p_robot_truth[0:3,0]
 
-                dp_truth = p_ref - p_robot_truth
+            #     dp_truth = p_ref - p_robot_truth
                 
-                dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+            #     dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
 
 if __name__ == "__main__":
