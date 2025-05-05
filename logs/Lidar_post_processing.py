@@ -11,6 +11,8 @@ from sklearn.gaussian_process import GaussianProcessClassifier #####from any pyt
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import classification_report
 
 p = Vector(3); 
 
@@ -701,11 +703,23 @@ def find_thetas(a):
     print("Score",gpc_corner.score(X_train_clean, y_train_clean))
     print("classes",gpc_corner.classes_)
 
+
+    ### Evaluate the model using cross-validation
+    scores = cross_val_score(gpc_corner, X_train_clean, y_train_clean, cv=5)
+    print("Cross-validated accuracy scores:", scores)
+    print("Mean accuracy:", scores.mean())
+
+
     # Obtain optimized kernel parameters
     sklearn_theta_1 = gpc_corner.kernel_.k2.get_params()['length_scale']
     sklearn_theta_0 = np.sqrt(gpc_corner.kernel_.k1.get_params()['constant_value'])
 
     print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
+
+    # Generate a classification report based on the trained model
+    print("Classification Report:")
+    y_pred = gpc_corner.predict(X_train_clean)  # Predictions using the trained model
+    print(classification_report(y_train_clean, y_pred))  # Detailed classification report
 
     return sklearn_theta_1,sklearn_theta_0
 
@@ -764,10 +778,10 @@ object_c = format_scan_object("logs/static_cylinder_20250325_141536_log.json",15
 object_d = format_scan_object("logs/static_10_cm_wall_20250325_131922_log.json", 15,0.1,1)
 #object_e = format_scan_object("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
-wall_a = format_scan_wall("logs/all_static_corners_&_walls_20250325_135405_log.json", 15,0.0001,1)
-wall_b = format_scan_wall("logs/2_lap_square_complete_20250325_140938_log.json", 15,0.0001,1)
-wall_c = format_scan_wall("logs/static_cylinder_20250325_141536_log.json",15,0.0001,1)
-wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 15,0.0001,1)
+wall_a = format_scan_wall("logs/all_static_corners_&_walls_20250325_135405_log.json", 15,0.01,0.5)
+wall_b = format_scan_wall("logs/2_lap_square_complete_20250325_140938_log.json", 15,0.01,0.5)
+wall_c = format_scan_wall("logs/static_cylinder_20250325_141536_log.json", 15,0.01,0.5)
+wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 15,0.01,0.5)
 #wall_e = format_scan_wall("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
 
