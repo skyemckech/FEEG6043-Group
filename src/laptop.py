@@ -123,9 +123,6 @@ class LaptopPilot:
         lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
-        # Excel export
-        self.export_data = None
-        self.ref_pose_worksheet = LaptopPilot.createExcelFile("output_data.xlsx")
 
         # Create variable for plotting ground truth and reference position
         self.p_reference_tracker = None
@@ -152,29 +149,7 @@ class LaptopPilot:
             "/groundtruth", Pose, self.groundtruth_callback, ip=self.robot_ip
         )
     
-    class createExcelFile:
-        def __init__(self, filename = "reference.xlsx"):
-            # Creates workbook and worksheet to modify
-            self.workbook = openpyxl.Workbook()
-            self.worksheet = self.workbook.active
-            self.filename = filename
-            self.workbook.save(filename)
 
-            # Initialise variable to store data
-            self.dataLine = []
-
-        def extend_data(self, data):
-            # adds to list self.dataLine
-            data = change_to_list(data)
-            self.dataLine.extend(data)
-
-        def export_to_excel(self):
-            # appends dataLine to sheet and saves file
-            self.workbook = load_workbook(self.filename)
-            self.worksheet.append(self.dataLine)       
-            self.workbook.save(self.filename)
-            self.workbook.close
-            self.dataLine = []
 
     def true_wheel_speeds_callback(self, msg):
         print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
@@ -432,16 +407,6 @@ class LaptopPilot:
                 self.initialise_robot()
                 self.uncertainty = LaptopPilot.uncertaintyMatrices()
 
-                # Add headers
-                self.ref_pose_worksheet.extend_data(["Elapsed Time",
-                                                    "Trajectory Northings",
-                                                    "Trajectory Eastings",
-                                                    "Trajectory Gamma",
-                                                    "Measured Northings Error", 
-                                                    "Measured Eastings Error", 
-                                                    "Measured Gamma Error"])
-                self.ref_pose_worksheet.export_to_excel()
-
                 self.generate_trajectory()
 
                 # get current time and determine timestep
@@ -571,17 +536,6 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
-
-            # # Prep messages
-            # p_ref_msg = Vector3Stamped()
-            # p_ref_msg.vector.x = p_ref[0,0]
-            # p_ref_msg.vector.y = p_ref[1,0]
-            # self.datalog.log(p_ref_msg, topic_name = "/p_ref" )
-            
-            # Export data to excel
-            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
-            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
-            self.ref_pose_worksheet.export_to_excel()
 
 
 
