@@ -67,7 +67,7 @@ class LaptopPilot:
         self.eastings_path = lapy+lapy+lapy     
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.190 # m 
+        wheel_distance = 0.174 # m 
         wheel_diameter = 0.070 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
@@ -135,11 +135,30 @@ class LaptopPilot:
         self.pathstage = 0
         self.inprogress = False
         self.starttime = None
-        self.commands = [(0.1, np.pi, 5),
-                         (0.1, np.pi, 5),
-                         (0.1, np.pi, 5),
-                         (0.1, np.pi, 5),
-                         (0, np.pi, 5),
+        self.commands = [   (0.01, 0, 1),
+                            (0, -np.pi/2, 2),
+                            (0, -np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, -np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, -np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, -np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, -np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, np.pi/2, 10),
+                            (-0.1, 0, 1),
+                            (0, -np.pi/2, 10),
+                            
                          ]
         
         ###############################################################        
@@ -409,12 +428,15 @@ class LaptopPilot:
                 u[0] = command[0]/command[2]
                 u[1] = command[1]/command[2]
                 q = self.ddrive.inv_kinematics(u)  
-                self.wheel_speed_msg = Vector3Stamped()
-                self.wheel_speed_msg.vector.x = q[0]  #q[0,0] # Right wheelspeed rad/s
-                self.wheel_speed_msg.vector.y = q[1]  #q[1,0] # Left wheelspeed rad/s  
+                wheel_speed_msg = Vector3Stamped()
+                wheel_speed_msg.vector.x = q[0,0]  #q[0,0] # Right wheelspeed rad/s
+                wheel_speed_msg.vector.y = q[1,0]  #q[1,0] # Left wheelspeed rad/s  
 
-                self.cmd_wheelrate_right = self.wheel_speed_msg.vector.x
-                self.cmd_wheelrate_left = self.wheel_speed_msg.vector.y
+                self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+                self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+
+                self.wheel_speed_pub.publish(wheel_speed_msg)
+                self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
             else: 
                 self.inprogress = False
                 self.pathstage += 1
@@ -507,8 +529,7 @@ class LaptopPilot:
 
             # > Act < #
             # Send commands to the robot        
-            self.wheel_speed_pub.publish(self.wheel_speed_msg)
-            self.datalog.log(self.wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+
             
             # Export data to excel
             # self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
