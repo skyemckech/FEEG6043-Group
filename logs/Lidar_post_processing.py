@@ -385,10 +385,10 @@ def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
         #print("Values[0]:",values[:,0],"Values[1]:",values[:,1],)
 
         ####plotting funcitons####
-        # fig,ax = plt.subplots()
-        # show_scan(p, lidar, observation)
-        # ax.scatter(m_y, m_x,s=0.01)
-        # plt.show()
+        fig,ax = plt.subplots()
+        show_scan(p, lidar, observation)
+        ax.scatter(m_y, m_x,s=0.01)
+        plt.show()
 
             ####if the number of nan's is more than X of the total size then pass#######
         if np.count_nonzero(~np.isnan(values[:,0])) > 0.1 * len(values[:,0]):
@@ -751,19 +751,19 @@ def combine_scans(*scans):
     return combined_scans
 
 
-
-corner_a = format_scan_corner("logs/MovingCircle.json", 0.001,0.1,1)
-corner_b = format_scan_corner("logs/MovingCircleFast.json", 0.001,0.1,1)
-corner_c = format_scan_corner("logs/RoundObject.json",0.001,0.1,1)
-corner_d = format_scan_corner("logs/StaticCorner.json", 0.001,0.01,1)
-corner_e = format_scan_corner("logs/StaticRoundObject.json", 0.001,0.1,1)
-corner_f = format_scan_corner("logs/StaticWall.json", 0.001,0.1,1)
-corner_g = format_scan_corner("logs/StraightLinePlusCorner.json",0.001,0.1,1)
-corner_h = format_scan_corner("logs/StraightLinePlusCorner2.json", 0.001,0.01,1)
+corner_a = format_scan_corner("logs/20250510_110609_log.json", 0.001,0.1,1)
+# corner_a = format_scan_corner("logs/MovingCircle.json", 0.001,0.1,1)
+# corner_b = format_scan_corner("logs/MovingCircleFast.json", 0.001,0.1,1)
+# corner_c = format_scan_corner("logs/RoundObject.json",0.001,0.1,1)
+# corner_d = format_scan_corner("logs/StaticCorner.json", 0.001,0.01,1)
+# corner_e = format_scan_corner("logs/StaticRoundObject.json", 0.001,0.1,1)
+# corner_f = format_scan_corner("logs/StaticWall.json", 0.001,0.1,1)
+# corner_g = format_scan_corner("logs/StraightLinePlusCorner.json",0.001,0.1,1)
+# corner_h = format_scan_corner("logs/StraightLinePlusCorner2.json", 0.001,0.01,1)
 #corner_i = format_scan_corner("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
 #object_a = format_scan_object("logs/MovingCircle.json", 15,1,1)
-object_b = format_scan_object("logs/MovingCircleFast.json", 15,1,1)
+#object_b = format_scan_object("logs/MovingCircleFast.json", 15,1,1)
 # object_c = format_scan_object("logs/RoundObject.json",15,1,1)
 # object_d = format_scan_object("logs/StaticCorner.json", 15,1,1)
 # object_e = format_scan_object("logs/StaticRoundObject.json", 15,1,1)
@@ -773,7 +773,7 @@ object_b = format_scan_object("logs/MovingCircleFast.json", 15,1,1)
 #object_i = format_scan_object("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
 #wall_a = format_scan_wall("logs/MovingCircle.json", 15,0.0001,1)
-wall_b = format_scan_wall("logs/MovingCircleFast.json", 15,0.0001,1)
+#wall_b = format_scan_wall("logs/MovingCircleFast.json", 15,0.0001,1)
 # wall_c = format_scan_wall("logs/RoundObject.json",15,0.0001,1)
 # wall_d = format_scan_wall("logs/StaticCorner.json", 15,0.0001,1)
 # wall_e = format_scan_wall("logs/StaticRoundObject.json", 15,0.0001,1)
