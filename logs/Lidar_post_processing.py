@@ -715,32 +715,36 @@ def find_thetas(a):
 
     print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
 
-    return sklearn_theta_1,sklearn_theta_0
+    return sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train_clean, y_train_clean
 
 
 
-###WORK PROGRESSED!!!!########
-def combine_test_data(q,w,e,r):
 
-    size_example = np.column_stack((corner_training[i].data_filled[:, 0], corner_training[i].data_filled[:, 1]))
-    corner_example = GPC_input_output(q[0], None)
-    corner_training = [corner_example]
+def cross_validate(gpc_corner,X_train_clean,y_train_clean):
 
-    ####name of the values
-    for i in range(len(corner_training)):
-        print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
-        print('Data type: Radius', corner_training[i].data_filled[:, 0])
-        print('Data type:Theta', corner_training[i].data_filled[:, 1])
+    ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
+    print("Score",gpc_corner.score(X_train_clean, y_train_clean))
+    print("classes",gpc_corner.classes_)
 
-        ##funciton which appends data to big ass variable:
-    new_observation.label = 'corner'
-    new_observation.ne_representative = z_lm
-    print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
-    print("corner")
+    ### Evaluate the model using cross-validation
+    scores = cross_val_score(gpc_corner, X_train_clean, y_train_clean, cv=5)
+    print("Cross-validated accuracy scores:", scores)
+    print("Mean accuracy:", scores.mean())
 
-    corner_training.append(new_observation)
+    print("Standard deviation of accuracy:", scores.std())
+    print("Mean accuracy (std):", scores.mean(), "+/-", scores.std())
+    print("Repeatability (1 - std/mean):", 1 - scores.std()/scores.mean())
 
-    return 
+    
+    repeatability = evaluate_repeatability(scores)
+    print("Repeatability (1 - std/mean):", repeatability)
+
+    # Generate a classification report based on the trained model
+    print("Classification Report:")
+    y_pred = gpc_corner.predict(X_train_clean)  # Predictions using the trained model
+    print(classification_report(y_train_clean, y_pred))  # Detailed classification report
+
+    return scores.mean(), repeatability
 
 def combine_scans(*scans):
     """
@@ -802,6 +806,47 @@ object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 1,0.1,1)
 
 
 
+    # X_train_clean = np.array(X_train_clean)
+    # y_train_clean = np.array(y_train_clean)
+
+    # # gpc_corner is the instnace of the classifier which we used with the weighting comands
+    # kernel = 1.0 * RBF(1.0)
+    # gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
+
+    # ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
+    # print("Score",gpc_corner.score(X_train_clean, y_train_clean))
+    # print("classes",gpc_corner.classes_)
+
+
+    # ### Evaluate the model using cross-validation
+    # scores = cross_val_score(gpc_corner, X_train_clean, y_train_clean, cv=5)
+    # print("Cross-validated accuracy scores:", scores)
+    # print("Mean accuracy:", scores.mean())
+
+    # print("Standard deviation of accuracy:", scores.std())
+    # print("Mean accuracy (std):", scores.mean(), "+/-", scores.std())
+    # print("Repeatability (1 - std/mean):", 1 - scores.std()/scores.mean())
+
+    
+    # repeatability = evaluate_repeatability(scores)
+    # print("Repeatability (1 - std/mean):", repeatability)
+
+
+
+    # # Obtain optimized kernel parameters
+    # sklearn_theta_1 = gpc_corner.kernel_.k2.get_params()['length_scale']
+    # sklearn_theta_0 = np.sqrt(gpc_corner.kernel_.k1.get_params()['constant_value'])
+
+    # print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
+
+    # # Generate a classification report based on the trained model
+    # print("Classification Report:")
+    # y_pred = gpc_corner.predict(X_train_clean)  # Predictions using the trained model
+    # print(classification_report(y_train_clean, y_pred))  # Detailed classification report
+
+    # return sklearn_theta_1,sklearn_theta_0, scores.mean(), repeatability
+
+
 
 print("-----------------------testprint----------------")
 # object_r = combine_scans(object_a,object_b,object_c,object_d,object_e,object_f,object_g,object_h)
@@ -845,16 +890,16 @@ print("-----------------------testprint----------------")
 print("-----------------------testcombine_scan----------------")
 
 corner_0_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise,wall_high_noise,wall_low_noise,wall_0_noise,object_high_noise,object_low_noise,object_0_noise)
-corner_theta1_0_R_H, corner_theta2_0_R_H = find_thetas(corner_0_R_H)
+corner_theta1_0_R_H, corner_theta2_0_R_H, gpc_0_R_H = find_thetas(corner_0_R_H)
 
 corner_0_R = combine_scans(corner_low_noise,corner_0_noise,wall_low_noise,wall_0_noise,object_low_noise,object_0_noise)
-corner_theta1_0_R, corner_theta2_0_R = find_thetas(corner_0_R)
+corner_theta1_0_R, corner_theta2_0_R, gpc_0_R = find_thetas(corner_0_R)
 
 corner_0 = combine_scans(corner_0_noise,wall_0_noise,object_0_noise)
-corner_theta1_0, corner_theta2_0 = find_thetas(corner_0)
+corner_theta1_0, corner_theta2_0, gpc_0 = find_thetas(corner_0)
 
 corner_H = combine_scans(corner_high_noise,wall_high_noise,object_high_noise)
-corner_theta1_H, corner_theta2_H = find_thetas(corner_H)
+corner_theta1_H, corner_theta2_H, gpc_H = find_thetas(corner_H)
 
 
 print("corner_0_R_H")
@@ -879,3 +924,25 @@ print("corner_theta1_0_R:",corner_theta1_0_R, "corner_theta2_0_R:",corner_theta2
 print("corner_theta1_0:",corner_theta1_0, "corner_theta2_0:",corner_theta2_0)
 print("corner_theta1_H:",corner_theta1_H, "corner_theta2_H:",corner_theta2_H)
 #print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
+
+
+# print('Data type: Radius', corner_training[i].data_filled[:, 0])
+# print('Data type:Theta', corner_training[i].data_filled[:, 1])
+
+#print(corner_0_R_H)
+# n = len(corner_0_R_H)
+# g = len(corner_0_R_H[0].data_filled[:, 0])  # Length of your inner arrays
+
+# # Create an empty array with object dtype to hold arrays
+# matrix = np.empty((n, 2), dtype=object)
+
+# for i in range(n):
+#     matrix[i, 0] = corner_0_R_H[i].data_filled[:, 0]  # Radius
+#     matrix[i, 1] = corner_0_R_H[i].data_filled[:, 1]  # Theta
+
+
+
+
+# print(matrix[1,0])
+# print(matrix[2,0])
+#print(corner_0_R_H)
