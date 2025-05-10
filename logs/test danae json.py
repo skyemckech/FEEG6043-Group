@@ -780,26 +780,103 @@ def combine_scans(*scans):
 
     return combined_scans
 
+def tune_thresholds(scan_func, logs, threshold_vals, fit_err_vals, wall_err_vals, label):
+    best_repeatability = -1
+    best_config = None
+    best_accuracy = -1
+
+    for threshold in threshold_vals:
+        for fit_err in fit_err_vals:
+            for wall_err in wall_err_vals:
+                try:
+                    scan_data = []
+                    for log in logs:
+                        scan_data += scan_func(log, threshold, fit_err, wall_err)
+
+                    if len(scan_data) == 0:
+                    
+                        continue
+
+                    unique_labels = set(obs.label for obs in scan_data if obs.label is not None)
+                    if len(unique_labels) < 2:
+                        print(f" Skipping config=({threshold}, {fit_err}, {wall_err}) — only one class found: {unique_labels}")
+                        continue
+
+                    _, _, accuracy, repeatability = find_thetas(scan_data)
+
+                    print(f"[{label}] Checked: acc={accuracy:.3f}, rep={repeatability:.3f} for config=({threshold}, {fit_err}, {wall_err})")
+
+                    if repeatability > best_repeatability or \
+                       (repeatability == best_repeatability and accuracy > best_accuracy):
+                        best_repeatability = repeatability
+                        best_accuracy = accuracy
+                        best_config = (threshold, fit_err, wall_err)
+
+                except Exception as e:
+                    print(f" Error for threshold={threshold}, fit_err={fit_err}, wall_err={wall_err}: {e}")
+
+    if best_config is None:
+        print(f"[{label}]  No valid configuration found.")
+    else
+        print(f"[{label}] ✅ Best config: acc={best_accuracy:.3f}, rep={best_repeatability:.3f}, config={best_config}")
+
+    return best_config
 
 
 
-corner_a = format_scan_corner("logs/all_static_corners_&_walls_20250325_135405_log.json", 0.005,0.1,0.001)
-corner_b = format_scan_corner("logs/2_lap_square_complete_20250325_140938_log.json", 0.005,0.1,0.001)
-corner_c = format_scan_corner("logs/static_cylinder_20250325_141536_log.json",0.005,0.1,0.001)
-corner_d = format_scan_corner("logs/static_10_cm_wall_20250325_131922_log.json", 0.005,0.1,0.001)
-# corner_e = format_scan_corner("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.005,0.1,0.001)
+# === Paths to logs ===
+corner_logs = [
+    "logs/all_static_corners_&_walls_20250325_135405_log.json",
+    "logs/2_lap_square_complete_20250325_140938_log.json",
+    "logs/static_cylinder_20250325_141536_log.json",
+    "logs/static_10_cm_wall_20250325_131922_log.json",
+    # "logs/CORNERS_CLASSIFIER_20250325_135248_log.json"
+]
 
-object_a = format_scan_object("logs/all_static_corners_&_walls_20250325_135405_log.json", 12, 0.005, 1)
-object_b = format_scan_object("logs/2_lap_square_complete_20250325_140938_log.json", 12, 0.005, 1)
-object_c = format_scan_object("logs/static_cylinder_20250325_141536_log.json",12, 0.005, 1)
-object_d = format_scan_object("logs/static_10_cm_wall_20250325_131922_log.json", 112, 0.005, 1)
-# object_e = format_scan_object("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 12,0.05,1.5)
+# === Threshold ranges (corner-specific) ===
+corner_threshold_vals = [12, 15, 17]
+corner_fit_err_vals   = [0.05, 0.1, 0.15]
+corner_wall_err_vals  = [0.5,1, 1.5]
 
-wall_a = format_scan_wall("logs/all_static_corners_&_walls_20250325_135405_log.json", 18,0.05,1.0)
-wall_b = format_scan_wall("logs/2_lap_square_complete_20250325_140938_log.json", 18,0.05,1.0)
-wall_c = format_scan_wall("logs/static_cylinder_20250325_141536_log.json", 18,0.05,1.0)
-wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 18,0.05,1.0)
-# wall_e = format_scan_wall("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 18,0.05,1.0)
+
+# === Run tuning just for CORNER ===
+corner_best = tune_thresholds(
+    format_scan_corner,
+    corner_logs,
+    threshold_vals=corner_threshold_vals,
+    fit_err_vals=corner_fit_err_vals,
+    wall_err_vals=corner_wall_err_vals,
+    label="corner"
+)
+
+print("\n🏁 Best config for CORNER:", corner_best)
+print(f"[{label.upper()}]  Best config for thresholds:")
+print(f"  ↳ threshold = {best_config[0]}")
+print(f"  ↳ fit_error = {best_config[1]}")
+print(f"  ↳ wall_error = {best_config[2]}")
+print(f"  ↳ Accuracy = {best_accuracy:.3f}, Repeatability = {best_repeatability:.3f}")
+
+
+
+
+
+corner_a = format_scan_corner("logs/all_static_corners_&_walls_20250325_135405_log.json", 0.001,0.1,1)
+corner_b = format_scan_corner("logs/2_lap_square_complete_20250325_140938_log.json", 0.001,0.1,1)
+corner_c = format_scan_corner("logs/static_cylinder_20250325_141536_log.json",0.001,0.1,1)
+corner_d = format_scan_corner("logs/static_10_cm_wall_20250325_131922_log.json", 0.001,0.01,1)
+#corner_e = format_scan_corner("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
+
+object_a = format_scan_object("logs/all_static_corners_&_walls_20250325_135405_log.json", 15,0.01,1)
+object_b = format_scan_object("logs/2_lap_square_complete_20250325_140938_log.json", 15,0.1)
+object_c = format_scan_object("logs/static_cylinder_20250325_141536_log.json",15,0.1)
+object_d = format_scan_object("logs/static_10_cm_wall_20250325_131922_log.json", 15,0.1,1)
+#object_e = format_scan_object("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
+
+wall_a = format_scan_wall("logs/all_static_corners_&_walls_20250325_135405_log.json", 15,0.01,0.5)
+wall_b = format_scan_wall("logs/2_lap_square_complete_20250325_140938_log.json", 15,0.01,0.5)
+wall_c = format_scan_wall("logs/static_cylinder_20250325_141536_log.json", 15,0.01,0.5)
+wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 15,0.01,0.5)
+#wall_e = format_scan_wall("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.01,0.01,1)
 
 
 #dd
@@ -856,15 +933,18 @@ wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 18,
 
 
 object_r = combine_scans(object_a,object_b,object_c,object_d)
-object_theta1, object_theta0, object_acc, object_rep = find_thetas(object_r)
-
+object_theta1, object_theta2, object_acc, object_rep = find_thetas(object_r)
 
 corner_r = combine_scans(corner_a,corner_b,corner_c,corner_d)
-corner_theta1, corner_theta0, corner_acc, corner_rep = find_thetas(corner_r)
-
+corner_theta1, corner_theta2 = find_thetas(corner_r)
 
 wall_r = combine_scans(wall_a,wall_b,wall_c,wall_d)
-wall_theta1, wall_theta0, wall_acc, wall_rep = find_thetas(wall_r)
+wall_theta1, wall_theta2 = find_thetas(wall_r)
+
+corner_final = []
+for log in corner_logs:
+    corner_final += format_scan_corner(log, *corner_best)
+find_thetas(corner_final)
 
 
 
@@ -896,6 +976,6 @@ print("wall_r")
 for i in range(len(wall_r)):
       print('Entry:', i, ', Class', wall_r[i].label)
 
-print("object_theta1:", object_theta1, "object_theta0:", object_theta0)
-print("corner_theta1:", corner_theta1, "corner_theta0:", corner_theta0)
-print("wall_theta1:", wall_theta1, "wall_theta0:", wall_theta0)
+print("object_theta1:",object_theta1, "object_theta2:",object_theta2)
+print("corner_theta1:",corner_theta1, "corner_theta2:",corner_theta2)
+print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
