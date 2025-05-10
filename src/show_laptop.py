@@ -17,7 +17,7 @@ warnings.simplefilter("ignore")
 import numpy as np 
 import copy
 
-from Libraries import *
+
 from PyQt5.QtWidgets import QWidget, QApplication, QGridLayout
 from pglive.sources.data_connector import DataConnector
 from pglive.sources.live_plot import LiveLinePlot

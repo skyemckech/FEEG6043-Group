@@ -2053,4 +2053,30 @@ class graphslam_backend:
             show_information(self.sigma,self.n,3,self.m,2)
 
         print('Residual = ',self.residual) 
+    
+class GPC_input_output:
+    def __init__(self, data, label):
+        """
+        Initializes an observation with data and a label.
 
+        Parameters:
+        data (matrix): The observation data (e.g., a matrix).
+        data_filled (matrix): The observation data after zero offset and making nan's mean
+        label (str): The label associated with the observation.
+        ne_representative: representative northings and eastings location
+        """
+        self.data = data
+        self.data_filled = self._fill_nan(data)
+        self.label = label
+        self.ne_representative = None 
+        # make filled and zero offset version        
+        
+    def _fill_nan(self,data):
+        data_filled = np.copy(data)
+        mean=np.nanmean(data[:,0])  
+        for i in range(len(data[:,1])):
+            if np.isnan(data[i,0]):
+                data_filled[i,0]=0
+            else: 
+                data_filled[i,0]=data[i,0]-mean
+        return data_filled
