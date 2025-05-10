@@ -352,6 +352,13 @@ class LaptopPilot:
         self.sensor_measurement[E] = self.measured_pose_eastings_m
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
+    def lidar_update(self, noise):
+        rangenoise = self.add_noise(self.lidar_rangenoise,0,len(self.lidar_data[:,0]))
+        anglenoise = self.add_noise(self.lidar_anglenoise,0,len(self.lidar_data[:,1]))
+
+        self.lidar_data[:,0] += rangenoise
+        self.lidar_data[:,1] += anglenoise
+        
     class uncertaintyMatrices:  
         #Class to keep track of model uncertainty
         def get_initial_uncertainty(self):
@@ -505,41 +512,37 @@ class LaptopPilot:
 
             # Motion model update
             self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            self.lidar_update()
             
-            if self.t > 10:
-                self.graph.motion(self.state,self.covariance,Vector(3),final=True)
-                print('Finish graph data association')
-                print('*************************************************')
+            # if self.t > 10:
+            #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)
+            #     print('Finish graph data association')
+            #     print('*************************************************')
 
-                self.graph.construct_graph()
+            #     self.graph.construct_graph()
 
-                pose_ground_truth = self.p_gt_path
-                em = Vector(2)
-                H_em = HomogeneousTransformation(em,0)  
-                m_e0 = Vector(2)
-                m_e0[0] = -0
-                m_e0[1] = 2
+            #     pose_ground_truth = self.p_gt_path
+            #     em = Vector(2)
+            #     H_em = HomogeneousTransformation(em,0)  
+            #     m_e0 = Vector(2)
+            #     m_e0[0] = -0
+            #     m_e0[1] = 2
 
-                m_e1 = Vector(2)
-                m_e1[0] = 2
-                m_e1[1] = 5
+            #     m_e1 = Vector(2)
+            #     m_e1[0] = 2
+            #     m_e1[1] = 5
 
-                m_e2 = Vector(2)
-                m_e2[0] = 1.0
-                m_e2[1] = 5.5
-                map_ground_truth = [m_e0, m_e1, m_e2]
-                map_labels = ['m1', 'm2', 'm3']
-                plot_graph(self.graph, pose_ground_truth, H_em, map_ground_truth, map_labels)
+            #     m_e2 = Vector(2)
+            #     m_e2[0] = 1.0
+            #     m_e2[1] = 5.5
+            #     map_ground_truth = [m_e0, m_e1, m_e2]
+            #     map_labels = ['m1', 'm2', 'm3']
+            #     plot_graph(self.graph, pose_ground_truth, H_em, map_ground_truth, map_labels)
                 
-                visualise_flag = True
-                self.graph.construct_graph(visualise_flag = visualise_flag)
-            else:
-                self.graph.motion(p_,sigma_, dp ,final=False)   # Task
-
-
-                                
-            #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
-
+            #     visualise_flag = True
+            #     self.graph.construct_graph(visualise_flag = visualise_flag)
+            # else:
+            #     self.graph.motion(p_,sigma_, dp ,final=False)   # Task
             #################### Trajectory sample #################################    
 
             # feedforward control: check wp progress and sample reference trajectory
