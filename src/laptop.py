@@ -18,6 +18,9 @@ from zeroros.messages import LaserScan, Vector3Stamped, Pose, PoseStamped, Heade
 from zeroros.datalogger import DataLogger
 from zeroros.rate import Rate
 
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import ConstantKernel, RBF
+
 from matplotlib import pyplot as plt
 from openpyxl import load_workbook
 
