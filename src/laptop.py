@@ -235,8 +235,13 @@ class LaptopPilot:
 
         msg.header.stamp += self.sim_time_offset
 
+<<<<<<< HEAD
         rangenoise = self.add_noise(self.lidar_rangenoise,0,len(msg.ranges))
         anglenoise = self.add_noise(self.lidar_anglenoise,0,len(msg.angles))
+=======
+        rangenoise = self.add_noise(0.000075,0,len(msg.ranges))
+        anglenoise = self.add_noise(0.0009,0,len(msg.angles))
+>>>>>>> af9c781 (Ran tests for noise)
 
         msg.ranges += rangenoise
         msg.angles += anglenoise
