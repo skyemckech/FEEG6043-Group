@@ -762,6 +762,15 @@ def combine_scans(*scans):
 corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
 corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
 corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
+
+wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 1,0.1,1)
+wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 1,0.1,1)
+wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 1,0.1,1)
+
+object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 1,0.1,1)
+object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 1,0.1,1)
+object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 1,0.1,1)
+
 # corner_c = format_scan_corner("logs/RoundObject.json",0.001,0.1,1)
 # corner_d = format_scan_corner("logs/StaticCorner.json", 0.001,0.01,1)
 # corner_e = format_scan_corner("logs/StaticRoundObject.json", 0.001,0.1,1)
@@ -816,66 +825,57 @@ print("-----------------------testprint----------------")
 # print("wall_r")
 # for i in range(len(wall_r)):
 #       print('Entry:', i, ', Class', wall_r[i].label)
-    #####More printing bollox#######
-print("corner_0_noise")    
-for i in range(len(corner_0_noise)):
-      print('Entry:', i, ', Class', corner_0_noise[i].label)
-print("corner_low_noise")
-for i in range(len(corner_low_noise)):
-      print('Entry:', i, ', Class', corner_low_noise[i].label)
-print("corner_high_noise")
-for i in range(len(corner_high_noise)):
-      print('Entry:', i, ', Class', corner_high_noise[i].label)
 
-# print("corner_a")
-# for i in range(len(corner_d)):
-#       print('Entry:', i, ', Class', corner_d[i].label)
-# print("corner_a")
-# for i in range(len(corner_e)):
-#       print('Entry:', i, ', Class', corner_e[i].label)
-# print("corner_a")
-# for i in range(len(corner_f)):
-#       print('Entry:', i, ', Class', corner_f[i].label)
-# print("corner_a")
-# for i in range(len(corner_g)):
-#       print('Entry:', i, ', Class', corner_g[i].label)
-# print("corner_a")
-# for i in range(len(corner_h)):
-#       print('Entry:', i, ', Class', corner_h[i].label)
+
+
+    #####More printing bollox#######
+# print("corner_0_noise")    
+# for i in range(len(corner_0_noise)):
+#       print('Entry:', i, ', Class', corner_0_noise[i].label)
+# print("corner_low_noise")
+# for i in range(len(corner_low_noise)):
+#       print('Entry:', i, ', Class', corner_low_noise[i].label)
+# print("corner_high_noise")
+# for i in range(len(corner_high_noise)):
+#       print('Entry:', i, ', Class', corner_high_noise[i].label)
+
+
+
 
 print("-----------------------testcombine_scan----------------")
-corner_O_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise)
-corner_theta1, corner_theta2 = find_thetas(corner_O_R_H)
+
+corner_0_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise,wall_high_noise,wall_low_noise,wall_0_noise,object_high_noise,object_low_noise,object_0_noise)
+corner_theta1_0_R_H, corner_theta2_0_R_H = find_thetas(corner_0_R_H)
+
+corner_0_R = combine_scans(corner_low_noise,corner_0_noise,wall_low_noise,wall_0_noise,object_low_noise,object_0_noise)
+corner_theta1_0_R, corner_theta2_0_R = find_thetas(corner_0_R)
+
+corner_0 = combine_scans(corner_0_noise,wall_0_noise,object_0_noise)
+corner_theta1_0, corner_theta2_0 = find_thetas(corner_0)
+
+corner_H = combine_scans(corner_high_noise,wall_high_noise,object_high_noise)
+corner_theta1_H, corner_theta2_H = find_thetas(corner_H)
 
 
-# corner_r = combine_scans(corner_b)#,corner_b,corner_c,corner_d,corner_e,corner_f,corner_g,corner_h)
-# corner_theta1, corner_theta2 = find_thetas(corner_r)
+print("corner_0_R_H")
+for i in range(len(corner_0_R_H)):
+      print('Entry:', i, ', Class', corner_0_R_H[i].label)
 
-print("corner_O_R_H")
-for i in range(len(corner_O_R_H)):
-      print('Entry:', i, ', Class', corner_O_R_H[i].label)
+print("corner_0_R")
+for i in range(len(corner_0_R)):
+      print('Entry:', i, ', Class', corner_0_R[i].label)
 
-# wall_r = combine_scans(wall_b)#,wall_b,wall_c,wall_d,wall_e,wall_f,wall_g,wall_h)
-# wall_theta1, wall_theta2 = find_thetas(wall_r)
+print("corner_0")
+for i in range(len(corner_0)):
+      print('Entry:', i, ', Class', corner_0[i].label)
 
-# print("wall_r")
-# for i in range(len(wall_r)):
-#       print('Entry:', i, ', Class', wall_r[i].label)
-
-
-
-# print("object_r")
-# for i in range(len(object_r)):
-#       print('Entry:', i, ', Class', object_r[i].label)
-
-# print("corner_r")
-# for i in range(len(corner_r)):
-#       print('Entry:', i, ', Class', corner_r[i].label)
-
-# print("wall_r")
-# for i in range(len(wall_r)):
-#       print('Entry:', i, ', Class', wall_r[i].label)
+print("corner_H")
+for i in range(len(corner_H)):
+      print('Entry:', i, ', Class', corner_H[i].label)
 
 #print("object_theta1:",object_theta1, "object_theta2:",object_theta2)
-print("corner_theta1:",corner_theta1, "corner_theta2:",corner_theta2)
+print("corner_theta1_0_R_H:",corner_theta1_0_R_H, "corner_theta2_0_R_H:",corner_theta2_0_R_H)
+print("corner_theta1_0_R:",corner_theta1_0_R, "corner_theta2_0_R:",corner_theta2_0_R)
+print("corner_theta1_0:",corner_theta1_0, "corner_theta2_0:",corner_theta2_0)
+print("corner_theta1_H:",corner_theta1_H, "corner_theta2_H:",corner_theta2_H)
 #print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
