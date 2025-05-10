@@ -739,15 +739,15 @@ def cross_validate(gpc_corner,X_train_clean,y_train_clean):
     print("Repeatability (1 - std/mean):", 1 - scores.std()/scores.mean())
 
     
-    repeatability = evaluate_repeatability(scores)
-    print("Repeatability (1 - std/mean):", repeatability)
+    # repeatability = evaluate_repeatability(scores)
+    # print("Repeatability (1 - std/mean):", repeatability)
 
     # Generate a classification report based on the trained model
     print("Classification Report:")
     y_pred = gpc_corner.predict(X_train_clean)  # Predictions using the trained model
     print(classification_report(y_train_clean, y_pred))  # Detailed classification report
 
-    return scores.mean(), repeatability
+    return scores.mean()
 
 def combine_scans(*scans):
     """
@@ -891,18 +891,19 @@ print("-----------------------testprint----------------")
 
 
 print("-----------------------testcombine_scan----------------")
+#sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train_clean, y_train_clean
 
 corner_0_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise,wall_high_noise,wall_low_noise,wall_0_noise,object_high_noise,object_low_noise,object_0_noise)
-corner_theta1_0_R_H, corner_theta2_0_R_H, gpc_0_R_H = find_thetas(corner_0_R_H)
+corner_theta1_0_R_H, corner_theta2_0_R_H, gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_ = find_thetas(corner_0_R_H)
 
 corner_0_R = combine_scans(corner_low_noise,corner_0_noise,wall_low_noise,wall_0_noise,object_low_noise,object_0_noise)
-corner_theta1_0_R, corner_theta2_0_R, gpc_0_R = find_thetas(corner_0_R)
+corner_theta1_0_R, corner_theta2_0_R, gpc_0_R, __,__ = find_thetas(corner_0_R)
 
 corner_0 = combine_scans(corner_0_noise,wall_0_noise,object_0_noise)
-corner_theta1_0, corner_theta2_0, gpc_0 = find_thetas(corner_0)
+corner_theta1_0, corner_theta2_0, gpc_0, __,__ = find_thetas(corner_0)
 
 corner_H = combine_scans(corner_high_noise,wall_high_noise,object_high_noise)
-corner_theta1_H, corner_theta2_H, gpc_H = find_thetas(corner_H)
+corner_theta1_H, corner_theta2_H, gpc_H, __,__ = find_thetas(corner_H)
 
 
 print("corner_0_R_H")
@@ -929,23 +930,4 @@ print("corner_theta1_H:",corner_theta1_H, "corner_theta2_H:",corner_theta2_H)
 #print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
 
 
-# print('Data type: Radius', corner_training[i].data_filled[:, 0])
-# print('Data type:Theta', corner_training[i].data_filled[:, 1])
-
-#print(corner_0_R_H)
-# n = len(corner_0_R_H)
-# g = len(corner_0_R_H[0].data_filled[:, 0])  # Length of your inner arrays
-
-# # Create an empty array with object dtype to hold arrays
-# matrix = np.empty((n, 2), dtype=object)
-
-# for i in range(n):
-#     matrix[i, 0] = corner_0_R_H[i].data_filled[:, 0]  # Radius
-#     matrix[i, 1] = corner_0_R_H[i].data_filled[:, 1]  # Theta
-
-
-
-
-# print(matrix[1,0])
-# print(matrix[2,0])
-#print(corner_0_R_H)
+meanacc = cross_validate(gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_)
