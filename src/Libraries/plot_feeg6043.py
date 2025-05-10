@@ -3,6 +3,7 @@ from .math_feeg6043 import Vector,Matrix,Identity,Transpose,Inverse,v2t,t2v,Homo
 import matplotlib.patches as patches
 import matplotlib as mpl
 import numpy as np
+import json
 from matplotlib.colors import hsv_to_rgb
 from matplotlib.colors import LogNorm
 from scipy.stats import multivariate_normal
@@ -1630,4 +1631,24 @@ def plot_graph(graph_object, p_gt_path, H_em, m_gt, m_labels):
             unique_labels[label] = handle
 
     plt.legend(handles=unique_labels.values(), labels=unique_labels.keys(),bbox_to_anchor=(1.05, 1.0),loc="upper left")
-    plt.show()    
+    plt.show()
+
+def parse_json_file(file_path):
+    data_by_topic = {}  # Dictionary to store data organised by topic
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            try:
+                # Parse each JSON object
+                obj = json.loads(line.strip())
+
+                # Organise data by topic
+                obj_topic = obj.get("topic", "Unknown")
+                if obj_topic not in data_by_topic:
+                    data_by_topic[obj_topic] = []
+                data_by_topic[obj_topic].append(obj)
+
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON: {e}")
+
+    return data_by_topic    
