@@ -11,6 +11,9 @@ from sklearn.gaussian_process import GaussianProcessClassifier #####from any pyt
 from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import classification_report
+
 
 p = Vector(3); 
 
