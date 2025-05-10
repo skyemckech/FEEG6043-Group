@@ -222,11 +222,21 @@ class LaptopPilot:
             self.sim_init = False     
 
         msg.header.stamp += self.sim_time_offset
+
+        rangenoise = self.add_noise(0.000075,0,len(msg.ranges))
+        anglenoise = self.add_noise(0.0009,0,len(msg.angles))
+
+        msg.ranges += rangenoise
+        msg.angles += anglenoise
+
+        # msg.ranges = [a + b for a, b in zip(msg.ranges, rangenoise)]
+        # msg.angles = [a + b for a, b in zip(msg.angles, anglenoise)]
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
@@ -383,6 +393,14 @@ class LaptopPilot:
         # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
+
+    def add_noise(self, variance, mean = 0, number = 100):
+        # Add random normal noise
+        noise = np.random.normal(mean, np.sqrt(variance), number) 
+        # first is the mean of the normal distribution you are choosing from
+        # second is the standard deviation of the normal distribution
+        # third is the number of elements you get in array noise
+        return noise
 
 
     class uncertaintyMatrices:  
