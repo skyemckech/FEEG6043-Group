@@ -333,6 +333,7 @@ def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
     r = variables.extract_data("/lidar", ["message", "ranges"])
     theta = variables.extract_data("/lidar", ["message", "angles"])
     timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+    j = 0
 
     ###########________random bull shit which fixes formating_______###########
 
@@ -385,10 +386,17 @@ def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
         #print("Values[0]:",values[:,0],"Values[1]:",values[:,1],)
 
         ####plotting funcitons####
-        fig,ax = plt.subplots()
-        show_scan(p, lidar, observation)
-        ax.scatter(m_y, m_x,s=0.01)
-        plt.show()
+        
+        # if j < 6:
+        #     j = j + 1
+        #     fig,ax = plt.subplots()
+        #     show_scan(p, lidar, observation)
+        #     ax.scatter(m_y, m_x,s=0.01)
+        #     plt.title(loc)
+        #     plt.show()
+        #     print(j)
+        # else:
+        #     print("yummy cummy")
 
             ####if the number of nan's is more than X of the total size then pass#######
         if np.count_nonzero(~np.isnan(values[:,0])) > 0.1 * len(values[:,0]):
@@ -750,10 +758,10 @@ def combine_scans(*scans):
 
     return combined_scans
 
-
-corner_a = format_scan_corner("logs/20250510_110609_log.json", 0.001,0.1,1)
-# corner_a = format_scan_corner("logs/MovingCircle.json", 0.001,0.1,1)
-# corner_b = format_scan_corner("logs/MovingCircleFast.json", 0.001,0.1,1)
+#0.0005
+corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
+corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
+corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
 # corner_c = format_scan_corner("logs/RoundObject.json",0.001,0.1,1)
 # corner_d = format_scan_corner("logs/StaticCorner.json", 0.001,0.01,1)
 # corner_e = format_scan_corner("logs/StaticRoundObject.json", 0.001,0.1,1)
@@ -786,7 +794,7 @@ corner_a = format_scan_corner("logs/20250510_110609_log.json", 0.001,0.1,1)
 
 
 
-print("-----------------------test1----------------")
+print("-----------------------testprint----------------")
 # object_r = combine_scans(object_a,object_b,object_c,object_d,object_e,object_f,object_g,object_h)
 # object_theta1, object_theta2 = find_thetas(object_r)
 
@@ -808,67 +816,66 @@ print("-----------------------test1----------------")
 # print("wall_r")
 # for i in range(len(wall_r)):
 #       print('Entry:', i, ', Class', wall_r[i].label)
-for i in range(len(corner_a)):
-      print('Entry:', i, ', Class', corner_a[i].label)
-print("corner_a")
-for i in range(len(corner_b)):
-      print('Entry:', i, ', Class', corner_b[i].label)
-print("corner_a")
-for i in range(len(corner_c)):
-      print('Entry:', i, ', Class', corner_c[i].label)
-print("corner_a")
-for i in range(len(corner_d)):
-      print('Entry:', i, ', Class', corner_d[i].label)
-print("corner_a")
-for i in range(len(corner_e)):
-      print('Entry:', i, ', Class', corner_e[i].label)
-print("corner_a")
-for i in range(len(corner_f)):
-      print('Entry:', i, ', Class', corner_f[i].label)
-print("corner_a")
-for i in range(len(corner_g)):
-      print('Entry:', i, ', Class', corner_g[i].label)
-print("corner_a")
-for i in range(len(corner_h)):
-      print('Entry:', i, ', Class', corner_h[i].label)
+    #####More printing bollox#######
+print("corner_0_noise")    
+for i in range(len(corner_0_noise)):
+      print('Entry:', i, ', Class', corner_0_noise[i].label)
+print("corner_low_noise")
+for i in range(len(corner_low_noise)):
+      print('Entry:', i, ', Class', corner_low_noise[i].label)
+print("corner_high_noise")
+for i in range(len(corner_high_noise)):
+      print('Entry:', i, ', Class', corner_high_noise[i].label)
 
-print("-----------------------test2----------------")
-object_r = combine_scans(object_b)#,object_c,object_d,object_e,object_f,object_g,object_h)
-object_theta1, object_theta2 = find_thetas(object_r)
+# print("corner_a")
+# for i in range(len(corner_d)):
+#       print('Entry:', i, ', Class', corner_d[i].label)
+# print("corner_a")
+# for i in range(len(corner_e)):
+#       print('Entry:', i, ', Class', corner_e[i].label)
+# print("corner_a")
+# for i in range(len(corner_f)):
+#       print('Entry:', i, ', Class', corner_f[i].label)
+# print("corner_a")
+# for i in range(len(corner_g)):
+#       print('Entry:', i, ', Class', corner_g[i].label)
+# print("corner_a")
+# for i in range(len(corner_h)):
+#       print('Entry:', i, ', Class', corner_h[i].label)
 
-print("object_r")
-for i in range(len(object_r)):
-      print('Entry:', i, ', Class', object_r[i].label)
-
-
-corner_r = combine_scans(corner_b)#,corner_b,corner_c,corner_d,corner_e,corner_f,corner_g,corner_h)
-corner_theta1, corner_theta2 = find_thetas(corner_r)
-
-print("corner_r")
-for i in range(len(corner_r)):
-      print('Entry:', i, ', Class', corner_r[i].label)
-
-wall_r = combine_scans(wall_b)#,wall_b,wall_c,wall_d,wall_e,wall_f,wall_g,wall_h)
-wall_theta1, wall_theta2 = find_thetas(wall_r)
-
-print("wall_r")
-for i in range(len(wall_r)):
-      print('Entry:', i, ', Class', wall_r[i].label)
+print("-----------------------testcombine_scan----------------")
+corner_O_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise)
+corner_theta1, corner_theta2 = find_thetas(corner_O_R_H)
 
 
+# corner_r = combine_scans(corner_b)#,corner_b,corner_c,corner_d,corner_e,corner_f,corner_g,corner_h)
+# corner_theta1, corner_theta2 = find_thetas(corner_r)
 
-print("object_r")
-for i in range(len(object_r)):
-      print('Entry:', i, ', Class', object_r[i].label)
+print("corner_O_R_H")
+for i in range(len(corner_O_R_H)):
+      print('Entry:', i, ', Class', corner_O_R_H[i].label)
 
-print("corner_r")
-for i in range(len(corner_r)):
-      print('Entry:', i, ', Class', corner_r[i].label)
+# wall_r = combine_scans(wall_b)#,wall_b,wall_c,wall_d,wall_e,wall_f,wall_g,wall_h)
+# wall_theta1, wall_theta2 = find_thetas(wall_r)
 
-print("wall_r")
-for i in range(len(wall_r)):
-      print('Entry:', i, ', Class', wall_r[i].label)
+# print("wall_r")
+# for i in range(len(wall_r)):
+#       print('Entry:', i, ', Class', wall_r[i].label)
 
-print("object_theta1:",object_theta1, "object_theta2:",object_theta2)
+
+
+# print("object_r")
+# for i in range(len(object_r)):
+#       print('Entry:', i, ', Class', object_r[i].label)
+
+# print("corner_r")
+# for i in range(len(corner_r)):
+#       print('Entry:', i, ', Class', corner_r[i].label)
+
+# print("wall_r")
+# for i in range(len(wall_r)):
+#       print('Entry:', i, ', Class', wall_r[i].label)
+
+#print("object_theta1:",object_theta1, "object_theta2:",object_theta2)
 print("corner_theta1:",corner_theta1, "corner_theta2:",corner_theta2)
-print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
+#print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
