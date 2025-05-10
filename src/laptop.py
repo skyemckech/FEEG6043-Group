@@ -70,6 +70,9 @@ class LaptopPilot:
         wheel_diameter = 0.070 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
+        self.lidar_rangenoise = 0.000025
+        self.lidar_anglenoise = 0.0003
+
         # control parameters        
         self.tau_s = 0.5 # s to remove along track error
         self.L = 0.2 # m distance to remove normal and angular error
@@ -513,7 +516,7 @@ class LaptopPilot:
             # Motion model update
             self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
             self.lidar_update()
-            
+
             # if self.t > 10:
             #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)
             #     print('Finish graph data association')
