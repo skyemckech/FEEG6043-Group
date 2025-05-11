@@ -736,7 +736,7 @@ def cross_validate(gpc_corner,X_train_clean,y_train_clean):
 
     print("Standard deviation of accuracy:", scores.std())
     print("Mean accuracy (std):", scores.mean(), "+/-", scores.std())
-    print("Repeatability (1 - std/mean):", 1 - scores.std()/scores.mean())
+    print("Repeatability (1 - std/mean):", 1 - scores.std()/scores.mean()) ## basicly saying where less of the data is likely to be!!!!
 
     
     # repeatability = evaluate_repeatability(scores)
@@ -897,13 +897,13 @@ corner_0_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise,w
 corner_theta1_0_R_H, corner_theta2_0_R_H, gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_ = find_thetas(corner_0_R_H)
 
 corner_0_R = combine_scans(corner_low_noise,corner_0_noise,wall_low_noise,wall_0_noise,object_low_noise,object_0_noise)
-corner_theta1_0_R, corner_theta2_0_R, gpc_0_R, __,__ = find_thetas(corner_0_R)
+corner_theta1_0_R, corner_theta2_0_R, gpc_0_R, DataX_0_R,DataY_0_R = find_thetas(corner_0_R)
 
 corner_0 = combine_scans(corner_0_noise,wall_0_noise,object_0_noise)
-corner_theta1_0, corner_theta2_0, gpc_0, __,__ = find_thetas(corner_0)
+corner_theta1_0, corner_theta2_0, gpc_0, DataX_0,DataY_0 = find_thetas(corner_0)
 
 corner_H = combine_scans(corner_high_noise,wall_high_noise,object_high_noise)
-corner_theta1_H, corner_theta2_H, gpc_H, __,__ = find_thetas(corner_H)
+corner_theta1_H, corner_theta2_H, gpc_H, DataX_H,DataY_H  = find_thetas(corner_H)
 
 
 print("corner_0_R_H")
@@ -927,7 +927,62 @@ print("corner_theta1_0_R_H:",corner_theta1_0_R_H, "corner_theta2_0_R_H:",corner_
 print("corner_theta1_0_R:",corner_theta1_0_R, "corner_theta2_0_R:",corner_theta2_0_R)
 print("corner_theta1_0:",corner_theta1_0, "corner_theta2_0:",corner_theta2_0)
 print("corner_theta1_H:",corner_theta1_H, "corner_theta2_H:",corner_theta2_H)
-#print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
 
-
+print("-----------------gpc_0_R_H vs Data_0_R_H_---------------")
 meanacc = cross_validate(gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_)
+
+print("-----------------gpc_0_R_H vs Data_0_R---------------")
+meanacc = cross_validate(gpc_0_R_H,DataX_0_R,DataY_0_R)
+
+print("-----------------gpc_0_R_H vs Data_0---------------")
+meanacc = cross_validate(gpc_0_R_H,DataX_0,DataY_0)
+
+print("-----------------gpc_0_R_H vs Data_H---------------")
+meanacc = cross_validate(gpc_0_R_H,DataX_H,DataY_H)
+
+
+
+
+print("-----------------gpc_0_R vs Data_0_R_H_---------------")
+meanacc = cross_validate(gpc_0_R,DataX_0_R_H_,DataY_0_R_H_)
+
+print("-----------------gpc_0_R vs Data_0_R---------------")
+meanacc = cross_validate(gpc_0_R,DataX_0_R,DataY_0_R)
+
+print("-----------------gpc_0_R vs Data_0---------------")
+meanacc = cross_validate(gpc_0_R,DataX_0,DataY_0)
+
+print("-----------------gpc_0_R vs Data_H---------------")
+meanacc = cross_validate(gpc_0_R,DataX_H,DataY_H)
+
+
+
+
+
+print("-----------------gpc_0 vs Data_0_R_H_---------------")
+meanacc = cross_validate(gpc_0,DataX_0_R_H_,DataY_0_R_H_)
+
+print("-----------------gpc_0 vs Data_0_R---------------")
+meanacc = cross_validate(gpc_0,DataX_0_R,DataY_0_R)
+
+print("-----------------gpc_0 vs Data_0---------------")
+meanacc = cross_validate(gpc_0,DataX_0,DataY_0)
+
+print("-----------------gpc_0 vs Data_H---------------")
+meanacc = cross_validate(gpc_0,DataX_H,DataY_H)
+
+
+
+
+print("-----------------gpc_H vs Data_0_R_H_---------------")
+meanacc = cross_validate(gpc_H,DataX_0_R_H_,DataY_0_R_H_)
+
+print("-----------------gpc_H vs Data_0_R---------------")
+meanacc = cross_validate(gpc_H,DataX_0_R,DataY_0_R)
+
+print("-----------------gpc_H vs Data_0---------------")
+meanacc = cross_validate(gpc_H,DataX_0,DataY_0)
+
+print("-----------------gpc_H vs Data_H---------------")
+meanacc = cross_validate(gpc_H,DataX_H,DataY_H)
+
