@@ -441,7 +441,7 @@ class LaptopPilot:
 
                 #Graphslam
                 self.cornerClassifier = Classifier()
-                self.cornerClassifier.train_classifier('corner', noise=0)
+                self.cornerClassifier.train_classifier('corner')
 
                 self.graph = graphslam_frontend()
                 self.graph.anchor(self.uncertainty.get_initial_uncertainty)
