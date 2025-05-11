@@ -64,18 +64,20 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
-        lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
+        lapx = [0,1.4,1.4,0,0]
+        lapy = [0,0,1.4,1.4,0]
         self.northings_path = lapx+lapx+lapx
         self.eastings_path = lapy+lapy+lapy     
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
         wheel_distance = 0.190 # m 
-        wheel_diameter = 0.070 # m
+        wheel_diameter = 0.074 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
-        self.lidar_rangenoise = 0.000025
-        self.lidar_anglenoise = 0.0003
+        # self.lidar_rangenoise = 0.000025
+        # self.lidar_anglenoise = 0.0003
+        self.lidar_rangenoise = 0 
+        self.lidar_anglenoise = 0
 
         # control parameters        
         self.tau_s = 0.5 # s to remove along track error
@@ -209,6 +211,7 @@ class LaptopPilot:
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+        self.raw_lidar = self.lidar_data
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
@@ -233,8 +236,6 @@ class LaptopPilot:
             self.lidar_data[i,0] = t_em[0]
             self.lidar_data[i,1] = t_em[1]
 
-        # this filters out any 
-        self.lidar_data = self.lidar_data[~np.isnan(self.lidar_data).any(axis=1)]
 
 
     def groundtruth_callback(self, msg):
@@ -336,12 +337,14 @@ class LaptopPilot:
         self.sensor_measurement[E] = self.measured_pose_eastings_m
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
-    def lidar_update(self):
-        rangenoise = add_noise(self.lidar_rangenoise,0,len(self.lidar_data[:,0]))
-        anglenoise = add_noise(self.lidar_anglenoise,0,len(self.lidar_data[:,1]))
+    def lidar_addnoise(self, lidardata):
+        rangenoise = add_noise(self.lidar_rangenoise,0,len(lidardata[:,0]))
+        anglenoise = add_noise(self.lidar_anglenoise,0,len(lidardata[:,1]))
 
-        self.lidar_data[:,0] += rangenoise
-        self.lidar_data[:,1] += anglenoise
+        lidardata[:,0] += rangenoise
+        lidardata[:,1] += anglenoise
+
+        return lidardata
 
         
     class uncertaintyMatrices:  
@@ -436,14 +439,12 @@ class LaptopPilot:
 
                 self.generate_trajectory()
 
-                # #Graphslam
-                # self.cornerClassifier = Classifier()
-                # self.cornerClassifier.train_classifier('corner', noise=2)
-                # self.graph = graphslam_frontend()
-                # self.graph.anchor(self.uncertainty.get_initial_uncertainty)
+                #Graphslam
+                self.cornerClassifier = Classifier()
+                self.cornerClassifier.train_classifier('corner', noise=0)
 
-
-
+                self.graph = graphslam_frontend()
+                self.graph.anchor(self.uncertainty.get_initial_uncertainty)
 
                 # get current time and determine timestep
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
@@ -494,16 +495,17 @@ class LaptopPilot:
             # Motion model update
             self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
             
-            # position sensor cheat
-            self.position_sensor_update()
-            self.state = self. sensor_measurement
+            # # position sensor cheat
+            self.state = p_gt
 
-            # # Lidar observation 
-            # self.lidar_update()
-            # observation = GPC_input_output(self.lidar_data, None)
-            # corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
-            # label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
-            # print(label)
+            # Lidar observation 
+            self.lidar_data = self.lidar_addnoise(self.lidar_data)
+            observation = GPC_input_output(self.lidar_data, None)
+            corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
+            label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
+            print(label, corner_probability)
+            # if label == 'corner': 
+            #     self.lidar_data
 
             # if self.t > 10:
             #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)

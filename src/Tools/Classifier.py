@@ -1,4 +1,5 @@
 from .import_functions import format_scan, combine_scans, find_thetas
+import numpy as np
 
 class Classifier:
     def __init__(self):
@@ -33,8 +34,11 @@ class Classifier:
         print("theta 1 is:",theta1, "theta 2 is:",theta2)
 
 
-# cornerClassifier = Classifier()
-# cornerClassifier.train_classifier('corner', noise=2)
-# observation = cornerClassifier.data[2][500]
-# proba = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
-# print(proba)
+cornerClassifier = Classifier()
+cornerClassifier.train_classifier('corner', noise=0)
+observation = cornerClassifier.data[0][5]
+proba = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
+label = (cornerClassifier.classifier.classes_[np.argmax(proba)])
+print(proba)
+print(label)
+
