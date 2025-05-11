@@ -73,6 +73,8 @@ def show_scan(p_eb, lidar, observations, show_lines = True):
     plt.xlabel('Eastings, m')
     plt.ylabel('Northings, m')
     plt.axis('equal')
+    plt.title("fuck marwan and danae")
+    plt.show()
 
 def find_corner(corner, threshold = 0.01):
     # identify the reference coordinate as the inflection point
@@ -197,45 +199,24 @@ def format_scan(filepath, label):
 
 
 
-def find_thetas(a):
+def find_thetas(corner_training):
 
-    target_size = a[0].data_filled[:, 0].size  # or define manually
-    X_train = []
-    y_train = []
+    X_train = np.full((len(corner_training), corner_training[0].data_filled[:,0].size), None)
+    y_train = np.full(len(corner_training), None, dtype=object)
 
-    #makes clean data for any size array: (clean data is the data without the first instance will all zeros in it)
-    for i in range(len(a)):
-        data = a[i].data_filled[:, 0]
-        if a[i].label is not None:
-            if data.size < target_size:
-                # pad with NaNs or zeros
-                padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan)
-            else:
-                # trim to target size
-                padded = data[:target_size]
-            X_train.append(padded)
-            y_train.append(a[i].label)
-
-    X_train = np.array(X_train)
-    y_train = np.array(y_train)
-
-    X_train_clean = []
-    y_train_clean = []
-
-    for i in range(len(y_train)):
-        if y_train[i] is not None:
-            X_train_clean.append(X_train[i])
-            y_train_clean.append(y_train[i])
-
-    X_train_clean = np.array(X_train_clean)
-    y_train_clean = np.array(y_train_clean)
+    # populate with the training data
+    for i in range(len(corner_training)):
+        X_train[i,:]= corner_training[i].data_filled[:,0]
+        if i == 1:
+            print(X_train[i,:])
+        y_train[i]= corner_training[i].label
 
     # gpc_corner is the instnace of the classifier which we used with the weighting comands
     kernel = 1.0 * RBF(1.0)
-    gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
+    gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train, y_train)
 
     ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
-    print("Score",gpc_corner.score(X_train_clean, y_train_clean))
+    print("Score",gpc_corner.score(X_train, y_train))
     print("classes",gpc_corner.classes_)
 
     # Obtain optimized kernel parameters
@@ -244,7 +225,7 @@ def find_thetas(a):
 
     print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
 
-    return sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train_clean, y_train_clean
+    return sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train, y_train
 
 
 def cross_validate(gpc_corner,X_train_clean,y_train_clean):

@@ -89,7 +89,7 @@ class plot_2dframe:
                 size = 0.1
                 colour = 'k'            
             elif self.object_type == 'point' or self.object_type == 'point_only': 
-                size = 0.05
+                size = 0.01
                 colour = 'r'            
 
             circle = plt.Circle((c[1], c[0]), size, color=colour, label=self.id1)

@@ -34,6 +34,10 @@ class Classifier:
         theta1, theta2, self.classifier, _,_ = find_thetas(data)
         print("theta 1 is:",theta1, "theta 2 is:",theta2)
 
+    def check_classifier(self):
+        test_d = format_scan("src/Tools/training_data/test.json", None)
+        return test_d
+
 
 # cornerClassifier = Classifier()
 # cornerClassifier.train_classifier('corner')

@@ -64,13 +64,13 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        lapx = [0,1.4,1.4,0,0]
-        lapy = [0,0,1.4,1.4,0]
-        self.northings_path = lapx+lapx+lapx
-        self.eastings_path = lapy+lapy+lapy     
+        lapx = [0,1.4,1.4,0]
+        lapy = [0,0,1.4,1.4]
+        self.northings_path = lapx
+        self.eastings_path = lapy    
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.190 # m 
+        wheel_distance = 0.100 # m 
         wheel_diameter = 0.074 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
@@ -78,6 +78,7 @@ class LaptopPilot:
         # self.lidar_anglenoise = 0.0003
         self.lidar_rangenoise = 0 
         self.lidar_anglenoise = 0
+        self.new_lidar = None
 
         # control parameters        
         self.tau_s = 0.5 # s to remove along track error
@@ -235,6 +236,8 @@ class LaptopPilot:
 
             self.lidar_data[i,0] = t_em[0]
             self.lidar_data[i,1] = t_em[1]
+        
+        self.new_lidar = True
 
 
 
@@ -367,12 +370,19 @@ class LaptopPilot:
         def get_process_uncertainty3x3(self):
             #Motion model linear noise due to v and w
             sigma_motion=Matrix(3,2)
-            sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
-            sigma_motion[0,1]= np.deg2rad(0.1)**2 # impact of w angular velocity on x
-            sigma_motion[1,0]=0.3**2 # impact of v linear velocity on y
-            sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
-            sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
-            sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
+            # sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
+            # sigma_motion[0,1]= np.deg2rad(0.1)**2 # impact of w angular velocity on x
+            # sigma_motion[1,0]=0.3**2 # impact of v linear velocity on y
+            # sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
+            # sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
+            # sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
+
+            sigma_motion[0,0]= 0.0 # impact of v linear velocity on x           #Task
+            sigma_motion[0,1]= 0.0 # impact of w angular velocity on x
+            sigma_motion[1,0]= 0.0 # impact of v linear velocity on y
+            sigma_motion[1,1]= 0.0 # impact of w angular velocity on y
+            sigma_motion[2,0]= 0.0 # impact of v linear velocity on gamma
+            sigma_motion[2,1]= 0.0 # impact of w angular velocity on gamma
 
             return sigma_motion
 
@@ -490,20 +500,23 @@ class LaptopPilot:
             else: 
                 p_gt = self.position_sensor_update()
             
-            self.p_gt_path.append(p_gt)
-
-            # Motion model update
-            self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
-            
-            # # position sensor cheat
+            # self.p_gt_path.append(p_gt)
             self.state = p_gt
 
+            # Motion model update
+            # self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            
+            # # position sensor cheat
+
+
             # Lidar observation 
-            self.lidar_data = self.lidar_addnoise(self.lidar_data)
-            observation = GPC_input_output(self.lidar_data, None)
-            corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
-            label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
-            print(label, corner_probability)
+            if self.new_lidar == True:
+                self.lidar_data = self.lidar_addnoise(self.lidar_data)
+                observation = GPC_input_output(self.lidar_data, None)
+                corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
+                label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
+                print(label, corner_probability)
+                self.new_lidar = False
             # if label == 'corner': 
             #     self.lidar_data
 
