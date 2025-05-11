@@ -6,6 +6,7 @@ Licensed under the BSD 3-Clause License.
 See LICENSE.md file in the project root for full license information.
 """
 from Libraries import *
+from Tools import *
 import numpy as np
 import argparse
 import time
@@ -324,33 +325,6 @@ class LaptopPilot:
         self.update_estimated_pose()
 
 
-
-    def position_sensor_transform(self, sensor_measurement):
-        # Create transformation matrix from sensor reading to measured position
-        # To use with kalman_update, must return two outputs, (z, H) and take one input, (z)
-        # z the measurement vector, H the sensor transformation matrix jacobian
-        measurement_vector = Vector(5)
-        measurement_vector[N] = sensor_measurement[N]
-        measurement_vector[E] = sensor_measurement[E]
-
-        sensor_jacobian = Matrix(5,5)
-        sensor_jacobian[N,N] = 1
-        sensor_jacobian[E,E] = 1
-
-        return measurement_vector, sensor_jacobian
-
-    def yaw_sensor_transform(self, sensor_measurement):
-        # Create transformation matrix from sensor reading to measured yaw
-        # To use with kalman_update, must return two outputs, (z, H) and take one input, (z)
-        # z the measurement vector, H the sensor transformation matrix jacobian
-        measurement_vector = Vector(5)
-        measurement_vector[G] = sensor_measurement[G]
-
-        sensor_jacobian = Matrix(5,5)
-        sensor_jacobian[G,G] = 1
-
-        return measurement_vector, sensor_jacobian
-
     def position_sensor_update(self):
         # Sample position data from Aruco
         self.sensor_measurement = Vector(3)
@@ -358,12 +332,13 @@ class LaptopPilot:
         self.sensor_measurement[E] = self.measured_pose_eastings_m
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
-    def lidar_update(self, noise):
+    def lidar_update(self):
         rangenoise = self.add_noise(self.lidar_rangenoise,0,len(self.lidar_data[:,0]))
         anglenoise = self.add_noise(self.lidar_anglenoise,0,len(self.lidar_data[:,1]))
 
         self.lidar_data[:,0] += rangenoise
         self.lidar_data[:,1] += anglenoise
+
         
     class uncertaintyMatrices:  
         #Class to keep track of model uncertainty
@@ -455,20 +430,16 @@ class LaptopPilot:
                 self.uncertainty = LaptopPilot.uncertaintyMatrices()
                 self.covariance = self.uncertainty.get_initial_uncertainty()
 
+                self.generate_trajectory()
+
+                #Graphslam
+                cornerClassifier = Classifier()
+                cornerClassifier.train_classifier('corner', noise=2)
                 self.graph = graphslam_frontend()
                 self.graph.anchor(self.uncertainty.get_initial_uncertainty)
 
-                # Add headers
-                self.ref_pose_worksheet.extend_data(["Elapsed Time",
-                                                    "Trajectory Northings",
-                                                    "Trajectory Eastings",
-                                                    "Trajectory Gamma",
-                                                    "Measured Northings Error", 
-                                                    "Measured Eastings Error", 
-                                                    "Measured Gamma Error"])
-                self.ref_pose_worksheet.export_to_excel()
 
-                self.generate_trajectory()
+
 
                 # get current time and determine timestep
                 self.t_prev = datetime.utcnow().timestamp() #initialise the time
@@ -518,7 +489,12 @@ class LaptopPilot:
 
             # Motion model update
             self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            
+            # Lidar observation 
             self.lidar_update()
+            observation = GPC_input_output(self.lidar_data, None)
+            corner_probability = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
+            print(corner_probability)
 
             # if self.t > 10:
             #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)

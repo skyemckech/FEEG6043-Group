@@ -1,4 +1,4 @@
 from .math_feeg6043 import Vector, Inverse, HomogeneousTransformation, Identity, l2m, Matrix
-from .model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, extended_kalman_filter_predict, extended_kalman_filter_update, graphslam_frontend
+from .model_feeg6043 import ActuatorConfiguration, rigid_body_kinematics, RangeAngleKinematics, feedback_control, TrajectoryGenerate, extended_kalman_filter_predict, extended_kalman_filter_update, graphslam_frontend, GPC_input_output
 from .plot_feeg6043 import plot_zero_order,plot_trajectory,plot_2dframe, plot_graph
 from .additional_files import m2l, change_to_list, motion_model
