@@ -506,17 +506,21 @@ class LaptopPilot:
             # Motion model update
             # self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
             
-            # # position sensor cheat
-
 
             # Lidar observation 
             if self.new_lidar == True:
-                self.lidar_data = self.lidar_addnoise(self.lidar_data)
-                observation = GPC_input_output(self.lidar_data, None)
-                corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
-                label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
-                print(label, corner_probability)
                 self.new_lidar = False
+                self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
+                observation = GPC_input_output(self.raw_lidar, None)
+
+                #Check for corners
+                corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
+                if corner_probability[0][0] > 0.6:
+                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
+                    print(label, corner_probability)
+                    _, _, loc = find_corner(observation, 0.006)
+                    print(loc)
+            
             # if label == 'corner': 
             #     self.lidar_data
 

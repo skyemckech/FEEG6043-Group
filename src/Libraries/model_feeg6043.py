@@ -2081,3 +2081,24 @@ class GPC_input_output:
                 data_filled[i,0]=data[i,0]-mean
         return data_filled
 
+def find_corner(corner, threshold = 0.01):
+    # identify the reference coordinate as the inflection point
+
+    # Step 1: Compute slope
+    slope = np.gradient(corner.data[:, 0])
+
+    # Step 2: Compute the second derivative (curvature)
+    curvature = np.gradient(slope)
+
+    # Step 3: Check if criteria is more than threshold    
+    print('Max inflection value is ',np.nanmax(abs(np.gradient(np.gradient(curvature)))), ': Threshold ',threshold)
+    if np.nanmax(abs(np.gradient(np.gradient(curvature)))) > threshold:
+        # compute index of inflection point    
+        largest_inflection_idx = np.nanargmax(abs(np.gradient(np.gradient( curvature ))))
+        
+        r = corner.data[largest_inflection_idx, 0]  # Radial distance at the largest curvature
+        theta = corner.data[largest_inflection_idx, 1]  # Angle at the largest curvature
+        return r, theta, largest_inflection_idx
+
+    else:
+        return None, None, None  # No inflection points found  

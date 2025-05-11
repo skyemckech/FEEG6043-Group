@@ -6,7 +6,7 @@ cornerClassifier.train_classifier('corner')
 testd = cornerClassifier.check_classifier()
 
 # observation = cornerClassifier.data[52]
-observation = testd[10]
+observation = testd[0]
 proba = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
 label = (cornerClassifier.classifier.classes_[np.argmax(proba)])
 print(proba)
