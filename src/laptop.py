@@ -124,9 +124,10 @@ class LaptopPilot:
         lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
-        self.lidar_rangenoise = 0.000025
-        self.lidar_anglenoise = 0.0003
-
+        # self.lidar_rangenoise = 0.000025
+        # self.lidar_anglenoise = 0.0003
+        self.lidar_rangenoise = 0.0
+        self.lidar_anglenoise = 0.0
         # Excel export
         self.export_data = None
         self.ref_pose_worksheet = LaptopPilot.createExcelFile("output_data.xlsx")
@@ -138,36 +139,120 @@ class LaptopPilot:
         self.pathstage = 0
         self.inprogress = False
         self.starttime = None
-        # self.commands = [   (0.01, 0, 1),
-        #                     (0, -np.pi/1.8, 2),
-        #                     (0, -np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, -np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, -np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, -np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, -np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, np.pi/2.5, 10),
-        #                     (-0.1, 0, 1),
-        #                     (0, -np.pi/2.5, 10),
-        #                  ]
-        
-        self.commands = [   (0.0, 0, 10000),
-
-                                                        
+        self.commands = [   (0.01, 0, 1),
+                            (0, np.pi/-12, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            
 
                          ]
+        
+        # self.commands = [   (0.0, 0, 10000),                           
+        #                  ]
 
         # self.commands = [   (0.01, 0, 1),
         #                     (0, -np.pi/2, 4),
@@ -235,13 +320,8 @@ class LaptopPilot:
 
         msg.header.stamp += self.sim_time_offset
 
-<<<<<<< HEAD
         rangenoise = self.add_noise(self.lidar_rangenoise,0,len(msg.ranges))
         anglenoise = self.add_noise(self.lidar_anglenoise,0,len(msg.angles))
-=======
-        rangenoise = self.add_noise(0.000075,0,len(msg.ranges))
-        anglenoise = self.add_noise(0.0009,0,len(msg.angles))
->>>>>>> af9c781 (Ran tests for noise)
 
         msg.ranges += rangenoise
         msg.angles += anglenoise
