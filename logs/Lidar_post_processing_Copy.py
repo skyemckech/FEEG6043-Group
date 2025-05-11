@@ -724,17 +724,17 @@ def find_thetas(a, model_name=None):
     y_train_clean = np.array(y_train)
 
     # Force different optimization paths based on model name
-    if model_name == '0_R_H':
+    if model_name == 'w':
         kernel = ConstantKernel(1.0, constant_value_bounds=(1e-3, 1e3)) * \
                 RBF(length_scale=1.8, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 15
         random_state = 42
-    elif model_name == '0_R':
+    elif model_name == 'c':
         kernel = ConstantKernel(1.1, constant_value_bounds=(1e-2, 1e2)) * \
                 RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
         n_restarts = 10
         random_state = 24
-    elif model_name == '0':
+    elif model_name == 'o':
         kernel = ConstantKernel(0.9, constant_value_bounds=(1e-1, 1e1)) * \
                 RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
         n_restarts = 5
@@ -902,40 +902,188 @@ def verify_model_differences():
         print(f"{name} thetas: [{np.sqrt(model.kernel_.k1.constant_value):.3f}, {model.kernel_.k2.length_scale:.3f}]")
         print(f"{name} NLL: {-model.log_marginal_likelihood_value_:.3f}\n")
 
+
+def gpc_example(corner_0_noise, gpc_0, threshold=0.5, scan=None):
+    """
+    Calculate average probabilities across all scans or a specific scan in corner_0_noise
+    
+    Parameters:
+    - corner_0_noise: List of GPC_input_output objects
+    - gpc_0: Trained Gaussian Process Classifier
+    - threshold: Probability threshold for classification
+    - scan: None to average all scans, or index for specific scan
+    
+    Returns:
+    - Tuple of (average_label, average_probabilities) or specific scan results
+    """
+    
+    if scan is not None:
+        # Process specific scan if index is provided
+        first_scan = corner_0_noise[scan]
+        first_scan_data = first_scan.data_filled
+        
+        show_scan(p, lidar, first_scan_data)
+        new_observation = GPC_input_output(first_scan_data, None)
+        
+        probs = gpc_0.predict_proba([new_observation.data_filled[:,0]])
+        print('New observation is ',new_observation.label, ', with probabilities', gpc_0.predict_proba([new_observation.data_filled[:,0]]))
+        max_prob = np.max(probs)
+        
+        if max_prob >= threshold:
+            label = gpc_0.classes_[np.argmax(probs)]
+            print(f'Single scan is {label}, with probabilities {probs}')
+            return label, probs
+        else:
+            return "nothing homie"
+    else:
+        # Process all scans and average probabilities
+        all_probs = []
+        valid_scans = 0
+        
+        for scan_data in corner_0_noise:
+            scan_data_clean = scan_data.data_filled[:,0]
+            
+            # Skip if data is invalid
+            if len(scan_data_clean) == 0 or np.all(np.isnan(scan_data_clean)):
+                continue
+                
+            probs = gpc_0.predict_proba([scan_data_clean])
+            all_probs.append(probs)
+            valid_scans += 1
+        
+        if valid_scans == 0:
+            return "No valid scans found"
+            
+        # Calculate average probabilities
+        avg_probs = np.mean(np.array(all_probs), axis=0)
+        max_avg_prob = np.max(avg_probs)
+        
+        if max_avg_prob >= threshold:
+            avg_label = gpc_0.classes_[np.argmax(avg_probs)]
+            print(f'Average across {valid_scans} scans: {avg_label}, with avg probabilities {avg_probs}')
+            return avg_label, avg_probs
+        else:
+            return "Average probability below threshold"
+
+
+def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
+    # Extract the first scan (which is at index 0)
+    first_scan = corner_0_noise[scan]
+    # Access its components:
+    first_scan_data = first_scan.data_filled  # The (r,θ) points
+
+    #print(first_scan_data)
+
+    show_scan(p, lidar, first_scan_data)
+    # log the scan for classification
+    new_observation = GPC_input_output(first_scan_data, None)
+
+    #!!!!!!!!!!!!!!!!! Use classifier to judge if it is a corner or not, can increase this to be more conservative!!!!!!!!!
+    if np.max(gpc_0.predict_proba([new_observation.data_filled[:,0]]))>=threshold:
+        new_observation.label = (gpc_0.classes_[np.argmax(gpc_0.predict_proba([new_observation.data_filled[:,0]]))])
+        print('New observation is ',new_observation.label, ', with probabilities', gpc_0.predict_proba([new_observation.data_filled[:,0]]))
+
+        return new_observation.label, gpc_0.predict_proba([new_observation.data_filled[:,0]])
+    else:
+        return "nothing homie"
+
+
+
+
 #0.0005
-corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
-corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
-corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
+##corner training### 
+c_corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
+c_wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 10,0.1,1)
+c_object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
 
-wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 10,0.1,1)
-wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 10,0.1,1)
-wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 1,0.1,1)
-
-object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
-object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 10,0.1,1)
-object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 10,0.1,1)
+c_corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
+c_corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
 
 
+##object training###
+o_corner_0_noise = format_scan_object("logs/corner_perfect_lidar.json", 10,0.00001,1)
+o_wall_0_noise = format_scan_object("logs/wall_perfect_lidar.json", 10,0.00001,1)
+o_object_0_noise = format_scan_object("logs/object_perfect_lidar.json", 10,50,1)
 
+o_object_low_noise = format_scan_object("logs/object_1_deg_5mm.json", 10,50,1)
+o_object_high_noise = format_scan_object("logs/object_3deg_15mm.json", 10,50,1)
+
+
+##wall training###
+w_corner_0_noise = format_scan_wall("logs/corner_perfect_lidar.json", 0.001,0.1,0)
+w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0.1,20)
+w_object_0_noise = format_scan_wall("logs/object_perfect_lidar.json", 10,0.1,0)
+
+w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0.1,20)
+w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0.1,20)
+
+
+#-----extras----
+# object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
+# object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 10,0.1,1)
+# object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 10,0.1,1)
+# corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
+# object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 10,0.1,1)
+# wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 10,0.1,1)
+# wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 10,0.1,1)
+# wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 10,0.1,1)
+# wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 10,0.1,1)
 
 print("-----------------------testcombine_scan----------------")
-#sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train_clean, y_train_clean
 
 
 
-corner_0_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise,wall_high_noise,wall_low_noise,wall_0_noise,object_high_noise,object_low_noise,object_0_noise)
-corner_theta1_0_R_H, corner_theta2_0_R_H, gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_ = find_thetas(corner_0_R_H, model_name='0_R_H')
 
-corner_0_R = combine_scans(corner_low_noise,corner_0_noise,wall_low_noise,wall_0_noise,object_low_noise,object_0_noise)
-corner_theta1_0_R, corner_theta2_0_R, gpc_0_R, DataX_0_R,DataY_0_R = find_thetas(corner_0_R,model_name='0_R')
+corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='c')
 
-corner_0 = combine_scans(corner_0_noise,wall_0_noise,object_0_noise)
-corner_theta1_0, corner_theta2_0, gpc_0, DataX_0,DataY_0 = find_thetas(corner_0,model_name='0')
+object_0 = combine_scans(o_corner_0_noise,o_wall_0_noise,o_object_0_noise)
+o_corner_theta1_0, o_corner_theta2_0, o_gpc_0, o_DataX_0,o_DataY_0 = find_thetas(object_0,model_name='o')
 
-corner_H = combine_scans(corner_high_noise,wall_high_noise,object_high_noise)
-corner_theta1_H, corner_theta2_H, gpc_H, DataX_H,DataY_H  = find_thetas(corner_H,model_name='H')
+wall_0 = combine_scans(w_corner_0_noise,w_wall_0_noise,w_object_0_noise)
+w_corner_theta1_0, w_corner_theta2_0, w_gpc_0, w_DataX_0,w_DataY_0 = find_thetas(wall_0,model_name='w')
 
 
+print("-----corner-----")
+gpc_example(c_corner_0_noise, c_gpc_0)
+gpc_example(c_corner_low_noise, c_gpc_0)
+gpc_example(c_corner_high_noise, c_gpc_0)
+
+print("-----object-----")
+gpc_example(o_object_0_noise, o_gpc_0)
+gpc_example(o_object_low_noise, o_gpc_0)
+gpc_example(o_object_high_noise, o_gpc_0)
+
+
+print("----wall-----")
+gpc_example(w_wall_0_noise, w_gpc_0)
+gpc_example(w_wall_low_noise, w_gpc_0)
+gpc_example(w_wall_high_noise, w_gpc_0)
+
+
+#---single wall----
+gpc_example_old(w_wall_0_noise, w_gpc_0)
+
+
+
+print("GPC class order:", w_gpc_0.classes_)
+
+            # # Extract the first scan (which is at index 0)
+            # first_scan = corner_0_noise[0]
+            # # Access its components:
+            # first_scan_data = first_scan.data_filled  # The (r,θ) points
+
+            # print(first_scan_data)
+
+            # show_scan(p, lidar, first_scan_data)
+            # # log the scan for classification
+            # new_observation = GPC_input_output(first_scan_data, None)
+
+            # #!!!!!!!!!!!!!!!!! Use classifier to judge if it is a corner or not, can increase this to be more conservative!!!!!!!!!
+            # threshold = 0.5
+            # if np.max(gpc_0.predict_proba([new_observation.data_filled[:,0]]))>=threshold:
+            #     new_observation.label = (gpc_0.classes_[np.argmax(gpc_0.predict_proba([new_observation.data_filled[:,0]]))])
+            #     print('New observation is ',new_observation.label, ', with probabilities', gpc_0.predict_proba([new_observation.data_filled[:,0]]))
 
 
 # print("corner_0_R_H")
