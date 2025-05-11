@@ -17,4 +17,6 @@ p[2] = 0 #Heading (rad)
 
 x_bl = 0; y_bl = 0
 lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 120)
+
+show_scan(p, lidar, observation.data_filled)
 	
