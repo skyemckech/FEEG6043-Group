@@ -51,6 +51,7 @@ def show_scan(p_eb, lidar, observations, show_lines = True):
     fov_y = []
 
     H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
+    fig,ax = plt.subplots()
         
     for z_fov in fov:    
         t_lm[0],t_lm[1] = polar2cartesian(z_fov[0],z_fov[1])      
