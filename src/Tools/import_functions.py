@@ -288,6 +288,16 @@ def combine_scans(*scans):
 
     return combined_scans
 
+def add_noise(variance, mean, number):
+    # Add random normal noise
+    variance = max(0, variance)
+    noise = np.random.normal(mean, np.sqrt(variance), number) 
+    # first is the mean of the normal distribution you are choosing from
+    # second is the standard deviation of the normal distribution
+    # third is the number of elements you get in array noise
+    return noise
+
+
 # #0.0005
 # corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
 # corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)

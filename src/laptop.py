@@ -86,6 +86,9 @@ class LaptopPilot:
         
         self.initialise_control = True # False once control gains is initialised 
 
+        # classifiers
+        self.cornerClassifier = None
+
         # model pose
         self.est_pose_northings_m = None
         self.est_pose_eastings_m = None
@@ -185,7 +188,7 @@ class LaptopPilot:
             self.dataLine = []
 
     def true_wheel_speeds_callback(self, msg):
-        print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
+        # print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
         # update wheel rates
         self.measured_wheelrate_right = self.measured_wheelrate_right_next
         self.measured_wheelrate_right_next = msg.vector.x
@@ -232,6 +235,7 @@ class LaptopPilot:
 
         # this filters out any 
         self.lidar_data = self.lidar_data[~np.isnan(self.lidar_data).any(axis=1)]
+
 
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
@@ -333,8 +337,8 @@ class LaptopPilot:
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
 
     def lidar_update(self):
-        rangenoise = self.add_noise(self.lidar_rangenoise,0,len(self.lidar_data[:,0]))
-        anglenoise = self.add_noise(self.lidar_anglenoise,0,len(self.lidar_data[:,1]))
+        rangenoise = add_noise(self.lidar_rangenoise,0,len(self.lidar_data[:,0]))
+        anglenoise = add_noise(self.lidar_anglenoise,0,len(self.lidar_data[:,1]))
 
         self.lidar_data[:,0] += rangenoise
         self.lidar_data[:,1] += anglenoise
@@ -432,11 +436,11 @@ class LaptopPilot:
 
                 self.generate_trajectory()
 
-                #Graphslam
-                cornerClassifier = Classifier()
-                cornerClassifier.train_classifier('corner', noise=2)
-                self.graph = graphslam_frontend()
-                self.graph.anchor(self.uncertainty.get_initial_uncertainty)
+                # #Graphslam
+                # self.cornerClassifier = Classifier()
+                # self.cornerClassifier.train_classifier('corner', noise=2)
+                # self.graph = graphslam_frontend()
+                # self.graph.anchor(self.uncertainty.get_initial_uncertainty)
 
 
 
@@ -490,11 +494,16 @@ class LaptopPilot:
             # Motion model update
             self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
             
-            # Lidar observation 
-            self.lidar_update()
-            observation = GPC_input_output(self.lidar_data, None)
-            corner_probability = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
-            print(corner_probability)
+            # position sensor cheat
+            self.position_sensor_update()
+            self.state = self. sensor_measurement
+
+            # # Lidar observation 
+            # self.lidar_update()
+            # observation = GPC_input_output(self.lidar_data, None)
+            # corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
+            # label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
+            # print(label)
 
             # if self.t > 10:
             #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)
