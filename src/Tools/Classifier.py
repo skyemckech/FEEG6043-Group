@@ -8,7 +8,8 @@ class Classifier:
 
         filepath = "src/Tools/training_data/"
         corner_no_noise = format_scan(filepath+"corner_0.json", 'corner')
-        corner_side = format_scan(filepath+"corner_0_side.json", 'corner')
+        corner_sider = format_scan(filepath+"corner_0_sider.json", 'corner')
+        corner_sidel = format_scan(filepath+"corner_0_sidel.json", 'corner')
         # corner_low_noise = format_scan(filepath+"corner_1d_5mm.json", 'corner')
         # corner_high_noise = format_scan(filepath+"corner_3d_15mm.json", 'corner')
 
@@ -20,7 +21,7 @@ class Classifier:
         # object_low_noise = format_scan(filepath+"circle_1d_5mm.json", 'object')
         # object_high_noise = format_scan(filepath+"circle_3d_15mm.json", 'object')
 
-        no_noise = combine_scans(corner_no_noise,corner_side, wall_no_noise,object_no_noise)
+        no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,object_no_noise)
         # low_noise = combine_scans(no_noise, corner_low_noise,wall_low_noise,object_low_noise)
         # high_noise = combine_scans(low_noise, corner_high_noise,wall_high_noise,object_high_noise)
 
