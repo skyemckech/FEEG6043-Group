@@ -521,9 +521,10 @@ class LaptopPilot:
                     print(label, corner_probability)
                     z_lm = Vector(2)
                     z_lm[0], z_lm[1], loc = find_corner(observation, 0.006)
-                    z_lm[1] = -z_lm[1]
+                    # z_lm[1] = -z_lm[1]
                     if loc is not None and z_lm is not np.array([[np.nan], [np.nan]]):
                         self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
+                        self.landmark = self.landmark.flatten()
                         print(self.state)
                         print(self.landmark)
                     else:
