@@ -699,30 +699,105 @@ def find_thetas(a, model_name=None):
     y_train_clean = np.array(y_train)
 
     # Force different optimization paths based on model name
-    if model_name == 'w':
-        kernel = ConstantKernel(1.0, constant_value_bounds=(1e-3, 1e3)) * \
+    if model_name == '1':
+        kernel = ConstantKernel(1.02, constant_value_bounds=(1e-3, 1e3)) * \
                 RBF(length_scale=1.8, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 15
-        random_state = 42
-    elif model_name == 'c':
-        kernel = ConstantKernel(1.1, constant_value_bounds=(1e-2, 1e2)) * \
-                RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
-        n_restarts = 10
-        random_state = 24
-    elif model_name == 'o':
-        kernel = ConstantKernel(0.9, constant_value_bounds=(1e-1, 1e1)) * \
+        n_restarts = 5
+        random_state = 5
+    elif model_name == '2':
+        kernel = ConstantKernel(1.019, constant_value_bounds=(1e-2, 1e2)) * \
+        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        n_restarts = 4
+        random_state = 4
+    elif model_name == '3':
+        kernel = ConstantKernel(1.018, constant_value_bounds=(1e-1, 1e1)) * \
                 RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
-        n_restarts = 5
-        random_state = 84
-    elif model_name == 'H':
-        kernel = ConstantKernel(1.2, constant_value_bounds=(1e-3, 1e3)) * \
+        n_restarts = 3
+        random_state = 3
+    elif model_name == '4':
+        kernel = ConstantKernel(1.017, constant_value_bounds=(1e-3, 1e3)) * \
                 RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 20
-        random_state = 126
+        n_restarts = 2
+        random_state = 2
+    elif model_name == '5':
+        kernel = ConstantKernel(1.016, constant_value_bounds=(1e-2, 1e2)) * \
+        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        n_restarts = 4
+        random_state = 4
+    elif model_name == '6':
+        kernel = ConstantKernel(1.015, constant_value_bounds=(1e-1, 1e1)) * \
+                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+        n_restarts = 3
+        random_state = 3
+    elif model_name == '7':
+        kernel = ConstantKernel(1.014, constant_value_bounds=(1e-3, 1e3)) * \
+                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+        n_restarts = 2
+        random_state = 2
+    elif model_name == '8':
+        kernel = ConstantKernel(1.013, constant_value_bounds=(1e-2, 1e2)) * \
+                RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        n_restarts = 4
+        random_state = 4
+    elif model_name == '9':
+        kernel = ConstantKernel(1.012, constant_value_bounds=(1e-1, 1e1)) * \
+                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+        n_restarts = 3
+        random_state = 3
+    elif model_name == '10':
+        kernel = ConstantKernel(1.011, constant_value_bounds=(1e-3, 1e3)) * \
+                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+        n_restarts = 2
+        random_state = 2
+    elif model_name == '11':
+        kernel = ConstantKernel(1.01, constant_value_bounds=(1e-2, 1e2)) * \
+        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        n_restarts = 4
+        random_state = 4
+    elif model_name == '12':
+        kernel = ConstantKernel(1.009, constant_value_bounds=(1e-1, 1e1)) * \
+                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+        n_restarts = 3
+        random_state = 3
+    elif model_name == '13':
+        kernel = ConstantKernel(1.008, constant_value_bounds=(1e-3, 1e3)) * \
+                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+        n_restarts = 2
+        random_state = 2
+    elif model_name == '14':
+        kernel = ConstantKernel(1.007, constant_value_bounds=(1e-2, 1e2)) * \
+        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        n_restarts = 4
+        random_state = 4
+    elif model_name == '15':
+        kernel = ConstantKernel(1.006, constant_value_bounds=(1e-1, 1e1)) * \
+                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+        n_restarts = 3
+        random_state = 3
+    elif model_name == '16':
+        kernel = ConstantKernel(1.005, constant_value_bounds=(1e-3, 1e3)) * \
+                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+        n_restarts = 2
+        random_state = 2
+    elif model_name == '17':
+        kernel = ConstantKernel(1.004, constant_value_bounds=(1e-2, 1e2)) * \
+                RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        n_restarts = 4
+        random_state = 4
+    elif model_name == '18':
+        kernel = ConstantKernel(1.003, constant_value_bounds=(1e-1, 1e1)) * \
+                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+        n_restarts = 3
+        random_state = 3
+    elif model_name == '19':
+        kernel = ConstantKernel(1.002, constant_value_bounds=(1e-3, 1e3)) * \
+                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+        n_restarts = 2
+        random_state = 2
     else:
-        kernel = ConstantKernel(1.0) * RBF(length_scale=1.0)
-        n_restarts = 5
-        random_state = 0
+        kernel = ConstantKernel(1.001) * RBF(length_scale=1.0)
+        n_restarts = 1
+        random_state = 1
 
     # Lock the kernel parameters initially
     kernel = kernel.clone_with_theta(kernel.theta)
@@ -1011,11 +1086,11 @@ w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0.1,10)
 w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0.1,10)
 
 #extended data
-w_ranged_far = format_scan_object("logs/range_wall_far.json", 10,0,10)
-w_ranged_near = format_scan_object("logs/range_wall_near.json", 10,0,10)
-w_rotaion = format_scan_object("logs/Wall_0_extended_rotation.json", 10,0,10)
-w_side_left = format_scan_object("logs/side_wall_left.json", 10,0,10)
-w_side_right = format_scan_object("logs/side_wall_right.json", 10,0,10)
+w_ranged_far = format_scan_wall("logs/range_wall_far.json", 10,0,10)
+w_ranged_near = format_scan_wall("logs/range_wall_near.json", 10,0,10)
+w_rotaion = format_scan_wall("logs/Wall_0_extended_rotation.json", 10,0,10)
+w_side_left = format_scan_wall("logs/side_wall_left.json", 10,0,10)
+w_side_right = format_scan_wall("logs/side_wall_right.json", 10,0,10)
 
 
 
