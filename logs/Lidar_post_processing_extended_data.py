@@ -266,7 +266,7 @@ def find_corner(corner, threshold = 0.01):
     curvature = np.gradient(slope)
     
     # Step 3: Check if criteria is more than threshold    
-    print('Max inflection value is ',np.nanmax(abs(np.gradient(np.gradient(curvature)))), ': Threshold ',threshold)
+    #print('Max inflection value is ',np.nanmax(abs(np.gradient(np.gradient(curvature)))), ': Threshold ',threshold)
     if np.nanmax(abs(np.gradient(np.gradient(curvature)))) > threshold:
         # compute index of inflection point    
         largest_inflection_idx = np.nanargmax(abs(np.gradient(np.gradient(curvature))))  ####wheres the larges inflection point#### for finding corners
@@ -730,8 +730,8 @@ def find_thetas(a, model_name=None):
     if model_name == '1':
         kernel = ConstantKernel(1.02, constant_value_bounds=(1e-3, 1e3)) * \
                 RBF(length_scale=1.8, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 5
-        random_state = 5
+        n_restarts = 1
+        random_state = 1
     elif model_name == '2':
         kernel = ConstantKernel(1.019, constant_value_bounds=(1e-2, 1e2)) * \
         RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
@@ -902,10 +902,10 @@ def find_thetas_old(a):
 
 
 
-def cross_validate(model, X_train_clean, y_train_clean):
+def cross_validate(original_gpc, X_train_clean, y_train_clean):
     # Create a true independent copy
-    # model = clone(original_gpc)
-    # model.set_params(**original_gpc.get_params())  # Preserve all parameters
+    model = clone(original_gpc)
+    model.set_params(**original_gpc.get_params())  # Preserve all parameters
     
     # Verify kernel preservation
     # print(f"\nOriginal kernel: {original_gpc.kernel}")
@@ -913,7 +913,7 @@ def cross_validate(model, X_train_clean, y_train_clean):
     
     # Fit with verbose output
     model.fit(X_train_clean, y_train_clean)
-    print(f"Optimized kernel: {model.kernel_}")
+    #print(f"Optimized kernel: {model.kernel_}")
     
     # Cross-validation
     scores = cross_val_score(model, X_train_clean, y_train_clean, cv=5)
@@ -1156,11 +1156,11 @@ cc_rotaion = combine_scans(c_rotaion,corner_0)
 cc_side_left = combine_scans(c_side_left,corner_0)
 cc_side_right = combine_scans(c_side_right,corner_0)
 
-c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0  = clean_data(c_ranged_far)
-c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0  = clean_data(c_ranged_near)
-c_rotaion_only_DataX_0,c_rotaion_only_DataY_0   = clean_data(c_rotaion)
-c_side_left_only_DataX_0,c_side_left_only_DataY_0  = clean_data(c_side_left)
-c_side_right_only_DataX_0,c_side_right_only_DataY_0  = clean_data(c_side_right)
+c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0  = clean_data(combine_scans(c_ranged_far,c_wall_0_noise,c_object_0_noise))
+c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0  = clean_data(combine_scans(c_ranged_near,c_wall_0_noise,c_object_0_noise))
+c_rotaion_only_DataX_0,c_rotaion_only_DataY_0   = clean_data(combine_scans(c_rotaion,c_wall_0_noise,c_object_0_noise))
+c_side_left_only_DataX_0,c_side_left_only_DataY_0  = clean_data(combine_scans(c_side_left,c_wall_0_noise,c_object_0_noise))
+c_side_right_only_DataX_0,c_side_right_only_DataY_0  = clean_data(combine_scans(c_side_right,c_wall_0_noise,c_object_0_noise))
 
 ##centre test data gpc found#####
 __,__, c_ranged_far_gpc_0, c_ranged_far_DataX_0,c_ranged_far_DataY_0 = find_thetas(cc_ranged_far,model_name='4')
@@ -1168,6 +1168,24 @@ __,__, c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0 = find_t
 __,__, c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0 = find_thetas(cc_rotaion,model_name='6')
 __,__, c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0 = find_thetas(cc_side_left,model_name='7')
 __,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thetas(cc_side_right,model_name='8')
+
+print("---------------------c_gpc_0----------------------")
+print("c_gpc_0 vs c_DataX_0")
+cross_validate(c_gpc_0, c_DataX_0,c_DataY_0)
+print("c_gpc_0 vs c_ranged_far_only_DataX_0")
+cross_validate(c_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+print("c_gpc_0 vs c_ranged_near_only_DataX_0")
+cross_validate(c_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
+print("c_gpc_0 vs c_rotaion_only_DataX_0")
+cross_validate(c_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
+print("c_gpc_0 vs c_side_left_only_DataX_0")
+cross_validate(c_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
+print("c_gpc_0 vs c_side_right_only_DataX_0")
+cross_validate(c_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
+
+
+print("----------------c_ranged_far_gpc_0---------------")
+cross_validate(c_ranged_far_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
 
 
 # ##wall test data gpc found#####
