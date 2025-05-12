@@ -36,7 +36,7 @@ class LaptopPilot:
         # network for sensed pose
         aruco_params = {
             "port": 50000,  # Port to listen to (DO NOT CHANGE)
-            "marker_id": 20,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
+            "marker_id": 21,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
         }
         self.robot_ip = "192.168.90.1"
         
@@ -61,14 +61,14 @@ class LaptopPilot:
         #>Modelling<#
         ################
         # path
-        self.path_velocity = 0.1
+        self.path_velocity = 0.04
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        lapx = [0,1.4,1.4,0]
-        lapy = [0,0,1.4,1.4]
-        self.northings_path = lapx
-        self.eastings_path = lapy    
+        lapx = [0,1,1,0]
+        lapy = [0,0,1,1]
+        self.northings_path = lapx+lapx+lapx
+        self.eastings_path = lapy+lapy+lapy  
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
         wheel_distance = 0.100 # m 
@@ -82,8 +82,8 @@ class LaptopPilot:
         self.new_lidar = None
 
         # control parameters        
-        self.tau_s = 0.5 # s to remove along track error
-        self.L = 0.2 # m distance to remove normal and angular error
+        self.tau_s = 2 # s to remove along track error
+        self.L = 1 # m distance to remove normal and angular error
         self.v_max = 0.6 # m/s fastest the robot can go
         self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
@@ -214,12 +214,8 @@ class LaptopPilot:
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+        self.lidar_data = self.lidar_data[:120,:]
 
-        new_indices = np.linspace(0, len(msg.ranges)-1, 120)
-        temparray = np.empty((120, 2))
-        for i in range(2):  # Iterate over the two columns
-            temparray[:, i] = np.interp(new_indices, np.arange(124), self.lidar_data[:, i])
-        self.lidar_data = temparray
 
         self.raw_lidar = self.lidar_data
         ###############(imported)#########################
@@ -483,8 +479,6 @@ class LaptopPilot:
             self.initialise()
         # initialisation step
     
-
-
         if self.initialise_pose != True:  
             
              # > Receive < #
@@ -520,21 +514,18 @@ class LaptopPilot:
             else: 
                 p_gt = self.position_sensor_update()
             
-            # self.p_gt_path.append(p_gt)
-            self.state = p_gt
-
             # Motion model update
-            # self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
-            
+            self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
 
             # Lidar observation 
             if self.new_lidar == True:
                 self.new_lidar = False
                 self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
-                observation = GPC_input_output(self.raw_lidar, None)
+                observation = format(self.raw_lidar, None)
 
                 #Check for corners
                 corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
+                print(corner_probability)
                 if corner_probability[0][0] > 0.6:
                     label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
                     print(label, corner_probability)

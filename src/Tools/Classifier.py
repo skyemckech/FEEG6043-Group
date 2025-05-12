@@ -38,7 +38,7 @@ class Classifier:
         print("theta 1 is:",theta1, "theta 2 is:",theta2)
 
     def check_classifier(self):
-        test_d = format_scan("src/Tools/training_data/test.json", None)
+        test_d = format_scan("src/Tools/training_data/realsquare3x.json",None)
         return test_d
 
 

@@ -8,6 +8,8 @@ testd = cornerClassifier.check_classifier()
 
 # observation = cornerClassifier.data[52]
 observation = testd[13]
+observation.data_filled = observation.data_filled[:120,:]
+observation.data = observation.data[:120,:]
 proba = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
 observation.label = (cornerClassifier.classifier.classes_[np.argmax(proba)])
 print(proba)
