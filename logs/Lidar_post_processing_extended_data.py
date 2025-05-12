@@ -1134,7 +1134,6 @@ __,__, w_ranged_near_gpc_0, w_ranged_near_DataX_0,w_ranged_near_DataY_0 = find_t
 __,__, w_rotaion_gpc_0, w_rotaion_DataX_0,w_rotaion_DataY_0 = find_thetas(w_rotaion,model_name='11')
 __,__, w_side_left_gpc_0, w_side_left_DataX_0,w_side_left_DataY_0 = find_thetas(w_side_left,model_name='12')
 __,__, w_side_right_gpc_0, w_side_right_DataX_0,w_side_right_DataY_0 = find_thetas(w_side_right,model_name='13')
-__,__, w_side_right_gpc_0, w_side_right_DataX_0,w_side_right_DataY_0 = find_thetas(w_side_right,model_name='14')
 
 
 ##object test data gpc found#####
@@ -1142,7 +1141,7 @@ __,__, o_ranged_far_gpc_0, o_ranged_far_DataX_0,o_ranged_far_DataY_0 = find_thet
 __,__, o_ranged_near_gpc_0, o_ranged_near_DataX_0,o_ranged_near_DataY_0 = find_thetas(o_ranged_near,model_name='16')
 __,__, o_rotaion_gpc_0, o_rotaion_DataX_0,o_rotaion_DataY_0 = find_thetas(o_rotaion,model_name='17')
 __,__, o_side_left_gpc_0, o_side_left_DataX_0,o_side_left_DataY_0 = find_thetas(o_side_left,model_name='18')
-__,__, o_side_right_gpc_0, o_side_right_DataX_0,o_side_right_DataY_0 = find_thetas(o_side_right,model_name='19')
+__,__, o_side_right_gpc_0, o_side_right_DataX_0,o_side_right_DataY_0 = find_thetas(o_side_right,model_name='14')
 
 
 
