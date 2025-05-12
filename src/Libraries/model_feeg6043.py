@@ -2085,7 +2085,7 @@ def find_corner(corner, threshold = 0.01):
     # identify the reference coordinate as the inflection point
 
     # Step 1: Compute slope
-    slope = np.gradient(corner.data[:, 0])
+    slope = np.gradient(corner.data_filled[:, 0])
 
     # Step 2: Compute the second derivative (curvature)
     curvature = np.gradient(slope)

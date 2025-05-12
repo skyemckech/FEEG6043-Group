@@ -519,14 +519,17 @@ class LaptopPilot:
                 if corner_probability[0][0] > 0.6:
                     label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
                     print(label, corner_probability)
+
                     z_lm = Vector(2)
                     z_lm[0], z_lm[1], loc = find_corner(observation, 0.006)
+                    print(observation.data[loc,:])
                     # z_lm[1] = -z_lm[1]
                     if loc is not None and z_lm is not np.array([[np.nan], [np.nan]]):
                         self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
-                        self.landmark = self.landmark.flatten()
+                        observation.ne_representative = self.landmark
+                        self.landmark = observation.ne_representative.flatten()
                         print(self.state)
-                        print(self.landmark)
+                        print(observation.ne_representative)
                     else:
                         self.landmark = None
                     
