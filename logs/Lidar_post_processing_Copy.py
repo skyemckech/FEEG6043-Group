@@ -651,32 +651,7 @@ def format_scan_wall(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fi
         # plt.show()
 
             ####if the number of nan's is more than X of the total size then pass#######
-        if np.count_nonzero(~np.isnan(values[:,0])) > 0.1 * len(values[:,0]):
-
-            if loc is not None:
-                new_observation.label = 'not wall'
-                new_observation.ne_representative = z_lm
-                #print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
-                print("corner")
-
-                corner_training.append(new_observation)
-
-            else: 
-                z_lm[0], z_lm[1], r_val, fit_error = fit_circle_to_points(new_observation, fit_error_tolerance)
-                print("object fit error is here::::::--------",fit_error)
-
-                if r_val is not None:
-                    new_observation.label = 'not wall'
-                    new_observation.ne_representative = z_lm
-                    #print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
-                    print("object")
-                    corner_training.append(new_observation)
-                    #print(values)
-
-                else:
-                    error = fit_line_to_points(new_observation.data_filled, fit_error_tolerance_wall)
-
-                    if error is not None:
+        if fit_error_tolerance_wall == 1:
                         new_observation.label = 'wall'
                         new_observation.ne_representative = z_lm
                         #print('Map observation made at, Northings = ', new_observation.ne_representative[0], 'm, Eastings =', new_observation.ne_representative[1], 'm')  
@@ -1011,11 +986,11 @@ o_object_high_noise = format_scan_object("logs/object_3deg_15mm.json", 10,50,1)
 
 ##wall training###
 w_corner_0_noise = format_scan_wall("logs/corner_perfect_lidar.json", 0.001,0.1,0)
-w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0.1,20)
+w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0.1,1)
 w_object_0_noise = format_scan_wall("logs/object_perfect_lidar.json", 10,0.1,0)
 
-w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0.1,20)
-w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0.1,20)
+w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0.1,1)
+w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0.1,1)
 
 
 #-----extras----
@@ -1066,6 +1041,8 @@ gpc_example_old(w_wall_0_noise, w_gpc_0)
 
 
 
+print("GPC class order:", o_gpc_0.classes_)
+print("GPC class order:", c_gpc_0.classes_)
 print("GPC class order:", w_gpc_0.classes_)
 
             # # Extract the first scan (which is at index 0)
