@@ -587,7 +587,7 @@ def format_scan_object(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
     
     return corner_training
 
-def format_scan_wall(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_error_tolerance_wall = 0.005):
+def format_scan_wall(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_error_tolerance_wall = 1):
     fit_error = None
     variables = ImportLog(filepath)
     r = variables.extract_data("/lidar", ["message", "ranges"])
@@ -874,15 +874,14 @@ def find_thetas_old(a):
 
 
 
-def cross_validate(original_gpc, X_train_clean, y_train_clean):
+def cross_validate(model, X_train_clean, y_train_clean):
     # Create a true independent copy
-    from sklearn.base import clone
-    model = clone(original_gpc)
-    model.set_params(**original_gpc.get_params())  # Preserve all parameters
+    # model = clone(original_gpc)
+    # model.set_params(**original_gpc.get_params())  # Preserve all parameters
     
     # Verify kernel preservation
-    print(f"\nOriginal kernel: {original_gpc.kernel}")
-    print(f"Cloned kernel: {model.kernel}")
+    # print(f"\nOriginal kernel: {original_gpc.kernel}")
+    # print(f"Cloned kernel: {model.kernel}")
     
     # Fit with verbose output
     model.fit(X_train_clean, y_train_clean)
@@ -1078,19 +1077,19 @@ o_side_right = format_scan_object("logs/object_side_right.json", 10,50,1)
 
 
 ##wall training###
-w_corner_0_noise = format_scan_wall("logs/corner_perfect_lidar.json", 0.001,0.1,0)
-w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0,10)
+w_corner_0_noise = format_scan_wall("logs/corner_perfect_lidar.json", 10,0.1,10)
+w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0,1)
 w_object_0_noise = format_scan_wall("logs/object_perfect_lidar.json", 10,0.1,0)
 
 w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0,10)
 w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0,10)
 
 #extended data
-w_ranged_far = format_scan_wall("logs/range_wall_far.json", 10,0,10)
-w_ranged_near = format_scan_wall("logs/range_wall_near.json", 10,0,10)
-w_rotaion = format_scan_wall("logs/Wall_0_extended_rotation.json", 10,0,10)
-w_side_left = format_scan_wall("logs/side_wall_left.json", 10,0,10)
-w_side_right = format_scan_wall("logs/side_wall_right.json", 10,0,10)
+w_ranged_far = format_scan_wall("logs/range_wall_far.json", 10,0,1)
+w_ranged_near = format_scan_wall("logs/range_wall_near.json", 10,0,1)
+w_rotaion = format_scan_wall("logs/Wall_0_extended_rotation.json", 10,0,1)
+w_side_left = format_scan_wall("logs/side_wall_left.json", 10,0,1)
+w_side_right = format_scan_wall("logs/side_wall_right.json", 10,0,1)
 
 
 
@@ -1118,10 +1117,33 @@ object_0 = combine_scans(o_corner_0_noise,o_wall_0_noise,o_object_0_noise)
 o_corner_theta1_0, o_corner_theta2_0, o_gpc_0, o_DataX_0,o_DataY_0 = find_thetas(object_0,model_name='2')
 
 wall_0 = combine_scans(w_corner_0_noise,w_wall_0_noise,w_object_0_noise)
-print("wall_0")
-for i in range(len(wall_0)):
-      print('Entry:', i, ', Class', wall_0[i].label)
 w_corner_theta1_0, w_corner_theta2_0, w_gpc_0, w_DataX_0,w_DataY_0 = find_thetas(wall_0,model_name='3')
+
+
+##centre test data gpc found#####
+__,__, c_ranged_far_gpc_0, c_ranged_far_DataX_0,c_ranged_far_DataY_0 = find_thetas(c_ranged_far,model_name='4')
+__,__, c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0 = find_thetas(c_ranged_near,model_name='5')
+__,__, c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0 = find_thetas(c_rotaion,model_name='6')
+__,__, c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0 = find_thetas(c_side_left,model_name='7')
+__,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thetas(c_side_right,model_name='8')
+
+
+##wall test data gpc found#####
+__,__, w_ranged_far_gpc_0, w_ranged_far_DataX_0,w_ranged_far_DataY_0 = find_thetas(w_ranged_far,model_name='9')
+__,__, w_ranged_near_gpc_0, w_ranged_near_DataX_0,w_ranged_near_DataY_0 = find_thetas(w_ranged_near,model_name='10')
+__,__, w_rotaion_gpc_0, w_rotaion_DataX_0,w_rotaion_DataY_0 = find_thetas(w_rotaion,model_name='11')
+__,__, w_side_left_gpc_0, w_side_left_DataX_0,w_side_left_DataY_0 = find_thetas(w_side_left,model_name='12')
+__,__, w_side_right_gpc_0, w_side_right_DataX_0,w_side_right_DataY_0 = find_thetas(w_side_right,model_name='13')
+__,__, w_side_right_gpc_0, w_side_right_DataX_0,w_side_right_DataY_0 = find_thetas(w_side_right,model_name='14')
+
+
+##object test data gpc found#####
+__,__, o_ranged_far_gpc_0, o_ranged_far_DataX_0,o_ranged_far_DataY_0 = find_thetas(o_ranged_far,model_name='15')
+__,__, o_ranged_near_gpc_0, o_ranged_near_DataX_0,o_ranged_near_DataY_0 = find_thetas(o_ranged_near,model_name='16')
+__,__, o_rotaion_gpc_0, o_rotaion_DataX_0,o_rotaion_DataY_0 = find_thetas(o_rotaion,model_name='17')
+__,__, o_side_left_gpc_0, o_side_left_DataX_0,o_side_left_DataY_0 = find_thetas(o_side_left,model_name='18')
+__,__, o_side_right_gpc_0, o_side_right_DataX_0,o_side_right_DataY_0 = find_thetas(o_side_right,model_name='19')
+
 
 
 print("-----corner-----")
