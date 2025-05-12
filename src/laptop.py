@@ -41,7 +41,7 @@ class LaptopPilot:
         self.sim_time_offset = 0 #used to deal with webots timestamps
         self.sim_init = False #used to deal with webots timestamps
         self.simulation = simulation
-        self.aruco = True
+        self.aruco = False
         self.plotGroundtruth = None
 
         if self.simulation:
@@ -479,6 +479,7 @@ class LaptopPilot:
                 self.pathstage += 1
 
     def initialise(self):
+        time.sleep(0.1)
         if self.initialise_pose == True:
                 # set initial measurements
                 self.initialise_robot()
