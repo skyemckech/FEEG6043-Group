@@ -41,6 +41,7 @@ class LaptopPilot:
         self.sim_time_offset = 0 #used to deal with webots timestamps
         self.sim_init = False #used to deal with webots timestamps
         self.simulation = simulation
+        self.aruco = True
         self.plotGroundtruth = None
 
         if self.simulation:
@@ -351,12 +352,20 @@ class LaptopPilot:
     
     def initialise_robot(self):
         # Create initial state, covariance and position estimate
+        time.sleep(0.1)
         self.state = Vector(5)
-        self.state[0] = self.measured_pose_northings_m 
-        self.state[1] = self.measured_pose_eastings_m  
-        self.state[2] = self.measured_pose_yaw_rad
-        self.state[3] = 0 
-        self.state[4] = 0
+        if self.aruco is False:
+            self.state[0] = 0.0
+            self.state[1] = 0.0
+            self.state[2] = 0.0
+            self.state[3] = 0 
+            self.state[4] = 0
+        else:
+            self.state[0] = self.measured_pose_northings_m 
+            self.state[1] = self.measured_pose_eastings_m  
+            self.state[2] = self.measured_pose_yaw_rad
+            self.state[3] = 0 
+            self.state[4] = 0
 
         self.covariance = Identity(5) 
         self.covariance[N,N] = self.state[0]**2
@@ -469,6 +478,22 @@ class LaptopPilot:
                 self.inprogress = False
                 self.pathstage += 1
 
+    def initialise(self):
+        if self.initialise_pose == True:
+                # set initial measurements
+                self.initialise_robot()
+                self.uncertainty = LaptopPilot.uncertaintyMatrices()
+
+                self.generate_trajectory()
+
+                # get current time and determine timestep
+                self.t_prev = datetime.utcnow().timestamp() #initialise the time
+                self.t = 0 #elapsed time
+                time.sleep(0.1) #wait for approx a timestep before proceeding
+                
+                # path and tragectory are initialised
+                self.initialise_pose = False
+
     def update_estimated_pose(self):
         # Update estimate variable for logging
         self.est_pose_northings_m = self.state[0,0]
@@ -481,47 +506,28 @@ class LaptopPilot:
         Your code should go here.
         """
         # > Sense < #
-        # get the latest position measurements
-        aruco_pose = self.aruco_driver.read()    
+        if self.aruco:
+            # get the latest position measurements
+            aruco_pose = self.aruco_driver.read()    
 
-        if aruco_pose is not None:
-            # converts aruco date to zeroros PoseStamped format
-            msg = self.pose_parse(aruco_pose, aruco = True)
-            # reads sensed pose for local use
-            self.measured_pose_timestamp_s = msg.header.stamp
-            self.measured_pose_northings_m = msg.pose.position.x
-            self.measured_pose_eastings_m = msg.pose.position.y
-            _, _, self.measured_pose_yaw_rad = msg.pose.orientation.to_euler()        
-            self.measured_pose_yaw_rad = self.measured_pose_yaw_rad % (np.pi*2) # manage angle wrapping
+            if aruco_pose is not None:
+                # converts aruco date to zeroros PoseStamped format
+                msg = self.pose_parse(aruco_pose, aruco = True)
+                # reads sensed pose for local use
+                self.measured_pose_timestamp_s = msg.header.stamp
+                self.measured_pose_northings_m = msg.pose.position.x
+                self.measured_pose_eastings_m = msg.pose.position.y
+                _, _, self.measured_pose_yaw_rad = msg.pose.orientation.to_euler()        
+                self.measured_pose_yaw_rad = self.measured_pose_yaw_rad % (np.pi*2) # manage angle wrapping
 
-            # logs the data            
-            self.datalog.log(msg, topic_name="/aruco")
-        
+                # logs the data            
+                self.datalog.log(msg, topic_name="/aruco")
+                # initialisation step
+                self.initialise()
+        else:
             # initialisation step
-            if self.initialise_pose == True:
-                # set initial measurements
-                self.initialise_robot()
-                self.uncertainty = LaptopPilot.uncertaintyMatrices()
-
-                # Add headers
-                self.ref_pose_worksheet.extend_data(["Elapsed Time",
-                                                    "Trajectory Northings",
-                                                    "Trajectory Eastings",
-                                                    "Trajectory Gamma",
-                                                    "Measured Northings Error", 
-                                                    "Measured Eastings Error", 
-                                                    "Measured Gamma Error"])
-                self.ref_pose_worksheet.export_to_excel()
-
-                self.generate_trajectory()
-
-                # get current time and determine timestep
-                self.t_prev = datetime.utcnow().timestamp() #initialise the time
-                self.t = 0 #elapsed time
-                time.sleep(0.1) #wait for approx a timestep before proceeding
-                
-                # path and tragectory are initialised
-                self.initialise_pose = False
+            self.initialise()
+            
 
 
         if self.initialise_pose != True:  
