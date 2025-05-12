@@ -45,6 +45,7 @@ class LaptopPilot:
         self.sim_init = False #used to deal with webots timestamps
         self.simulation = simulation
         self.plotGroundtruth = None
+        self.aruco = False
 
         if self.simulation:
             self.robot_ip = "127.0.0.1"          
@@ -213,6 +214,13 @@ class LaptopPilot:
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+
+        new_indices = np.linspace(0, len(msg.ranges)-1, 120)
+        temparray = np.empty((120, 2))
+        for i in range(2):  # Iterate over the two columns
+            temparray[:, i] = np.interp(new_indices, np.arange(124), self.lidar_data[:, i])
+        self.lidar_data = temparray
+
         self.raw_lidar = self.lidar_data
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
@@ -328,9 +336,14 @@ class LaptopPilot:
     def initialise_robot(self):
         # Create initial state, covariance and position estimate
         self.state = Vector(3)
-        self.state[0] = self.measured_pose_northings_m 
-        self.state[1] = self.measured_pose_eastings_m  
-        self.state[2] = self.measured_pose_yaw_rad
+        if self.aruco == True:
+            self.state[0] = self.measured_pose_northings_m 
+            self.state[1] = self.measured_pose_eastings_m  
+            self.state[2] = self.measured_pose_yaw_rad
+        else:
+            self.state[0] = 0
+            self.state[1] = 0
+            self.state[2] = 0
         self.update_estimated_pose()
 
 
@@ -418,6 +431,30 @@ class LaptopPilot:
         self.est_pose_northings_m = self.state[0,0]
         self.est_pose_eastings_m = self.state[1,0]
         self.est_pose_yaw_rad = self.state[2,0]
+    
+    def initialise(self):
+        if self.initialise_pose == True:
+            # set initial measurements
+            self.initialise_robot()
+            self.uncertainty = LaptopPilot.uncertaintyMatrices()
+            self.covariance = self.uncertainty.get_initial_uncertainty()
+
+            self.generate_trajectory()
+
+            #Graphslam
+            self.cornerClassifier = Classifier()
+            self.cornerClassifier.train_classifier('corner')
+
+            self.graph = graphslam_frontend()
+            self.graph.anchor(self.uncertainty.get_initial_uncertainty)
+
+            # get current time and determine timestep
+            self.t_prev = datetime.utcnow().timestamp() #initialise the time
+            self.t = 0 #elapsed time
+            time.sleep(0.1) #wait for approx a timestep before proceeding
+            
+            # path and tragectory are initialised
+            self.initialise_pose = False
         
     def infinite_loop(self):
         """Main control loop
@@ -426,44 +463,26 @@ class LaptopPilot:
         """
         # > Sense < #
         # get the latest position measurements
-        aruco_pose = self.aruco_driver.read()    
+        if self.aruco:
+            aruco_pose = self.aruco_driver.read()    
 
-        if aruco_pose is not None:
-            # converts aruco date to zeroros PoseStamped format
-            msg = self.pose_parse(aruco_pose, aruco = True)
-            # reads sensed pose for local use
-            self.measured_pose_timestamp_s = msg.header.stamp
-            self.measured_pose_northings_m = msg.pose.position.x
-            self.measured_pose_eastings_m = msg.pose.position.y
-            _, _, self.measured_pose_yaw_rad = msg.pose.orientation.to_euler()        
-            self.measured_pose_yaw_rad = self.measured_pose_yaw_rad % (np.pi*2) # manage angle wrapping
+            if aruco_pose is not None:
+                # converts aruco date to zeroros PoseStamped format
+                msg = self.pose_parse(aruco_pose, aruco = True)
+                # reads sensed pose for local use
+                self.measured_pose_timestamp_s = msg.header.stamp
+                self.measured_pose_northings_m = msg.pose.position.x
+                self.measured_pose_eastings_m = msg.pose.position.y
+                _, _, self.measured_pose_yaw_rad = msg.pose.orientation.to_euler()        
+                self.measured_pose_yaw_rad = self.measured_pose_yaw_rad % (np.pi*2) # manage angle wrapping
 
-            # logs the data            
-            self.datalog.log(msg, topic_name="/aruco")
-        
-            # initialisation step
-            if self.initialise_pose == True:
-                # set initial measurements
-                self.initialise_robot()
-                self.uncertainty = LaptopPilot.uncertaintyMatrices()
-                self.covariance = self.uncertainty.get_initial_uncertainty()
-
-                self.generate_trajectory()
-
-                #Graphslam
-                self.cornerClassifier = Classifier()
-                self.cornerClassifier.train_classifier('corner')
-
-                self.graph = graphslam_frontend()
-                self.graph.anchor(self.uncertainty.get_initial_uncertainty)
-
-                # get current time and determine timestep
-                self.t_prev = datetime.utcnow().timestamp() #initialise the time
-                self.t = 0 #elapsed time
-                time.sleep(0.1) #wait for approx a timestep before proceeding
-                
-                # path and tragectory are initialised
-                self.initialise_pose = False
+                # logs the data            
+                self.datalog.log(msg, topic_name="/aruco")
+                self.initialise()
+        else:
+            self.initialise()
+        # initialisation step
+    
 
 
         if self.initialise_pose != True:  
