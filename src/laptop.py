@@ -140,7 +140,7 @@ class LaptopPilot:
         self.pathstage = 0
         self.inprogress = False
         self.starttime = None
-        self.commands = (0.01, 0, 1),
+        self.commands = [(0.01, 0, 1),
                             (0, np.pi/-12, 2.5),
                             (0, np.pi/6, 2.5),
                             (0, -np.pi/6, 2.5),
