@@ -26,7 +26,7 @@ TexturedBackgroundLight {
 }
 RectangleArena {
   translation 1 -1 0
-  floorSize 2 2
+  floorSize 5 5
   floorTileSize 2 2
   floorAppearance Appearance {
     material Material {
