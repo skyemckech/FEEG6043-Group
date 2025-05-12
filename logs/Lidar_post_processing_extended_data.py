@@ -993,11 +993,11 @@ o_object_low_noise = format_scan_object("logs/object_1_deg_5mm.json", 10,50,1)
 o_object_high_noise = format_scan_object("logs/object_3deg_15mm.json", 10,50,1)
 
 ########extended object data######
-o_ranged_far = format_scan_object("logs/corner_0_test1.json", 10,50,1)
-o_ranged_near = format_scan_object("logs/corner_0_test1.json", 10,50,1)
-o_rotaion = format_scan_object("logs/corner_0_test1.json", 10,50,1)
-o_side_left = format_scan_object("logs/corner_0_test1.json", 10,50,1)
-o_side_right = format_scan_object("logs/corner_0_test1.json", 10,50,1)
+o_ranged_far = format_scan_object("logs/object_range_far.json", 10,50,1)
+o_ranged_near = format_scan_object("logs/Range_object_near.json", 10,50,1)
+o_rotaion = format_scan_object("logs/object_0_extended_rotation.json", 10,50,1)
+o_side_left = format_scan_object("logs/object_side_left.json", 10,50,1)
+o_side_right = format_scan_object("logs/object_side_right.json", 10,50,1)
 
 
 
@@ -1011,11 +1011,11 @@ w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0.1,10)
 w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0.1,10)
 
 #extended data
-w_ranged_far = format_scan_object("logs/corner_0_test1.json", 10,0,10)
-w_ranged_near = format_scan_object("logs/corner_0_test1.json", 10,0,10)
-w_rotaion = format_scan_object("logs/corner_0_test1.json", 10,0,10)
-w_side_left = format_scan_object("logs/corner_0_test1.json", 10,0,10)
-w_side_right = format_scan_object("logs/corner_0_test1.json", 10,0,10)
+w_ranged_far = format_scan_object("logs/range_wall_far.json", 10,0,10)
+w_ranged_near = format_scan_object("logs/range_wall_near.json", 10,0,10)
+w_rotaion = format_scan_object("logs/Wall_0_extended_rotation.json", 10,0,10)
+w_side_left = format_scan_object("logs/side_wall_left.json", 10,0,10)
+w_side_right = format_scan_object("logs/side_wall_right.json", 10,0,10)
 
 
 
