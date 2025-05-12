@@ -124,6 +124,10 @@ class LaptopPilot:
         lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
 
+        # self.lidar_rangenoise = 0.000025
+        # self.lidar_anglenoise = 0.0003
+        self.lidar_rangenoise = 0.0
+        self.lidar_anglenoise = 0.0
         # Excel export
         self.export_data = None
         self.ref_pose_worksheet = LaptopPilot.createExcelFile("output_data.xlsx")
@@ -136,31 +140,124 @@ class LaptopPilot:
         self.inprogress = False
         self.starttime = None
         self.commands = [   (0.01, 0, 1),
-                            (0, -np.pi/1.8, 2),
-                            (0, -np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, -np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, -np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, -np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, -np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, np.pi/2.5, 10),
-                            (-0.1, 0, 1),
-                            (0, -np.pi/2.5, 10),
+                            (0, np.pi/-12, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
+                            (0, np.pi/6, 2.5),
+                            (0, -np.pi/6, 2.5),
                             
+
                          ]
         
+        # self.commands = [   (0.0, 0, 10000),                           
+        #                  ]
+
+        # self.commands = [   (0.01, 0, 1),
+        #                     (0, -np.pi/2, 4),
+        #                 ]
+                         
         ###############################################################        
 
         self.datalog = DataLogger(log_dir="logs")
@@ -222,11 +319,21 @@ class LaptopPilot:
             self.sim_init = False     
 
         msg.header.stamp += self.sim_time_offset
+
+        rangenoise = self.add_noise(self.lidar_rangenoise,0,len(msg.ranges))
+        anglenoise = self.add_noise(self.lidar_anglenoise,0,len(msg.angles))
+
+        msg.ranges += rangenoise
+        msg.angles += anglenoise
+
+        # msg.ranges = [a + b for a, b in zip(msg.ranges, rangenoise)]
+        # msg.angles = [a + b for a, b in zip(msg.angles, anglenoise)]
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
@@ -383,6 +490,14 @@ class LaptopPilot:
         # Sample yaw data from Aruco
         self.sensor_measurement = Vector(5)
         self.sensor_measurement[G] = self.measured_pose_yaw_rad
+
+    def add_noise(self, variance, mean = 0, number = 100):
+        # Add random normal noise
+        noise = np.random.normal(mean, np.sqrt(variance), number) 
+        # first is the mean of the normal distribution you are choosing from
+        # second is the standard deviation of the normal distribution
+        # third is the number of elements you get in array noise
+        return noise
 
 
     class uncertaintyMatrices:  

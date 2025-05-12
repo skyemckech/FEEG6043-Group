@@ -1237,3 +1237,125 @@ def extended_kalman_filter_update(mu, Sigma, z, h, Q, wrap_index = None):
     # Return the state and the covariance
     return cor_mu, cor_Sigma
 
+def logistic(z): return 1/(1+np.exp(-z))
+
+def K_(X, theta, sigma_n=1e-5):
+    """Adds noise to the diagonal elements of the kernel"""
+    return rbf_kernel(X, X, theta) + sigma_n * np.eye(len(X))
+
+def W_(f):
+    """W is a diagonal matrix with elements (logistic(f)(1-logistic(f)))"""
+    W = Matrix(len(f),len(f))
+
+    for i in range(len(f)): 
+        W[i,i] = logistic( f[i]) * ( 1 - logistic(f[i]) )
+    return W
+
+def posterior(X, c, K, max_iter=10, tol=1e-9):
+    """
+    Computes the mode of posterior p(a|t).
+    """
+    f = Vector(len(c)) #zeros    
+    I = np.eye(len(X))    
+  
+    for i in range(max_iter):
+        W = W_(f)
+
+        L = np.linalg.cholesky( I + np.sqrt(W) @ K @ np.sqrt(W) )
+        
+        b = W.dot(f) + (c - logistic(f))    
+        a = b - np.sqrt(W) @ np.linalg.solve(L.T,(np.linalg.solve(L, np.sqrt(W) @ K @ b)))
+                                 
+        f_new = K @ a
+
+        # update function
+        f_diff = np.abs(f_new - f)
+        f = f_new
+
+        # check for convergence
+        if not np.any(f_diff > tol):
+            break
+
+    return f, L
+
+def negative_log_likelihood_fn(X, c):
+    """
+    Returns the negative log-likelihood function for data X, c.
+
+    Basically: given our classes and inputs, how likely are these classes -> its a performance metric of this description of the inputs
+    """
+    def negative_log_likelihood(theta):
+        K = K_(X, theta)
+        K_inv = np.linalg.inv(K)
+        
+        # posterior mode depends on theta (via K)    
+        f, L = posterior(X, c, K)     
+
+        # first term, since f=Ka
+        ll = - 0.5 * f.T.dot(K_inv).dot(f)
+
+        # second term
+        sum_pcf = 0            
+        for i in range(len(f)): 
+            sum_pcf += np.log(1.0 + np.exp(f[i])) 
+            
+        # third term
+        sum_diag_logL = 0        
+        for i in range(len(L)): 
+            sum_diag_logL += np.log( L[i,i] )
+        
+        ll += - sum_pcf  + c.T.dot(f) - sum_diag_logL
+        
+        return -ll
+
+    return negative_log_likelihood
+
+def rbf_kernel(X1, X2, theta):
+    """
+    Radial Basis Function.
+    Args:
+        X1: Array of m points (m x d).
+        X2: Array of n points (n x d).
+        phi: Kernel weight parameters 
+                - theta[0]= sigma_f
+                - theta[1]= length scale along input axis
+    Returns:
+        (m x n) matrix
+    """
+
+    X1_sq = np.sum(X1**2, axis=1, keepdims=True)  # (m, 1)
+    X2_sq = np.sum(X2**2, axis=1, keepdims=True).T  # (1, n)
+    dist_sq = X1_sq - 2 * X1 @ X2.T + X2_sq
+    return theta[0] ** 2 * np.exp(-dist_sq/ (2* theta[1] ** 2))
+
+def predict_f(X_test, X, c, theta):
+    """
+    Computes the mean and variance of logits at points X_test
+    given training data X, t and kernel parameters theta.
+    """
+    K = K_(X, theta)
+    K_s = rbf_kernel(X, X_test, theta)
+    
+    f, L = posterior(X, c, K)    
+    W = W_(f)        
+    
+    f_test_mu = (K_s.T.dot(c - logistic(f)))
+
+    # Compute variances from the cholesky decomposisiotn, only need diagonals
+    v = np.linalg.solve(L, np.sqrt(W) @ K_s)  
+    
+    # Column vector of diagonal elements
+    f_test_var = np.diag((K_(X_test, theta) - v.T.dot(v)))[:,None] #[:,None] reshapes into a column vector  
+
+    return f_test_mu, f_test_var    
+
+def predict_class(X_test, X, c, theta):
+    """
+    Computes the probability of c=1 at points X_test
+    given training data X, t and kernel parameters theta.
+    """
+    f_mu, f_var = predict_f(X_test, X, c, theta)
+
+    kappa = 1/(1+0.25*np.pi* f_var)
+    return logistic( f_mu * np.sqrt( kappa ) )
+

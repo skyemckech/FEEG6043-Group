@@ -75,7 +75,7 @@ class Window(QWidget):
         self.est_position = DataConnector(est_position, max_points=1000)
         self.measured_position = DataConnector(measured_position, max_points=100)
         self.waypoints = DataConnector(waypoints, max_points=50)
-        self.lidar = DataConnector(lidar, max_points=3000)
+        self.lidar = DataConnector(lidar, max_points=30000)
 
         # Assignment 1 additions
         self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=1000)
