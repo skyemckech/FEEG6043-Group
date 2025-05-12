@@ -1079,11 +1079,11 @@ o_side_right = format_scan_object("logs/object_side_right.json", 10,50,1)
 
 ##wall training###
 w_corner_0_noise = format_scan_wall("logs/corner_perfect_lidar.json", 0.001,0.1,0)
-w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0.1,10)
+w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0,10)
 w_object_0_noise = format_scan_wall("logs/object_perfect_lidar.json", 10,0.1,0)
 
-w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0.1,10)
-w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0.1,10)
+w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0,10)
+w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0,10)
 
 #extended data
 w_ranged_far = format_scan_wall("logs/range_wall_far.json", 10,0,10)
@@ -1112,13 +1112,16 @@ print("-----------------------testcombine_scan----------------")
 
 
 corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
-c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='c')
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
 
 object_0 = combine_scans(o_corner_0_noise,o_wall_0_noise,o_object_0_noise)
-o_corner_theta1_0, o_corner_theta2_0, o_gpc_0, o_DataX_0,o_DataY_0 = find_thetas(object_0,model_name='o')
+o_corner_theta1_0, o_corner_theta2_0, o_gpc_0, o_DataX_0,o_DataY_0 = find_thetas(object_0,model_name='2')
 
 wall_0 = combine_scans(w_corner_0_noise,w_wall_0_noise,w_object_0_noise)
-w_corner_theta1_0, w_corner_theta2_0, w_gpc_0, w_DataX_0,w_DataY_0 = find_thetas(wall_0,model_name='w')
+print("wall_0")
+for i in range(len(wall_0)):
+      print('Entry:', i, ', Class', wall_0[i].label)
+w_corner_theta1_0, w_corner_theta2_0, w_gpc_0, w_DataX_0,w_DataY_0 = find_thetas(wall_0,model_name='3')
 
 
 print("-----corner-----")
