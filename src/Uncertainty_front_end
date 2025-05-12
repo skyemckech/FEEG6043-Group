@@ -100,3 +100,9 @@ sigma_w = k_w * E_b * np.deg2rad(30)  # Using 30°/s as typical turn rate
 print("\nFinal Motion Model Uncertainties:")
 print(f"Linear velocity std (σ_v): {sigma_v:.6f} m/s")
 print(f"Angular velocity std (σ_w): {sigma_w:.6f} rad/s")
+
+d_corrected = wheel_diameter * (1-E_d)
+b_corrected = wheelbase * (1 - E_b)
+
+print(f"Corrected wheel diameter {d_corrected:.6f} m")
+print(f"Corrected wheelbase {b_corrected:.6f} m")
