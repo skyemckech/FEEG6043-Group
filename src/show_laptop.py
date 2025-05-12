@@ -60,6 +60,7 @@ class Window(QWidget):
         est_position = LiveScatterPlot(symbol = 'o', size = 4, pen = 'blue', name = 'Estimated Position')
         measured_position = LiveScatterPlot(symbol = 'x', pen = 'green', name = 'Measured Position')
         waypoints = LiveScatterPlot(symbol = 'o', pen = 'red', name = 'Waypoints')
+        landmark_loc = LiveScatterPlot(symbol = 'x', size = 10, pen = 'red', name = 'Landmarks')
         lidar = LiveScatterPlot(symbol = 'o', size = 1, pen = 'w', name = 'Lidar')
         p_reference_tracker = LiveLinePlot(pen="grey", name='Reference path')
 
@@ -76,10 +77,14 @@ class Window(QWidget):
         self.est_position = DataConnector(est_position, max_points=1000)
         self.measured_position = DataConnector(measured_position, max_points=100)
         self.waypoints = DataConnector(waypoints, max_points=50)
+
         self.lidar = DataConnector(lidar, max_points=3000)
 
         # Assignment 1 additions
         self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=1000)
+
+        #Ass 2 additions
+        self.landmark_points = DataConnector(landmark_loc, max_points=50)
 
         # Show grid
         self.wheelrate_plot.showGrid(x=True, y=True, alpha=0.3)
@@ -113,6 +118,7 @@ class Window(QWidget):
         self.position_plot.addItem(est_position)
         self.position_plot.addItem(measured_position)
         self.position_plot.addItem(waypoints)
+        self.position_plot.addItem(landmark_loc)
         self.position_plot.addItem(lidar)   
         self.position_plot.addItem(p_reference_tracker)
 
@@ -197,6 +203,12 @@ class Window(QWidget):
             lidar_data = self.Laptop.lidar_data
             lidar_timestamp_s = self.Laptop.lidar_timestamp_s
 
+            # Landmarks ~
+            if self.Laptop.landmark is not None:
+                landmark_loc = self.Laptop.landmark
+            else:
+                landmark_loc = None
+
             ######## e-frame plots ############
             #waypoints
             if path_first_counter == 0 and northings_path is not None and eastings_path is not None:
@@ -209,6 +221,9 @@ class Window(QWidget):
             if p_reference is not None:
                 self.p_reference_tracker.cb_append_data_point(p_reference[0], p_reference[1])
 
+            # Landmarks
+            if landmark_loc is not None:
+                self.landmark_points.cb_append_data_point(landmark_loc[0], landmark_loc[1])
 
             # estimated and measured positions
             if est_pose_northings_m is not None and est_pose_eastings_m is not None:
