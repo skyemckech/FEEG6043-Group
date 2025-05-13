@@ -81,7 +81,7 @@ class Window(QWidget):
         self.lidar = DataConnector(lidar, max_points=3000)
 
         # Assignment 1 additions
-        self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=1000)
+        self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=100)
 
         #Ass 2 additions
         self.landmark_points = DataConnector(landmark_loc, max_points=50)
@@ -205,7 +205,7 @@ class Window(QWidget):
 
             # Landmarks ~
             if self.Laptop.landmark is not None:
-                landmark_loc = self.Laptop.landmark
+                landmark_loc = self.Laptop.landmark.flatten()
             else:
                 landmark_loc = None
 

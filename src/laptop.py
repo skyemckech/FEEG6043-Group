@@ -60,7 +60,7 @@ class LaptopPilot:
         #>Modelling<#
         ################
         # path
-        self.path_velocity = 0.04
+        self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
@@ -69,10 +69,10 @@ class LaptopPilot:
         # lapx = [0,-0.1]
         # lapy = [0,-0.1]
         self.northings_path = lapx+lapx+lapx
-        self.eastings_path = lapy+lapy+lapy  
+        self.eastings_path = lapy+lapy+lapy
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.17/2 # m 
+        wheel_distance = 0.174/2 # m 
         wheel_diameter = 0.07 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
@@ -83,14 +83,23 @@ class LaptopPilot:
         self.new_lidar = None
 
         # control parameters        
-        self.tau_s = 2 # s to remove along track error
-        self.L = 1 # m distance to remove normal and angular error
+        self.tau_s = 0.5 # s to remove along track error
+        self.L = 0.2 # m distance to remove normal and angular error
         self.v_max = 0.6 # m/s fastest the robot can go
         self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
         
         self.initialise_control = True # False once control gains is initialised 
 
+        # graphslam
+        self.stop_to_think = False
+        self.za_warudo_part_one = False
+        self.za_warudo_part_two = False
+        self.landmark_acceptance_radius = 1
+        self.count = 0
+        self.p_ = 0
+        self.sigma_ = 0
+        
         # classifiers
         self.cornerClassifier = None
         self.landmark = None # For sending to show_laptop
@@ -216,10 +225,8 @@ class LaptopPilot:
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
-        self.lidar_data = self.lidar_data[:120,:]
 
-
-        self.raw_lidar = self.lidar_data
+        self.raw_lidar = self.lidar_data[:120,:]
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
@@ -448,6 +455,8 @@ class LaptopPilot:
             self.graph = graphslam_frontend()
             self.graph.anchor(self.covariance)
 
+            self.reset_previous_state()
+
             # get current time and determine timestep
             self.t_prev = datetime.utcnow().timestamp() #initialise the time
             self.t = 0 #elapsed time
@@ -455,7 +464,22 @@ class LaptopPilot:
             
             # path and tragectory are initialised
             self.initialise_pose = False
-        
+    
+    def robo_stop(self):
+        wheel_speed_msg = Vector3Stamped()
+        wheel_speed_msg.vector.x = 0 # Right wheelspeed rad/s
+        wheel_speed_msg.vector.y = 0 # Left wheelspeed rad/s
+
+        self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+        self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+
+        self.wheel_speed_pub.publish(wheel_speed_msg)
+        self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+
+    def reset_previous_state(self):
+        self.p_ = self.state
+        self.sigma_ = self.covariance
+
     def infinite_loop(self):
         """Main control loop
 
@@ -494,11 +518,18 @@ class LaptopPilot:
             u = self.ddrive.fwd_kinematics(q)    
             
             #determine the time step
+
             t_now = datetime.utcnow().timestamp()        
-                    
-            dt = t_now - self.t_prev #timestep from last estimate
-            self.t += dt #add to the elapsed time
-            self.t_prev = t_now #update the previous timestep for the next loop
+
+            if self.za_warudo_part_one is True:
+                self.za_warudo_part_one = False
+                self.za_warudo_part_two = True
+                self.t_prev = t_now
+                dt = 0.001
+            else:
+                dt = t_now - self.t_prev #timestep from last estimate
+                self.t += dt #add to the elapsed time
+
 
              # > Think < #
             ################################################################################
@@ -521,19 +552,20 @@ class LaptopPilot:
                 #Check for corners
                 corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
                 # Remove lidar points with a range below 5cm (for real life lidar)
-                observation.data_filled = observation.data_filled[observation.data[:, 0] != 0.]
+                observation.data_filled = observation.data_filled[observation.data[:, 0] > 0.01]
+                print(corner_probability)  
                 # Only check for corners if there are at least 10 points
                 if corner_probability[0][0] > 0.6 and len(observation.data_filled) > 10:  
-                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])  
+                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
+                    print(label)
                     # Check for corners                
                     z_lm = Vector(2)
                     z_lm[0], z_lm[1], loc = find_corner(observation, 0.003)
-
-                    if loc is not None and z_lm.flatten() is not np.array([[np.nan],[np.nan]]):
+                    # If the corner exists and its coordinates are not nan
+                    if loc is not None and not (np.isnan(z_lm).any() or np.isinf(z_lm).any()):
                         # Record landmarks for graphslam
                         self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
-                        observation.ne_representative = self.landmark
-                        self.landmark = observation.ne_representative.flatten()
+                        # self.landmark = self.landmark.flatten()
                         print(label, "at", self.landmark)
                         self.new_landmark = True
                 else:
@@ -546,97 +578,110 @@ class LaptopPilot:
             sigma_motion = self.uncertainty.get_process_uncertainty3x3()
             sigma_lidar = self.uncertainty.get_lidar_uncertainty()
 
+            # Save previous pose and smegma
+            self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
             # Log landmark
             if self.new_landmark is True:
                 self.new_landmark = False
                 _, _, t_lm, sigma_observe_xy = self.lidar.loc_to_rangeangle(p_eb=self.state,t_em=self.landmark,sigma_observe=sigma_lidar)
-                landmark_id = 0
+                new_id, landmark_id = check_landmarks(self.landmark, self.graph, self.landmark_acceptance_radius)
+                print(landmark_id)
+                # Check distance to other landmarks
                 self.graph.observation(self.landmark, sigma_observe_xy, landmark_id, t_lm)
-                
-            # Save previous pose and smegma
-            p_ = self.state
-            sigma_ = self.covariance
+                # Check if landmark is older than 1 observation
+                if new_id is False and landmark_id != self.graph.landmark_id_array[-2]:
+                    # Stop robot motion cause it needsa think
+                    self.robo_stop()
+                    self.stop_to_think = True
+                    self.za_warudo_part_one = True
+                else:
+                    self.graph.motion(self.p_, self.sigma_, dp, final=False)
+                self.reset_previous_state()
+            # If no landmarks and moving, business as usual 
+            elif u.all() != 0 and self.count > 10:
+                self.graph.motion(self.p_, self.sigma_, dp, final=False)
+                self.reset_previous_state()
+                self.count = 0
+            self.count += 1
 
-            # Motion model update
-            if u.all() != 0:
-                self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
-                # self.graph.motion(p_,sigma_, dp ,final=False)   
-
+            # Optimise graph
+            if self.za_warudo_part_two:
+                    self.za_warudo_part_two = False
+                    self.robo_stop()
+                    self.graph.motion(self.p_, self.sigma_, dp, final=True)
+                    self.graph.construct_graph() 
+                    self.graph = juice_graph(self.graph)
+                    # Update position
+                    print("old state", self.state)
+                    self.state = self.graph.pose[-1:][0]
+                    print("new state", self.state)
+                    
             # update for show_laptop.py            
             self.update_estimated_pose()
             
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
-            self.datalog.log(msg, topic_name="/est_pose")     
-            
-            # if self.t > 10:
-            #     self.graph.construct_graph(visualise_flag = False)
-            #     graph_opt = graphslam_backend(self.graph)
-            #     print('Original graph has:')
-            #     print('Poses',self.graph.n)
-            #     print('Landmarks',self.graph.m)
-            #     print('Edges',self.graph.e)
-            #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)
-            #     print('Finish graph data association')
-            #     print('*************************************************')
-            #     self.graph.construct_graph(visualise_flag = True)  
+            self.datalog.log(msg, topic_name="/est_pose")      
 
             # feedforward control: check wp progress and sample reference trajectory
             self.path.wp_progress(self.t, self.state[0:3],self.accept_radius,2,self.timeout) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             self.p_reference_tracker = p_ref[0:2,0]
 
+            if self.stop_to_think == False:
+                self.t_prev = t_now #update the previous timestep for the next loop
+                # > Control < #
+                ################################################################################
+                # feedback control: get pose change to desired trajectory from body
+                dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
 
+                dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
-            # > Control < #
-            ################################################################################
-            # feedback control: get pose change to desired trajectory from body
-            dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
+                H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
+                ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
 
-            dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+                # compute control gains for the initial condition (where the robot is stationalry)
+                self.k_s = 1/self.tau_s #ks
+                if self.initialise_control == True:
+                    self.k_n = 0 #kn
+                    self.k_g = 0 #kg
+                    self.initialise_control = False # maths changes a bit after the first iteration
 
-            H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
-            ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
+                # update the controls
+                du = feedback_control(ds, self.k_s, self.k_n, self.k_g)
 
-            # compute control gains for the initial condition (where the robot is stationalry)
-            self.k_s = 1/self.tau_s #ks
-            if self.initialise_control == True:
-                self.k_n = 0 #kn
-                self.k_g = 0 #kg
-                self.initialise_control = False # maths changes a bit after the first iteration
+                # total control
+                #u = u_ref + du # combine feedback and feedforward control twist components
+                u = u_ref + du
 
-            # update the controls
-            du = feedback_control(ds, self.k_s, self.k_n, self.k_g)
+                # update control gains for the next timestep
+                self.k_n = 2*u[0]/(self.L**2) #kn
+                self.k_g = u[0]/self.L #kg
 
-            # total control
-            #u = u_ref + du # combine feedback and feedforward control twist components
-            u = u_ref + du
+                # ensure within performance limitation
+                if u[0] > self.v_max: u[0] = self.v_max
+                if u[0] < -self.v_max: u[0] = -self.v_max
+                if u[1] > self.w_max: u[1] = self.w_max
+                if u[1] < -self.w_max: u[1] = -self.w_max
 
-            # update control gains for the next timestep
-            self.k_n = 2*u[0]/(self.L**2) #kn
-            self.k_g = u[0]/self.L #kg
+                # actuator commands                 
+                q = self.ddrive.inv_kinematics(u)            
 
-            # ensure within performance limitation
-            if u[0] > self.v_max: u[0] = self.v_max
-            if u[0] < -self.v_max: u[0] = -self.v_max
-            if u[1] > self.w_max: u[1] = self.w_max
-            if u[1] < -self.w_max: u[1] = -self.w_max
+                wheel_speed_msg = Vector3Stamped()
+                wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
+                wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
 
-            # actuator commands                 
-            q = self.ddrive.inv_kinematics(u)            
+                self.cmd_wheelrate_right = wheel_speed_msg.vector.x
+                self.cmd_wheelrate_left = wheel_speed_msg.vector.y
+                
+                ################################################################################
 
-            wheel_speed_msg = Vector3Stamped()
-            wheel_speed_msg.vector.x = q[0,0] # Right wheelspeed rad/s
-            wheel_speed_msg.vector.y = q[1,0] # Left wheelspeed rad/s
+                # > Act < #
+                # Send commands to the robot        
+                self.wheel_speed_pub.publish(wheel_speed_msg)
+                self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
-            self.cmd_wheelrate_right = wheel_speed_msg.vector.x
-            self.cmd_wheelrate_left = wheel_speed_msg.vector.y
-            
-            ################################################################################
-
-            # > Act < #
-            # Send commands to the robot        
-            self.wheel_speed_pub.publish(wheel_speed_msg)
-            self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
+            else:
+                self.stop_to_think = False
 
             # Groundtruth
             if self.plotGroundtruth is not None:

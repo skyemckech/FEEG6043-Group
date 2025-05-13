@@ -2,6 +2,7 @@ import json
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from datetime import datetime
 from Libraries import *
 
 # from src.Libraries.model_feeg6043 import RangeAngleKinematics, t2v, v2t, GPC_input_output
@@ -97,8 +98,6 @@ def find_corner(corner, threshold = 0.01):
     
     else:
         return None, None, None  # No inflection points found
-
-
 class ImportLog:
     def __init__(self, filepath):
         # Expecting a file path to initialize
@@ -145,7 +144,6 @@ class ImportLog:
                 extracted_data.append(np.array([data]))
 
         return extracted_data
-
 
 def format_scan(filepath, label):
     variables = ImportLog(filepath)
@@ -197,8 +195,6 @@ def format_scan(filepath, label):
     
     return corner_training
 
-
-
 def find_thetas(corner_training):
 
     X_train = np.full((len(corner_training), corner_training[0].data_filled[:,0].size), None)
@@ -226,7 +222,6 @@ def find_thetas(corner_training):
     print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
 
     return sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train, y_train
-
 
 def cross_validate(gpc_corner,X_train_clean,y_train_clean):
 
@@ -290,40 +285,90 @@ def clean_data(lidar_data):
             padded = data[:120]
         return np.vstack(padded, lidar_data.label)
 
+def euclidean_distance(x1, y1, x2, y2):
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-# #0.0005
-# corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
-# corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
-# corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
+def check_landmarks(new_landmark, graph, acceptance_radius):
+    distances = []
+    old_landmarks = graph.landmark
+    ref_x, ref_y = new_landmark
+    for x, y in old_landmarks:
+        distance = euclidean_distance(ref_x, ref_y, x, y)
+        distances.append(distance)
+    indices = [i for i, x in enumerate(distances) if x < acceptance_radius]
+    if len(indices) != 0:
+        final_id = graph.landmark_id_array[min(indices)]
+        new = False
+    elif len(graph.landmark_id_array) != 0:
+        final_id = max(graph.landmark_id_array) + 1
+        new = True
+    else:
+        final_id = 0
+        new = True
+    return new, final_id
 
-# wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 1,0.1,1)
-# wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 1,0.1,1)
-# wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 1,0.1,1)
+def juice_graph(graph):
+    graph_opt = graph
+    initial_residual = 100 #just needs to be a big number to avoid triggering convergence if the first iteration has large residuals
+    initial_flag = True
 
-# object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 1,0.1,1)
-# object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 1,0.1,1)
-# object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 1,0.1,1)
+    residual_threshold = 1E-12 #if result changes by <1
+    delta_threshold = 1/1000 #if result changes by <1
+    lim_iterations = 20
+
+    n_iterations = 0
+    delta_residual = initial_residual
+    residual = initial_residual
+
+    visualise_flag = False
+    iteration_continue = True 
+    residual_continue = True
+    converge_continue = True
+
+    cpu_start_solver = datetime.now()
+
+    graph_opt = graphslam_backend(graph)
+    pose_graph = graph_opt.reduce2pose(visualise_flag)
+    l = graph_opt.n*3
+
+    while iteration_continue and residual_continue and converge_continue:    
+        graph_opt.solve()
+        
+        prev_residual = residual
+        residual = graph_opt.residual
+
+        delta_residual = abs((prev_residual - residual) /prev_residual)
+        n_iterations += 1
+
+        print('**************  Residual = ',residual,' ***************')        
+        residual_continue = (residual > residual_threshold)
+        print('Residual above threshold?',residual_continue)    
+        
+        print('************** Iteration = ',n_iterations,' ***************')
+        iteration_continue = (n_iterations <= lim_iterations)
+        print('Iterations below limit?',iteration_continue)
+        
+        print('********* Delta Residual = ',delta_residual,' ***************')
+        converge_continue = (delta_residual > delta_threshold)
+        print('Residual still changing?',converge_continue)
+        
+        #reconstruct the graph with these nodes
+        graph_opt.state_vector[0:l] = pose_graph.state_vector # Task
+        graph_opt.state_vector[l:] = Inverse(graph_opt.H[l:,l:])@(graph_opt.b[l:]+graph_opt.H[l:,0:l]@graph_opt.state_vector[0:l])
+        graph_opt = graphslam_frontend( graph_opt )   # Task
+        graph_opt.construct_graph(  ) # Task
+        graph_opt = graphslam_backend( graph_opt )    # Task
+        
+        pose_graph = graph_opt.reduce2pose(visualise_flag)
+
+    cpu_end_solver = datetime.now()
+    delta =  cpu_end_solver - cpu_start_solver       
+    print('********* Final solution took:',(delta.total_seconds()),'s ***************')      
 
 
-# corner_0_R_H = combine_scans(corner_high_noise,corner_low_noise,corner_0_noise,wall_high_noise,wall_low_noise,wall_0_noise,object_high_noise,object_low_noise,object_0_noise)
-# corner_theta1_0_R_H, corner_theta2_0_R_H, gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_ = find_thetas(corner_0_R_H)
-
-# corner_0_R = combine_scans(corner_low_noise,corner_0_noise,wall_low_noise,wall_0_noise,object_low_noise,object_0_noise)
-# corner_theta1_0_R, corner_theta2_0_R, gpc_0_R, __,__ = find_thetas(corner_0_R)
-
-# corner_0 = combine_scans(corner_0_noise,wall_0_noise,object_0_noise)
-# corner_theta1_0, corner_theta2_0, gpc_0, __,__ = find_thetas(corner_0)
-
-# corner_H = combine_scans(corner_high_noise,wall_high_noise,object_high_noise)
-# corner_theta1_H, corner_theta2_H, gpc_H, __,__ = find_thetas(corner_H)
-
-
-# #print("object_theta1:",object_theta1, "object_theta2:",object_theta2)
-# print("corner_theta1_0_R_H:",corner_theta1_0_R_H, "corner_theta2_0_R_H:",corner_theta2_0_R_H)
-# print("corner_theta1_0_R:",corner_theta1_0_R, "corner_theta2_0_R:",corner_theta2_0_R)
-# print("corner_theta1_0:",corner_theta1_0, "corner_theta2_0:",corner_theta2_0)
-# print("corner_theta1_H:",corner_theta1_H, "corner_theta2_H:",corner_theta2_H)
-# #print("wall_theta1:",wall_theta1, "wall_theta2:",wall_theta2)
-
-
-# meanacc = cross_validate(gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_)
+    return graphslam_frontend( graph_opt )
+            
+def make_not_zero(value):
+    if value == 0:
+        value = 0.001
+    return value

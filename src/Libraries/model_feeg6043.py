@@ -86,8 +86,8 @@ def rigid_body_kinematics(mu,u,dt=0.1,mu_gt=None,sigma_motion=Matrix(3,2),sigma_
         
         u_hat[0]=u[0]
         u_hat[1]=u[1]
-        gamma_noise = np.random.normal(0, (sigma[2]), 1)
-        
+        # gamma_noise = np.random.normal(0, (sigma[2]), 1)
+        gamma_noise = 0
         #calculate the noise component
         J = Matrix(3,3)
 
