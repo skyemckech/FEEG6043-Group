@@ -1282,8 +1282,10 @@ __,__, c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0 = find_thetas(cc_rot
 __,__, c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0 = find_thetas(cc_side_left,model_name='7')
 __,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thetas(cc_side_right,model_name='8')
 
+
 ##all together
 __,__, All_gpc_0, All_DataX_0,All_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_ranged_far,c_ranged_near,c_rotaion,c_side_left,c_side_right),model_name='9')
+__,__, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='10')
 
 
 # print("----------------validate vs themselves---------------")
@@ -1327,6 +1329,37 @@ print("----------c_side_left_gpc_0 vs c_side_left_DataX_0")
 cross_validate(c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0)
 print("----------c_side_right_gpc_0 vs c_side_right_DataX_0")
 cross_validate(c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0)
+
+
+print("---------------------ALL----------------------")
+print("c_gpc_0 vs c_ranged_far_only_DataX_0")
+cross_validate(All_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+print("c_gpc_0 vs c_ranged_near_only_DataX_0")
+cross_validate(All_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
+print("c_gpc_0 vs c_rotaion_only_DataX_0")
+cross_validate(All_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
+print("c_gpc_0 vs c_side_left_only_DataX_0")
+cross_validate(All_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
+print("c_gpc_0 vs c_side_right_only_DataX_0")
+cross_validate(All_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
+print("c_gpc_0 vs c_DataX_0")
+cross_validate(All_gpc_0, c_DataX_0,c_DataY_0)
+
+
+print("---------------------Best----------------------")
+print("best_gpc_0 vs c_ranged_far_only_DataX_0")
+cross_validate(c_rotaion_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+print("best_gpc_0 vs c_ranged_near_only_DataX_0")
+cross_validate(c_rotaion_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
+print("best_gpc_0 vs c_rotaion_only_DataX_0")
+cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
+print("best_gpc_0 vs c_side_left_only_DataX_0")
+cross_validate(c_rotaion_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
+print("best_gpc_0 vs c_side_right_only_DataX_0")
+cross_validate(c_rotaion_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
+print("best_gpc_0 vs c_DataX_0")
+cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
+
 
 
 
