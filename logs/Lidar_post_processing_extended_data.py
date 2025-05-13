@@ -1411,19 +1411,51 @@ print(scores)
 np.savez('optimization_results.npz', wl_values=wl_values, wr_values=wr_values, scores=scores)
 
 # Create a grid for plotting
-Wl, Wr = np.meshgrid(wl_values, wr_values)
+Wr, Wl = np.meshgrid(wl_values, wr_values)
 
-# Plot
-fig = plt.figure(figsize=(10, 7))
+max_idx = np.argmax(scores)  # Index of max value in flattened array
+wl_idx, wr_idx = np.unravel_index(max_idx, scores.shape)  # Convert to 2D indices
+
+best_wl = wl_values[wl_idx]
+best_wr = wr_values[wr_idx]
+best_score = scores[wl_idx, wr_idx]
+
+print(f"Optimal weights: wl = {best_wl:.2f}, wr = {best_wr:.2f}")
+print(f"Best score: {best_score:.4f}")
+
+# Create meshgrid for 3D plotting
+
+# Set up the figure
+fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(Wl, Wr, scores.T, cmap='viridis')  # Transpose scores to match meshgrid
 
-# Labels and title
-ax.set_xlabel('wl (left weight)')
-ax.set_ylabel('wr (right weight)')
-ax.set_zlabel('Score (e.g., Accuracy)')
-ax.set_title('Performance vs. wl and wr')
+# Plot the surface (grey)
+surf = ax.plot_surface(
+    Wl, Wr, scores.T,  # Transpose scores to match meshgrid
+    cmap='Blues',      # Grey colormap
+    alpha=0.7,         # Slightly transparent
+    edgecolor='none'
+)
 
+# Highlight the optimal point (red)
+ax.scatter(
+    best_wl, best_wr, best_score,
+    color='red',
+    s=100,             # Marker size
+    label=f'Optimal: wl={best_wl:.2f}, wr={best_wr:.2f}\nScore={best_score:.3f}'
+)
+
+# Customize the plot
+ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
+ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
+ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
+ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
+ax.legend(loc='upper right')
+
+# Add a colorbar for the surface
+fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
+
+plt.tight_layout()
 plt.show()
 
 
