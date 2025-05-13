@@ -799,7 +799,7 @@ def tune_thresholds(scan_func, logs, threshold_vals, fit_err_vals, wall_err_vals
 
                     unique_labels = set(obs.label for obs in scan_data if obs.label is not None)
                     if len(unique_labels) < 2:
-                        print(f"⚠️ Skipping config=({threshold}, {fit_err}, {wall_err}) — only one class found: {unique_labels}")
+                        print(f" Skipping config=({threshold}, {fit_err}, {wall_err}) — only one class found: {unique_labels}")
                         continue
 
                     _, _, accuracy, repeatability = find_thetas(scan_data)

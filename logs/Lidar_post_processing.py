@@ -390,11 +390,11 @@ def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
 
         ####plotting funcitons####
         
-        fig,ax = plt.subplots()
-        show_scan(p, lidar, observation)
-        ax.scatter(m_y, m_x,s=0.01)
-        plt.title(loc)
-        plt.show()
+        # fig,ax = plt.subplots()
+        # show_scan(p, lidar, observation)
+        # ax.scatter(m_y, m_x,s=0.01)
+        # plt.title(loc)
+        # plt.show()
         
 
             ####if the number of nan's is more than X of the total size then pass#######
@@ -794,16 +794,16 @@ corner_c = format_scan_corner("logs/static_cylinder_20250325_141536_log.json",0.
 corner_d = format_scan_corner("logs/static_10_cm_wall_20250325_131922_log.json", 0.0005,0.1,0.001)
 # corner_e = format_scan_corner("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 0.005,0.1,0.001)
 
-# object_a = format_scan_object("logs/all_static_corners_&_walls_20250325_135405_log.json", 12, 0.005, 1)
-# object_b = format_scan_object("logs/2_lap_square_complete_20250325_140938_log.json", 12, 0.005, 1)
-# object_c = format_scan_object("logs/static_cylinder_20250325_141536_log.json",12, 0.005, 1)
-# object_d = format_scan_object("logs/static_10_cm_wall_20250325_131922_log.json", 112, 0.005, 1)
+object_a = format_scan_object("logs/all_static_corners_&_walls_20250325_135405_log.json", 12, 0.005, 1)
+object_b = format_scan_object("logs/2_lap_square_complete_20250325_140938_log.json", 12, 0.005, 1)
+object_c = format_scan_object("logs/static_cylinder_20250325_141536_log.json",12, 0.005, 1)
+object_d = format_scan_object("logs/static_10_cm_wall_20250325_131922_log.json", 112, 0.005, 1)
 # # # object_e = format_scan_object("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 12,0.05,1.5)
 
-# wall_a = format_scan_wall("logs/all_static_corners_&_walls_20250325_135405_log.json", 18,0.05,1.0)
-# wall_b = format_scan_wall("logs/2_lap_square_complete_20250325_140938_log.json", 18,0.05,1.0)
-# wall_c = format_scan_wall("logs/static_cylinder_20250325_141536_log.json", 18,0.05,1.0)
-# wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 18,0.05,1.0)
+wall_a = format_scan_wall("logs/all_static_corners_&_walls_20250325_135405_log.json", 18,0.05,1.0)
+wall_b = format_scan_wall("logs/2_lap_square_complete_20250325_140938_log.json", 18,0.05,1.0)
+wall_c = format_scan_wall("logs/static_cylinder_20250325_141536_log.json", 18,0.05,1.0)
+wall_d = format_scan_wall("logs/static_10_cm_wall_20250325_131922_log.json", 18,0.05,1.0)
 # # # wall_e = format_scan_wall("logs/CORNERS_CLASSIFIER_20250325_135248_log.json", 18,0.05,1.0)
 
 
@@ -860,67 +860,67 @@ corner_d = format_scan_corner("logs/static_10_cm_wall_20250325_131922_log.json",
 
 
 
-# def inspect_and_plot_gpc_vs_home(scan_data, lidar, num_samples=5):
-#     """
-#     Compares the home vs GPC label and shows the scan for manual inspection.
-#     """
-#     import random
-#     from sklearn.gaussian_process import GaussianProcessClassifier
-#     from sklearn.gaussian_process.kernels import RBF
-#     from sklearn.metrics import classification_report
+def inspect_and_plot_gpc_vs_home(scan_data, lidar, num_samples=5):
+    """
+    Compares the home vs GPC label and shows the scan for manual inspection.
+    """
+    import random
+    from sklearn.gaussian_process import GaussianProcessClassifier
+    from sklearn.gaussian_process.kernels import RBF
+    from sklearn.metrics import classification_report
 
-#     # Build GPC model
-#     target_size = scan_data[0].data_filled[:, 0].size
-#     X_train = []
-#     y_train = []
+    # Build GPC model
+    target_size = scan_data[0].data_filled[:, 0].size
+    X_train = []
+    y_train = []
 
-#     for obs in scan_data:
-#         if obs.label is not None:
-#             data = obs.data_filled[:, 0]
-#             padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan) if data.size < target_size else data[:target_size]
-#             X_train.append(padded)
-#             y_train.append(obs.label)
+    for obs in scan_data:
+        if obs.label is not None:
+            data = obs.data_filled[:, 0]
+            padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan) if data.size < target_size else data[:target_size]
+            X_train.append(padded)
+            y_train.append(obs.label)
 
-#     X_train = np.array(X_train)
-#     y_train = np.array(y_train)
-#     gpc = GaussianProcessClassifier(kernel=1.0 * RBF(1.0), random_state=0).fit(X_train, y_train)
+    X_train = np.array(X_train)
+    y_train = np.array(y_train)
+    gpc = GaussianProcessClassifier(kernel=1.0 * RBF(1.0), random_state=0).fit(X_train, y_train)
 
-#     # Sample and inspect
-#     samples = random.sample([obs for obs in scan_data if obs.label is not None], min(num_samples, len(scan_data)))
+    # Sample and inspect
+    samples = random.sample([obs for obs in scan_data if obs.label is not None], min(num_samples, len(scan_data)))
 
-#     for i, obs in enumerate(samples):
-#         data_vector = obs.data_filled[:, 0]
-#         input_vector = np.pad(data_vector, (0, target_size - data_vector.size), 'constant', constant_values=np.nan) if data_vector.size < target_size else data_vector[:target_size]
-#         prediction = gpc.predict(input_vector.reshape(1, -1))[0]
+    for i, obs in enumerate(samples):
+        data_vector = obs.data_filled[:, 0]
+        input_vector = np.pad(data_vector, (0, target_size - data_vector.size), 'constant', constant_values=np.nan) if data_vector.size < target_size else data_vector[:target_size]
+        prediction = gpc.predict(input_vector.reshape(1, -1))[0]
 
-#         print(f"\n🧪 Sample {i+1}")
-#         print(f"   ↳ Home label      = {obs.label}")
-#         print(f"   ↳ GPC prediction  = {prediction}")
-#         print(f"   ↳ Displaying scan for manual verification...")
+        print(f"\n Sample {i+1}")
+        print(f"   ↳ Home label      = {obs.label}")
+        print(f"   ↳ GPC prediction  = {prediction}")
+        print(f"   ↳ Displaying scan for manual verification...")
 
-#         # Visualize the scan
-#         fig, ax = plt.subplots()
-#         show_scan(p, lidar, obs.data)
-#         plt.title(f"Scan {i+1} — Home: {obs.label}, GPC: {prediction}")
-#         plt.show()
-
-
+        # Visualize the scan
+        fig, ax = plt.subplots()
+        show_scan(p, lidar, obs.data)
+        plt.title(f"Scan {i+1} — Home: {obs.label}, GPC: {prediction}")
+        plt.show()
 
 
-# object_r = combine_scans(object_a,object_b,object_c,object_d)
-# object_theta1, object_theta0, object_acc, object_rep = find_thetas(object_r)
+
+
+object_r = combine_scans(object_a,object_b,object_c,object_d)
+object_theta1, object_theta0, object_acc, object_rep = find_thetas(object_r)
 
 
 corner_r = combine_scans(corner_a,corner_b,corner_c,corner_d)
 corner_theta1, corner_theta0, corner_acc, corner_rep = find_thetas(corner_r)
 
 
-# wall_r = combine_scans(wall_a,wall_b,wall_c,wall_d)
-# wall_theta1, wall_theta0, wall_acc, wall_rep = find_thetas(wall_r)
+wall_r = combine_scans(wall_a,wall_b,wall_c,wall_d)
+wall_theta1, wall_theta0, wall_acc, wall_rep = find_thetas(wall_r)
 
-# inspect_and_plot_gpc_vs_home(object_r, lidar, num_samples=10)
-# inspect_and_plot_gpc_vs_home(corner_r, lidar, num_samples=10)
-# inspect_and_plot_gpc_vs_home(wall_r, lidar, num_samples=10)
+inspect_and_plot_gpc_vs_home(object_r, lidar, num_samples=10)
+inspect_and_plot_gpc_vs_home(corner_r, lidar, num_samples=10)
+inspect_and_plot_gpc_vs_home(wall_r, lidar, num_samples=10)
 
 # print("a")
 # for i in range(len(a)):
@@ -940,15 +940,15 @@ corner_theta1, corner_theta0, corner_acc, corner_rep = find_thetas(corner_r)
 
 print("object_r")
 for i in range(len(object_r)):
-      print('Entry:', i, ', Class', object_r[i].label)
+    print('Entry:', i, ', Class', object_r[i].label)
 
 print("corner_r")
 for i in range(len(corner_r)):
-      print('Entry:', i, ', Class', corner_r[i].label)
+    print('Entry:', i, ', Class', corner_r[i].label)
 
 print("wall_r")
 for i in range(len(wall_r)):
-      print('Entry:', i, ', Class', wall_r[i].label)
+    print('Entry:', i, ', Class', wall_r[i].label)
 
 print("object_theta1:", object_theta1, "object_theta0:", object_theta0)
 print("corner_theta1:", corner_theta1, "corner_theta0:", corner_theta0)
