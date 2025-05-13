@@ -15,6 +15,8 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import classification_report
 from sklearn.base import clone
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 # # Create meaningfully different initial kernels
@@ -705,7 +707,7 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 import numpy as np
 
-def find_thetas(scans, model_name=None):
+def find_thetas(scans, model_name=None, wl = 1, wr = 1):
     """
     Trains a GaussianProcessClassifier with model-specific hyperparameters.
     
@@ -770,14 +772,23 @@ def find_thetas(scans, model_name=None):
         'seed': 100 + model_idx  # ensure different seeds
     }
 
-    kernel = ConstantKernel(settings['constant'], settings['constant_bounds']) * \
-             RBF(settings['length'], settings['length_bounds'])
+    # kernel = ConstantKernel(settings['constant'], settings['constant_bounds']) * \
+    #          RBF(settings['length'], settings['length_bounds'])
+    kernel =  wl* RBF(wr)
+
+    # --- Fit GPC ---
+    # gpc = GaussianProcessClassifier(
+    #     kernel=kernel,
+    #     optimizer='fmin_l_bfgs_b',
+    #     n_restarts_optimizer=settings['restarts'],
+    #     random_state=settings['seed'],
+    #     copy_X_train=False
+    # )
 
     # --- Fit GPC ---
     gpc = GaussianProcessClassifier(
         kernel=kernel,
-        optimizer='fmin_l_bfgs_b',
-        n_restarts_optimizer=settings['restarts'],
+        optimizer=None,
         random_state=settings['seed'],
         copy_X_train=False
     )
@@ -797,6 +808,15 @@ def find_thetas(scans, model_name=None):
 
     return theta_1, theta_0, gpc, X_train_clean, y_train_clean
 
+
+######scans making the gpc then the data you are validating against#######
+def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
+    
+
+    theta_1,theta_0, gpc, X_train,y_train = find_thetas(scans,model_name='11', wl=wl , wr=wr)
+    score = cross_validate(gpc, X_train, y_train)   # Get a performance metric
+
+    return theta_1, theta_0, gpc, X_train, y_train, score  # Add score to returns
 
 def find_thetas_old_1(a, model_name=None):
     target_size = a[0].data_filled[:, 0].size
@@ -982,7 +1002,7 @@ def find_thetas_old_2(a):
     X_train_clean = np.array(X_train_clean)
     y_train_clean = np.array(y_train_clean)
 
-    # gpc_corner is the instnace of the classifier which we used with the weighting comands
+    # gpc_corner is the instnace of the classifier which we used with the weighting comands ###########Change These#############
     kernel = 1.0 * RBF(1.0)
     gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
 
@@ -1285,8 +1305,8 @@ __,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thet
 
 ##all together
 __,__, All_gpc_0, All_DataX_0,All_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_ranged_far,c_ranged_near,c_rotaion,c_side_left,c_side_right),model_name='9')
-__,__, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='10')
-
+a,b, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='10', wl= 5 , wr= 5)
+c,d, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='11', wl= 0.1 , wr= 1)
 
 # print("----------------validate vs themselves---------------")
 # print("----------c_ranged_far_gpc_0 vs c_DataX_0")
@@ -1299,9 +1319,6 @@ __,__, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corne
 # cross_validate(c_side_left_gpc_0, c_DataX_0,c_DataY_0)
 # print("----------c_side_right_gpc_0 vs c_DataX_0")
 # cross_validate(c_side_right_gpc_0, c_DataX_0,c_DataY_0)
-
-
-
 
 print("---------------------c_gpc_0----------------------")
 print("c_gpc_0 vs c_DataX_0")
@@ -1361,11 +1378,53 @@ print("best_gpc_0 vs c_DataX_0")
 cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
 
 
+# Define ranges for wl and wr
+wl_values = np.arange(0.1, 5.0, 0.25)  # 0.1 to 0.9 in steps of 0.1
+wr_values = np.arange(0.1, 5.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
+
+# Initialize a grid to store scores
+scores = np.zeros((len(wl_values), len(wr_values)))
+wl_values_store = np.zeros((len(wl_values)))
+wr_values_store = np.zeros((len(wr_values)))
 
 
+#def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
 
+# Iterate over all combinations
+for i, wl in enumerate(wl_values):
+    for j, wr in enumerate(wr_values):
+        _, _, _, _,__, score = find_thetas_cross_validate(
+            combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+            c_DataX_0,
+            c_DataY_0,
+            wl=wl,
+            wr=wr
+        )
+        scores[i, j] = score  # Store the score
+        wl_values_store[i] = wl
+        wr_values_store[j] = wr
 
+print(wl_values_store)
+print(wr_values_store)
+print(scores)
 
+np.savez('optimization_results.npz', wl_values=wl_values, wr_values=wr_values, scores=scores)
+
+# Create a grid for plotting
+Wl, Wr = np.meshgrid(wl_values, wr_values)
+
+# Plot
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(Wl, Wr, scores.T, cmap='viridis')  # Transpose scores to match meshgrid
+
+# Labels and title
+ax.set_xlabel('wl (left weight)')
+ax.set_ylabel('wr (right weight)')
+ax.set_zlabel('Score (e.g., Accuracy)')
+ax.set_title('Performance vs. wl and wr')
+
+plt.show()
 
 
 # ##wall test data gpc found#####
