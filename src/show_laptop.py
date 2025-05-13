@@ -53,7 +53,7 @@ class Window(QWidget):
         # Heading
         est_heading = LiveLinePlot(pen = 'blue', name = 'Estimated Heading')
         measured_heading = LiveLinePlot(symbol = 'x', pen = 'green', name = 'Measured Heading')       
-
+        p_groundtruth_heading = LiveLinePlot(symbol = 'x', pen = 'green', name = 'Groundtruth Heading')
 
         # Position
         est_position = LiveScatterPlot(symbol = 'o', size = 4, pen = 'blue', name = 'Estimated Position')
@@ -61,7 +61,7 @@ class Window(QWidget):
         waypoints = LiveScatterPlot(symbol = 'o', pen = 'red', name = 'Waypoints')
         lidar = LiveScatterPlot(symbol = 'o', size = 1, pen = 'w', name = 'Lidar')
         p_reference_tracker = LiveLinePlot(pen="grey", name='Reference path')
-
+        p_groundtruth_position = LiveLinePlot(pen="green", name='Groundtruth')
         
         # Data connectors for each plot with dequeue of 600 points
         self.cmd_wheelrate_right = DataConnector(cmd_wheelrate_right, max_points=1500)
@@ -79,6 +79,8 @@ class Window(QWidget):
 
         # Assignment 1 additions
         self.p_reference_tracker = DataConnector(p_reference_tracker, max_points=1000)
+        self.p_groundtruth_position = DataConnector(p_groundtruth_position, max_points=1000)
+        self.p_groundtruth_heading = DataConnector(p_groundtruth_heading, max_points=1000)
 
         # Show grid
         self.wheelrate_plot.showGrid(x=True, y=True, alpha=0.3)
@@ -107,22 +109,15 @@ class Window(QWidget):
 
         self.heading_plot.addItem(measured_heading)
         self.heading_plot.addItem(est_heading)
-
+        self.heading_plot.addItem(p_groundtruth_heading)  
 
         self.position_plot.addItem(est_position)
         self.position_plot.addItem(measured_position)
         self.position_plot.addItem(waypoints)
         self.position_plot.addItem(lidar)   
         self.position_plot.addItem(p_reference_tracker)
-
-        if simulation:
-            p_groundtruth_heading = LiveLinePlot(symbol = 'x', pen = 'green', name = 'Groundtruth Heading')
-            p_groundtruth_position = LiveLinePlot(pen="green", name='Groundtruth')
-            self.p_groundtruth_position = DataConnector(p_groundtruth_position, max_points=1000)
-            self.p_groundtruth_heading = DataConnector(p_groundtruth_heading, max_points=1000)
-            self.heading_plot.addItem(p_groundtruth_heading)  
-            self.position_plot.addItem(p_groundtruth_position)
-        
+        self.position_plot.addItem(p_groundtruth_position)
+          
 
 
 
@@ -156,6 +151,11 @@ class Window(QWidget):
             else:
                 p_reference = None
 
+            # Ground truth
+            if self.Laptop.p_groundtruth_tracker is not None:
+                p_groundtruth = self.Laptop.p_groundtruth_tracker
+            else:
+                p_groundtruth = None
 
             # Estimated pose #
             if self.Laptop.est_pose_northings_m is not None:
@@ -208,6 +208,8 @@ class Window(QWidget):
             if p_reference is not None:
                 self.p_reference_tracker.cb_append_data_point(p_reference[0], p_reference[1])
 
+            if p_groundtruth is not None:
+                self.p_groundtruth_position.cb_append_data_point(p_groundtruth[0], p_groundtruth[1])
 
             # estimated and measured positions
             if est_pose_northings_m is not None and est_pose_eastings_m is not None:
@@ -252,20 +254,10 @@ class Window(QWidget):
             
             if measured_pose_timestamp_s is not None:
                 measured_pose_stamp_prev= measured_pose_timestamp_s
-            
-            
-            #Groundtruth
-            if simulation:
-                if self.Laptop.p_groundtruth_tracker is not None:
-                    p_groundtruth = self.Laptop.p_groundtruth_tracker
-                else:
-                    p_groundtruth = None
 
-                if p_groundtruth is not None:
-                    self.p_groundtruth_position.cb_append_data_point(p_groundtruth[0], p_groundtruth[1])
-                if p_groundtruth is not None:
-                    self.p_groundtruth_heading.cb_append_data_point(np.rad2deg(p_groundtruth[2]), current_time)
-
+            if p_groundtruth is not None:
+                self.p_groundtruth_heading.cb_append_data_point(np.rad2deg(p_groundtruth[2]), current_time)
+            
             self.loopcounter += 1  
             
             self.est_time = timestamp = time.time()
