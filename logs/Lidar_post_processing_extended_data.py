@@ -16,6 +16,7 @@ from sklearn.metrics import classification_report
 from sklearn.base import clone
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
+
 # # Create meaningfully different initial kernels
 # gpc_0_R_H = GaussianProcessClassifier(
 #     kernel=ConstantKernel(1.0) * RBF(length_scale=1.8),
@@ -700,7 +701,104 @@ def clean_data(a):
 
     return X_train_clean, y_train_clean
 
-def find_thetas(a, model_name=None):
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+import numpy as np
+
+def find_thetas(scans, model_name=None):
+    """
+    Trains a GaussianProcessClassifier with model-specific hyperparameters.
+    
+    Parameters:
+        scans: List of GPC_input_output objects with `.data_filled` and `.label`.
+        model_name: A string to control kernel hyperparameter initialization.
+    
+    Returns:
+        theta_1: Length scale
+        theta_0: Signal variance (square root of constant)
+        gpc: Trained classifier
+        X_train_clean, y_train_clean: Cleaned training data
+    """
+    # --- Extract consistent input length ---
+    target_size = max(s.data_filled[:, 0].size for s in scans)
+
+    X_train, y_train = [], []
+
+    for sample in scans:
+        if sample.label is None:
+            continue
+
+        data = sample.data_filled[:, 0]
+        if data.size < target_size:
+            data = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan)
+        else:
+            data = data[:target_size]
+
+        if not np.isnan(data).any():
+            X_train.append(data)
+            y_train.append(sample.label)
+
+    X_train_clean = np.array(X_train)
+    y_train_clean = np.array(y_train)
+
+    if len(X_train_clean) == 0:
+        raise ValueError("No valid training data available after filtering.")
+
+    # --- Define kernel settings ---
+    default_settings = {
+        'constant': 1.0,
+        'length': 1.0,
+        'constant_bounds': (1e-3, 1e3),
+        'length_bounds': (1e-3, 1e3),
+        'restarts': 1,
+        'seed': 42
+    }
+
+    # Modify kernel parameters based on model_name
+    try:
+        model_idx = int(model_name) if model_name is not None else 0
+    except:
+        model_idx = 0
+
+    factor = 1.0 - model_idx * 0.001  # Decrement constant and length scale per model
+    settings = {
+        'constant': default_settings['constant'] * factor,
+        'length': default_settings['length'] * (1 + model_idx * 0.05),
+        'constant_bounds': default_settings['constant_bounds'],
+        'length_bounds': default_settings['length_bounds'],
+        'restarts': 3 + (model_idx % 3),  # vary restarts a bit
+        'seed': 100 + model_idx  # ensure different seeds
+    }
+
+    kernel = ConstantKernel(settings['constant'], settings['constant_bounds']) * \
+             RBF(settings['length'], settings['length_bounds'])
+
+    # --- Fit GPC ---
+    gpc = GaussianProcessClassifier(
+        kernel=kernel,
+        optimizer='fmin_l_bfgs_b',
+        n_restarts_optimizer=settings['restarts'],
+        random_state=settings['seed'],
+        copy_X_train=False
+    )
+
+    gpc.fit(X_train_clean, y_train_clean)
+
+    # --- Extract and report optimized hyperparameters ---
+    opt_kernel = gpc.kernel_
+    theta_1 = opt_kernel.k2.length_scale
+    theta_0 = np.sqrt(opt_kernel.k1.constant_value)
+    nll = -gpc.log_marginal_likelihood_value_
+
+    print(f'\n=== Model {model_name or "default"} ===')
+    print(f'Optimized kernel: {opt_kernel}')
+    print(f'Theta: [theta_0: {theta_0:.3f}, theta_1: {theta_1:.3f}]')
+    print(f'Negative Log-Likelihood (NLL): {nll:.3f}')
+
+    return theta_1, theta_0, gpc, X_train_clean, y_train_clean
+
+
+def find_thetas_old_1(a, model_name=None):
     target_size = a[0].data_filled[:, 0].size
     X_train = []
     y_train = []
@@ -729,22 +827,22 @@ def find_thetas(a, model_name=None):
     # Force different optimization paths based on model name
     if model_name == '1':
         kernel = ConstantKernel(1.02, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.8, length_scale_bounds=(1e-3, 1e3))
+                RBF(length_scale=1.1, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 1
         random_state = 1
     elif model_name == '2':
         kernel = ConstantKernel(1.019, constant_value_bounds=(1e-2, 1e2)) * \
-        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        RBF(length_scale=1.2, length_scale_bounds=(1e-2, 1e2))
         n_restarts = 4
         random_state = 4
     elif model_name == '3':
         kernel = ConstantKernel(1.018, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+                RBF(length_scale=1.3, length_scale_bounds=(1e-1, 1e1))
         n_restarts = 3
         random_state = 3
     elif model_name == '4':
         kernel = ConstantKernel(1.017, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+                RBF(length_scale=1.4, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 2
         random_state = 2
     elif model_name == '5':
@@ -754,72 +852,72 @@ def find_thetas(a, model_name=None):
         random_state = 4
     elif model_name == '6':
         kernel = ConstantKernel(1.015, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+                RBF(length_scale=1.6, length_scale_bounds=(1e-1, 1e1))
         n_restarts = 3
         random_state = 3
     elif model_name == '7':
         kernel = ConstantKernel(1.014, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+                RBF(length_scale=1.7, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 2
         random_state = 2
     elif model_name == '8':
         kernel = ConstantKernel(1.013, constant_value_bounds=(1e-2, 1e2)) * \
-                RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+                RBF(length_scale=1.8, length_scale_bounds=(1e-2, 1e2))
         n_restarts = 4
         random_state = 4
     elif model_name == '9':
         kernel = ConstantKernel(1.012, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+                RBF(length_scale=1.9, length_scale_bounds=(1e-1, 1e1))
         n_restarts = 3
         random_state = 3
     elif model_name == '10':
         kernel = ConstantKernel(1.011, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+                RBF(length_scale=2.0, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 2
         random_state = 2
     elif model_name == '11':
         kernel = ConstantKernel(1.01, constant_value_bounds=(1e-2, 1e2)) * \
-        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        RBF(length_scale=2.1, length_scale_bounds=(1e-2, 1e2))
         n_restarts = 4
         random_state = 4
     elif model_name == '12':
         kernel = ConstantKernel(1.009, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+                RBF(length_scale=2.2, length_scale_bounds=(1e-1, 1e1))
         n_restarts = 3
         random_state = 3
     elif model_name == '13':
         kernel = ConstantKernel(1.008, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+                RBF(length_scale=2.3, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 2
         random_state = 2
     elif model_name == '14':
         kernel = ConstantKernel(1.007, constant_value_bounds=(1e-2, 1e2)) * \
-        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+        RBF(length_scale=2.4, length_scale_bounds=(1e-2, 1e2))
         n_restarts = 4
         random_state = 4
     elif model_name == '15':
         kernel = ConstantKernel(1.006, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+                RBF(length_scale=2.5, length_scale_bounds=(1e-1, 1e1))
         n_restarts = 3
         random_state = 3
     elif model_name == '16':
         kernel = ConstantKernel(1.005, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+                RBF(length_scale=2.6, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 2
         random_state = 2
     elif model_name == '17':
         kernel = ConstantKernel(1.004, constant_value_bounds=(1e-2, 1e2)) * \
-                RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
+                RBF(length_scale=2.7, length_scale_bounds=(1e-2, 1e2))
         n_restarts = 4
         random_state = 4
     elif model_name == '18':
         kernel = ConstantKernel(1.003, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.0, length_scale_bounds=(1e-1, 1e1))
+                RBF(length_scale=2.8, length_scale_bounds=(1e-1, 1e1))
         n_restarts = 3
         random_state = 3
     elif model_name == '19':
         kernel = ConstantKernel(1.002, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.0, length_scale_bounds=(1e-3, 1e3))
+                RBF(length_scale=2.9, length_scale_bounds=(1e-3, 1e3))
         n_restarts = 2
         random_state = 2
     else:
@@ -828,7 +926,7 @@ def find_thetas(a, model_name=None):
         random_state = 1
 
     # Lock the kernel parameters initially
-    kernel = kernel.clone_with_theta(kernel.theta)
+    #kernel = kernel.clone_with_theta(kernel.theta)
     
     gpc = GaussianProcessClassifier(
         kernel=kernel,
@@ -851,7 +949,7 @@ def find_thetas(a, model_name=None):
 
     return theta_1, theta_0, gpc, X_train_clean, y_train_clean
 
-def find_thetas_old(a):
+def find_thetas_old_2(a):
 
     target_size = a[0].data_filled[:, 0].size  # or define manually
     X_train = []
@@ -901,8 +999,23 @@ def find_thetas_old(a):
     return sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train_clean, y_train_clean
 
 
-
 def cross_validate(original_gpc, X_train_clean, y_train_clean):
+    # Clone the trained model and preserve the fitted kernel
+    kernel = original_gpc.kernel_
+    
+    # Build a new GPC with fixed kernel and NO further optimization
+    model = GaussianProcessClassifier(kernel=kernel, optimizer=None)
+    
+    # Cross-validation without fitting again (scikit-learn handles this safely)
+    scores = cross_val_score(model, X_train_clean, y_train_clean, cv=5)
+    
+    print(f"Mean accuracy: {scores.mean():.4f}")
+    print(f"Repeatability: {1 - scores.std()/scores.mean():.4f}")
+    
+    return scores.mean()
+
+
+def cross_validate_old(original_gpc, X_train_clean, y_train_clean):
     # Create a true independent copy
     model = clone(original_gpc)
     model.set_params(**original_gpc.get_params())  # Preserve all parameters
@@ -1169,6 +1282,25 @@ __,__, c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0 = find_thetas(cc_rot
 __,__, c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0 = find_thetas(cc_side_left,model_name='7')
 __,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thetas(cc_side_right,model_name='8')
 
+##all together
+__,__, All_gpc_0, All_DataX_0,All_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_ranged_far,c_ranged_near,c_rotaion,c_side_left,c_side_right),model_name='9')
+
+
+# print("----------------validate vs themselves---------------")
+# print("----------c_ranged_far_gpc_0 vs c_DataX_0")
+# cross_validate(c_ranged_far_gpc_0, c_DataX_0,c_DataY_0)
+# print("----------c_ranged_near_gpc_0 vs c_DataX_0")
+# cross_validate(c_ranged_near_gpc_0, c_DataX_0,c_DataY_0)
+# print("----------c_rotaion_gpc_0 vs c_DataX_0")
+# cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
+# print("----------c_side_left_gpc_0 vs c_DataX_0")
+# cross_validate(c_side_left_gpc_0, c_DataX_0,c_DataY_0)
+# print("----------c_side_right_gpc_0 vs c_DataX_0")
+# cross_validate(c_side_right_gpc_0, c_DataX_0,c_DataY_0)
+
+
+
+
 print("---------------------c_gpc_0----------------------")
 print("c_gpc_0 vs c_DataX_0")
 cross_validate(c_gpc_0, c_DataX_0,c_DataY_0)
@@ -1184,8 +1316,23 @@ print("c_gpc_0 vs c_side_right_only_DataX_0")
 cross_validate(c_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
 
 
-print("----------------c_ranged_far_gpc_0---------------")
+print("----------------validate vs themselves---------------")
+print("----------c_ranged_far_gpc_0 vs c_ranged_far_only_DataX_0")
 cross_validate(c_ranged_far_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+print("----------c_ranged_near_gpc_0 vs c_ranged_near_DataX_0")
+cross_validate(c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0)
+print("----------c_rotaion_gpc_0 vs c_rotaion_DataX_0")
+cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
+print("----------c_side_left_gpc_0 vs c_side_left_DataX_0")
+cross_validate(c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0)
+print("----------c_side_right_gpc_0 vs c_side_right_DataX_0")
+cross_validate(c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0)
+
+
+
+
+
+
 
 
 # ##wall test data gpc found#####
@@ -1207,7 +1354,6 @@ cross_validate(c_ranged_far_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_
 
 
 
-cross_validate(c_gpc_0, c_DataX_0,c_DataY_0 )
 
 # print("corner_0_R_H")
 # for i in range(len(corner_0_R_H)):
