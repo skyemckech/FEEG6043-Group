@@ -206,7 +206,7 @@ def find_thetas(corner_training):
 
     # populate with the training data
     for i in range(len(corner_training)):
-        X_train[i,:]= corner_training[i].data_filled[:,0]
+        X_train[i,:]= corner_training[i].data_filled[:120,0]
         if i == 1:
             print(X_train[i,:])
         y_train[i]= corner_training[i].label

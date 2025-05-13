@@ -60,14 +60,14 @@ class LaptopPilot:
         #>Modelling<#
         ################
         # path
-        self.path_velocity = 0.1
+        self.path_velocity = 0.04
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        # lapx = [0,1.4,1.4,0]
-        # lapy = [0,0,1.4,1.4]
-        lapx = [0,-0.1]
-        lapy = [0,-0.1]
+        lapx = [0,1.4,1.4,0]
+        lapy = [0,0,1.4,1.4]
+        # lapx = [0,-0.1]
+        # lapy = [0,-0.1]
         self.northings_path = lapx+lapx+lapx
         self.eastings_path = lapy+lapy+lapy  
         self.relative_path = True #False if you want it to be absolute  
@@ -513,20 +513,24 @@ class LaptopPilot:
             ######################################
             # Lidar observation 
             ######################################
+            #If a new observation is available
             if self.new_lidar == True:
                 self.new_lidar = False
-                self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
+                # self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
                 observation = GPC_input_output(self.raw_lidar, None)
-
                 #Check for corners
                 corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
-                if corner_probability[0][0] > 0.5:
-                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
-                    print(label, corner_probability)
-                    observation.data_filled = observation.data_filled[observation.data[:, 0] > 0.2]
+                # Remove lidar points with a range below 5cm (for real life lidar)
+                observation.data_filled = observation.data_filled[observation.data[:, 0] > 0.05]
+                # Only check for corners if there are at least 10 points
+                if corner_probability[0][0] > 0.6 and len(observation.data_filled) > 10:  
+                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])  
+                    # Check for corners                
                     z_lm = Vector(2)
                     z_lm[0], z_lm[1], loc = find_corner(observation, 0.003)
+
                     if loc is not None and z_lm.flatten() is not np.array([[np.nan],[np.nan]]):
+                        # Record landmarks for graphslam
                         self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
                         observation.ne_representative = self.landmark
                         self.landmark = observation.ne_representative.flatten()
@@ -549,8 +553,6 @@ class LaptopPilot:
                 landmark_id = 0
                 self.graph.observation(self.landmark, sigma_observe_xy, landmark_id, t_lm)
                 
-                 
-            
             # Save previous pose and smegma
             p_ = self.state
             sigma_ = self.covariance
@@ -566,11 +568,17 @@ class LaptopPilot:
             msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
             self.datalog.log(msg, topic_name="/est_pose")     
             
-            if self.t > 10:
-                self.graph.motion(self.state,self.covariance,Vector(3),final=True)
-                print('Finish graph data association')
-                print('*************************************************')
-                self.graph.construct_graph(visualise_flag = True)  
+            # if self.t > 10:
+            #     self.graph.construct_graph(visualise_flag = False)
+            #     graph_opt = graphslam_backend(self.graph)
+            #     print('Original graph has:')
+            #     print('Poses',self.graph.n)
+            #     print('Landmarks',self.graph.m)
+            #     print('Edges',self.graph.e)
+            #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)
+            #     print('Finish graph data association')
+            #     print('*************************************************')
+            #     self.graph.construct_graph(visualise_flag = True)  
 
             # feedforward control: check wp progress and sample reference trajectory
             self.path.wp_progress(self.t, self.state[0:3],self.accept_radius,2,self.timeout) # fill turning radius
