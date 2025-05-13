@@ -72,7 +72,7 @@ class LaptopPilot:
         self.eastings_path = lapy+lapy+lapy  
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.174/2 # m 
+        wheel_distance = 0.17/2 # m 
         wheel_diameter = 0.07 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
@@ -521,7 +521,7 @@ class LaptopPilot:
                 #Check for corners
                 corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
                 # Remove lidar points with a range below 5cm (for real life lidar)
-                observation.data_filled = observation.data_filled[observation.data[:, 0] > 0.05]
+                observation.data_filled = observation.data_filled[observation.data[:, 0] != 0.]
                 # Only check for corners if there are at least 10 points
                 if corner_probability[0][0] > 0.6 and len(observation.data_filled) > 10:  
                     label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])  
@@ -560,7 +560,7 @@ class LaptopPilot:
             # Motion model update
             if u.all() != 0:
                 self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
-                self.graph.motion(p_,sigma_, dp ,final=False)   
+                # self.graph.motion(p_,sigma_, dp ,final=False)   
 
             # update for show_laptop.py            
             self.update_estimated_pose()

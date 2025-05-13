@@ -24,7 +24,7 @@ class Classifier:
 
         nothing = format_scan(filepath+"nothing.json",'None')
 
-        no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,wall_wides, object_no_noise, nothing)
+        no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,wall_wides, object_no_noise)
         # low_noise = combine_scans(no_noise, corner_low_noise,wall_low_noise,object_low_noise)
         # high_noise = combine_scans(low_noise, corner_high_noise,wall_high_noise,object_high_noise)
 
