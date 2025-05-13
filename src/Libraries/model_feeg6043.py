@@ -84,8 +84,8 @@ def rigid_body_kinematics(mu,u,dt=0.1,mu_gt=None,sigma_motion=Matrix(3,2),sigma_
         sigma_u[1,1] = sigma[1]*dt
         sigma_u[2,2] = sigma[2]*dt
         
-        u_hat[0]=u[0]+np.random.normal(0, (sigma[0]), 1)
-        u_hat[1]=u[1]+np.random.normal(0, (sigma[1]), 1)
+        u_hat[0]=u[0]
+        u_hat[1]=u[1]
         gamma_noise = np.random.normal(0, (sigma[2]), 1)
         
         #calculate the noise component
@@ -117,7 +117,7 @@ def rigid_body_kinematics(mu,u,dt=0.1,mu_gt=None,sigma_motion=Matrix(3,2),sigma_
         u_hat = u
         gamma_noise = 0
 
-    tol = 1E-3
+    tol = 1E-2
     if abs(u_hat[0])<tol and abs(u_hat[1])<tol:
         # handles the stationary case where 
         H_bb_ = HomogeneousTransformation(Vector(2),0)

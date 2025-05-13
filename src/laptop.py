@@ -39,12 +39,11 @@ class LaptopPilot:
             "marker_id": 21,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
         }
         self.robot_ip = "192.168.90.1"
-        
+        self.plotGroundtruth = None
         # handles different time reference, network amd aruco parameters for simulator
         self.sim_time_offset = 0 #used to deal with webots timestamps
         self.sim_init = False #used to deal with webots timestamps
         self.simulation = simulation
-        self.plotGroundtruth = None
         self.aruco = False
 
         if self.simulation:
@@ -61,18 +60,20 @@ class LaptopPilot:
         #>Modelling<#
         ################
         # path
-        self.path_velocity = 0.04
+        self.path_velocity = 0.1
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        lapx = [0,1,1,0]
-        lapy = [0,0,1,1]
+        # lapx = [0,1.4,1.4,0]
+        # lapy = [0,0,1.4,1.4]
+        lapx = [0,-0.1]
+        lapy = [0,-0.1]
         self.northings_path = lapx+lapx+lapx
         self.eastings_path = lapy+lapy+lapy  
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.100 # m 
-        wheel_diameter = 0.074 # m
+        wheel_distance = 0.174/2 # m 
+        wheel_diameter = 0.07 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
         # self.lidar_rangenoise = 0.000025
@@ -93,6 +94,7 @@ class LaptopPilot:
         # classifiers
         self.cornerClassifier = None
         self.landmark = None # For sending to show_laptop
+        self.new_landmark = None
 
         # model pose
         self.est_pose_northings_m = None
@@ -336,19 +338,25 @@ class LaptopPilot:
             self.state[0] = self.measured_pose_northings_m 
             self.state[1] = self.measured_pose_eastings_m  
             self.state[2] = self.measured_pose_yaw_rad
-        else:
-            self.state[0] = 0
-            self.state[1] = 0
+        elif self.simulation == True:
+            self.state[0] = 0.3
+            self.state[1] = 0.3
             self.state[2] = 0
+        else:
+            self.state[0] = 0.0
+            self.state[1] = 0.0
+            self.state[2] = 0.0
         self.update_estimated_pose()
 
 
     def position_sensor_update(self):
         # Sample position data from Aruco
-        self.sensor_measurement = Vector(3)
-        self.sensor_measurement[N] = self.measured_pose_northings_m
-        self.sensor_measurement[E] = self.measured_pose_eastings_m
-        self.sensor_measurement[G] = self.measured_pose_yaw_rad
+        sensor_measurement = Vector(3)
+        sensor_measurement[N] = self.measured_pose_northings_m
+        sensor_measurement[E] = self.measured_pose_eastings_m
+        sensor_measurement[G] = self.measured_pose_yaw_rad
+
+        return sensor_measurement
 
     def lidar_addnoise(self, lidardata):
         rangenoise = add_noise(self.lidar_rangenoise,0,len(lidardata[:,0]))
@@ -380,19 +388,12 @@ class LaptopPilot:
         def get_process_uncertainty3x3(self):
             #Motion model linear noise due to v and w
             sigma_motion=Matrix(3,2)
-            # sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
-            # sigma_motion[0,1]= np.deg2rad(0.1)**2 # impact of w angular velocity on x
-            # sigma_motion[1,0]=0.3**2 # impact of v linear velocity on y
-            # sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
-            # sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
-            # sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
-
-            sigma_motion[0,0]= 0.0 # impact of v linear velocity on x           #Task
-            sigma_motion[0,1]= 0.0 # impact of w angular velocity on x
-            sigma_motion[1,0]= 0.0 # impact of v linear velocity on y
-            sigma_motion[1,1]= 0.0 # impact of w angular velocity on y
-            sigma_motion[2,0]= 0.0 # impact of v linear velocity on gamma
-            sigma_motion[2,1]= 0.0 # impact of w angular velocity on gamma
+            sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
+            sigma_motion[0,1]= np.deg2rad(0.1)**2 # impact of w angular velocity on x
+            sigma_motion[1,0]=0.3**2 # impact of v linear velocity on y
+            sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
+            sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
 
             return sigma_motion
 
@@ -418,7 +419,9 @@ class LaptopPilot:
             Ql = Identity(2)
 
             Ql[N,N] = 0.1**2
+            Ql[N,E] = 0
             Ql[E,N] = np.deg2rad(5)**2
+            Ql[E,E] = 0
 
             return Ql
 
@@ -430,6 +433,7 @@ class LaptopPilot:
     
     def initialise(self):
         if self.initialise_pose == True:
+            time.sleep(0.5)
             # set initial measurements
             self.initialise_robot()
             self.uncertainty = LaptopPilot.uncertaintyMatrices()
@@ -442,7 +446,7 @@ class LaptopPilot:
             self.cornerClassifier.train_classifier('corner')
 
             self.graph = graphslam_frontend()
-            self.graph.anchor(self.uncertainty.get_initial_uncertainty)
+            self.graph.anchor(self.covariance)
 
             # get current time and determine timestep
             self.t_prev = datetime.utcnow().timestamp() #initialise the time
@@ -475,7 +479,7 @@ class LaptopPilot:
                 # logs the data            
                 self.datalog.log(msg, topic_name="/aruco")
                 self.initialise()
-        else:
+        elif self.measured_wheelrate_right is not None:
             self.initialise()
         # initialisation step
     
@@ -498,96 +502,80 @@ class LaptopPilot:
 
              # > Think < #
             ################################################################################
-            ################### Motion Model ####################
-            # take current pose estimate and update by twist
+            #gwound twuth pwotter
+            if self.simulation:
+                p_gt = self.groundtruth_update()
+            elif self.aruco:
+                p_gt = self.position_sensor_update()
+            else:
+                p_gt = self.state
+            
+            ######################################
+            # Lidar observation 
+            ######################################
+            if self.new_lidar == True:
+                self.new_lidar = False
+                self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
+                observation = GPC_input_output(self.raw_lidar, None)
 
+                #Check for corners
+                corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
+                if corner_probability[0][0] > 0.5:
+                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
+                    print(label, corner_probability)
+                    observation.data_filled = observation.data_filled[observation.data[:, 0] > 0.2]
+                    z_lm = Vector(2)
+                    z_lm[0], z_lm[1], loc = find_corner(observation, 0.003)
+                    if loc is not None and z_lm.flatten() is not np.array([[np.nan],[np.nan]]):
+                        self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
+                        observation.ne_representative = self.landmark
+                        self.landmark = observation.ne_representative.flatten()
+                        print(label, "at", self.landmark)
+                        self.new_landmark = True
+                else:
+                    self.landmark = None
+
+            #####################################
+            # Graphslam frontend
+            #####################################
             # Get current pose to pose uncertainty
             sigma_motion = self.uncertainty.get_process_uncertainty3x3()
+            sigma_lidar = self.uncertainty.get_lidar_uncertainty()
+
+            # Log landmark
+            if self.new_landmark is True:
+                self.new_landmark = False
+                _, _, t_lm, sigma_observe_xy = self.lidar.loc_to_rangeangle(p_eb=self.state,t_em=self.landmark,sigma_observe=sigma_lidar)
+                landmark_id = 0
+                self.graph.observation(self.landmark, sigma_observe_xy, landmark_id, t_lm)
+                
+                 
             
             # Save previous pose and smegma
             p_ = self.state
             sigma_ = self.covariance
 
-            #gwound twuth pwotter
-            if self.simulation:
-                p_gt = self.groundtruth_update()
-            else: 
-                p_gt = self.position_sensor_update()
-            
             # Motion model update
-            self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=p_gt,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            if u.all() != 0:
+                self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+                self.graph.motion(p_,sigma_, dp ,final=False)   
 
-            # Lidar observation 
-            if self.new_lidar == True:
-                self.new_lidar = False
-                self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
-                observation = format(self.raw_lidar, None)
-
-                #Check for corners
-                corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
-                print(corner_probability)
-                if corner_probability[0][0] > 0.6:
-                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
-                    print(label, corner_probability)
-
-                    z_lm = Vector(2)
-                    z_lm[0], z_lm[1], loc = find_corner(observation, 0.006)
-                    print(observation.data[loc,:])
-                    # z_lm[1] = -z_lm[1]
-                    if loc is not None and z_lm is not np.array([[np.nan], [np.nan]]):
-                        self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
-                        observation.ne_representative = self.landmark
-                        self.landmark = observation.ne_representative.flatten()
-                        print(self.state)
-                        print(observation.ne_representative)
-                    else:
-                        self.landmark = None
-                    
+            # update for show_laptop.py            
+            self.update_estimated_pose()
             
-            # if label == 'corner': 
-            #     self.lidar_data
-
-            # if self.t > 10:
-            #     self.graph.motion(self.state,self.covariance,Vector(3),final=True)
-            #     print('Finish graph data association')
-            #     print('*************************************************')
-
-            #     self.graph.construct_graph()
-
-            #     pose_ground_truth = self.p_gt_path
-            #     em = Vector(2)
-            #     H_em = HomogeneousTransformation(em,0)  
-            #     m_e0 = Vector(2)
-            #     m_e0[0] = -0
-            #     m_e0[1] = 2
-
-            #     m_e1 = Vector(2)
-            #     m_e1[0] = 2
-            #     m_e1[1] = 5
-
-            #     m_e2 = Vector(2)
-            #     m_e2[0] = 1.0
-            #     m_e2[1] = 5.5
-            #     map_ground_truth = [m_e0, m_e1, m_e2]
-            #     map_labels = ['m1', 'm2', 'm3']
-            #     plot_graph(self.graph, pose_ground_truth, H_em, map_ground_truth, map_labels)
-                
-            #     visualise_flag = True
-            #     self.graph.construct_graph(visualise_flag = visualise_flag)
-            # else:
-            #     self.graph.motion(p_,sigma_, dp ,final=False)   # Task
-            #################### Trajectory sample #################################    
+            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
+            self.datalog.log(msg, topic_name="/est_pose")     
+            
+            if self.t > 10:
+                self.graph.motion(self.state,self.covariance,Vector(3),final=True)
+                print('Finish graph data association')
+                print('*************************************************')
+                self.graph.construct_graph(visualise_flag = True)  
 
             # feedforward control: check wp progress and sample reference trajectory
             self.path.wp_progress(self.t, self.state[0:3],self.accept_radius,2,self.timeout) # fill turning radius
             p_ref, u_ref = self.path.p_u_sample(self.t) #sample the path at the current elapsetime (i.e., seconds from start of motion modelling)
             self.p_reference_tracker = p_ref[0:2,0]
-            
-            # update for show_laptop.py            
-            self.update_estimated_pose()
-            
-            msg = self.pose_parse([datetime.utcnow().timestamp(),self.est_pose_northings_m,self.est_pose_eastings_m,0,0,0,self.est_pose_yaw_rad])
-            self.datalog.log(msg, topic_name="/est_pose")
 
 
 
@@ -641,11 +629,6 @@ class LaptopPilot:
             # Send commands to the robot        
             self.wheel_speed_pub.publish(wheel_speed_msg)
             self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
-            
-            # Export data to excel
-            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_right])
-            self.ref_pose_worksheet.extend_data([self.measured_wheelrate_left])
-            self.ref_pose_worksheet.export_to_excel()
 
             # Groundtruth
             if self.plotGroundtruth is not None:

@@ -73,7 +73,7 @@ def show_scan(p_eb, lidar, observations, show_lines = True):
     plt.xlabel('Eastings, m')
     plt.ylabel('Northings, m')
     plt.axis('equal')
-    plt.title("fuck marwan and danae")
+    plt.title("fuck this team")
     plt.show()
 
 def find_corner(corner, threshold = 0.01):
@@ -278,6 +278,17 @@ def add_noise(variance, mean, number):
     # second is the standard deviation of the normal distribution
     # third is the number of elements you get in array noise
     return noise
+
+def clean_data(lidar_data):
+    for i in range(len(lidar_data)):
+        data = lidar_data[i].data_filled[:, 0]
+        if data.size < 120:
+            # pad with NaNs or zeros
+            padded = np.pad(data, (0, 120 - data.size), 'constant', constant_values=np.nan)
+        else:
+            # trim to target size
+            padded = data[:120]
+        return np.vstack(padded, lidar_data.label)
 
 
 # #0.0005

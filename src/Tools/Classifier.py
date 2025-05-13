@@ -22,7 +22,9 @@ class Classifier:
         # object_low_noise = format_scan(filepath+"circle_1d_5mm.json", 'object')
         # object_high_noise = format_scan(filepath+"circle_3d_15mm.json", 'object')
 
-        no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,wall_wides, object_no_noise)
+        nothing = format_scan(filepath+"nothing.json",'None')
+
+        no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,wall_wides, object_no_noise, nothing)
         # low_noise = combine_scans(no_noise, corner_low_noise,wall_low_noise,object_low_noise)
         # high_noise = combine_scans(low_noise, corner_high_noise,wall_high_noise,object_high_noise)
 

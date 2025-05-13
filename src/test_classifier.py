@@ -7,7 +7,7 @@ cornerClassifier.train_classifier('corner')
 testd = cornerClassifier.check_classifier()
 
 # observation = cornerClassifier.data[52]
-observation = testd[13]
+observation = testd[15]
 observation.data_filled = observation.data_filled[:120,:]
 observation.data = observation.data[:120,:]
 proba = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
@@ -23,11 +23,12 @@ p[2] = 0 #Heading (rad)
 x_bl = 0; y_bl = 0
 lidar = RangeAngleKinematics(x_bl, y_bl, distance_range = [0.1, 1], scan_fov = np.deg2rad(60), n_beams = 30)
 
-show_scan(p, lidar, observation.data_filled)
+show_scan(p, lidar, observation.data)
 
-if observation.label == 'corner': 
+observation.data_filled = observation.data_filled[observation.data[:, 0] < 0.2]
+if observation.label == 'corner' and len(observation.data_filled) > 10:
     z_lm = Vector(2)
-    z_lm[0], z_lm[1], loc = find_corner(observation, 0.06) # we can set a lower threshold here
+    z_lm[0], z_lm[1], loc = find_corner(observation, 0.003) # we can set a lower threshold here
 
     if loc is not None:  
         # plot the raw sensor readings
