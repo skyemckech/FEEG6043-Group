@@ -579,7 +579,8 @@ class LaptopPilot:
             sigma_lidar = self.uncertainty.get_lidar_uncertainty()
 
             # Save previous pose and smegma
-            self.state, self.covariance, dp, p_gt =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            self.state, self.covariance, _, _ =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            dp = self.state - self.p_
             # Log landmark
             if self.new_landmark is True:
                 self.new_landmark = False
