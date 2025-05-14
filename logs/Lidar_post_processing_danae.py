@@ -685,7 +685,7 @@ def find_thetas(scans, model_name=None, wl = 1, wr = 1):
 
     # kernel = ConstantKernel(settings['constant'], settings['constant_bounds']) * \
     #          RBF(settings['length'], settings['length_bounds'])
-    kernel =  wl* RBF(wr)
+    kernel = wl * RBF(wr, length_scale_bounds='fixed')  # Prevent optimization
 
     # --- Fit GPC ---
     # gpc = GaussianProcessClassifier(
