@@ -20,6 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 p = Vector(3); 
 
@@ -589,33 +590,41 @@ def format_scan_wall(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fi
     
     return corner_training
 
-def clean_data(a):
+def clean_data(a, scaler=None, fit_scaler=True):
     target_size = a[0].data_filled[:, 0].size
     X_train = []
     y_train = []
 
-    # Data preparation
     for i in range(len(a)):
         if a[i].label is None:
             continue
-            
+
         data = a[i].data_filled[:, 0]
         if data.size < target_size:
-            padded = np.pad(data, (0, target_size - data.size), 
-                        'constant', constant_values=np.nan)
+            padded = np.pad(data, (0, target_size - data.size),
+                            'constant', constant_values=np.nan)
         else:
             padded = data[:target_size]
-        
+
         if np.isnan(padded).any():
             continue
-            
+
         X_train.append(padded)
         y_train.append(a[i].label)
 
     X_train_clean = np.array(X_train)
     y_train_clean = np.array(y_train)
 
-    return X_train_clean, y_train_clean
+    if scaler is None:
+        scaler = StandardScaler()
+
+    if fit_scaler:
+        X_train_clean = scaler.fit_transform(X_train_clean)
+    else:
+        X_train_clean = scaler.transform(X_train_clean)
+
+    return X_train_clean, y_train_clean, scaler
+
 
 
 def find_thetas(scans, model_name=None, wl = 1, wr = 1):
@@ -685,7 +694,12 @@ def find_thetas(scans, model_name=None, wl = 1, wr = 1):
 
     # kernel = ConstantKernel(settings['constant'], settings['constant_bounds']) * \
     #          RBF(settings['length'], settings['length_bounds'])
-    kernel =  wl* RBF(wr)
+    
+    #kernel =  wl* RBF(wr)
+
+#danae 
+    kernel = ConstantKernel(constant_value=wl, constant_value_bounds=(1e-3, 1e3)) * RBF(length_scale=wr, length_scale_bounds=(1e-3, 1e3))
+#danae 
 
     # --- Fit GPC ---
     # gpc = GaussianProcessClassifier(
@@ -703,6 +717,13 @@ def find_thetas(scans, model_name=None, wl = 1, wr = 1):
         random_state=settings['seed'],
         copy_X_train=False
     )
+    #danae 
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    X_train_clean = scaler.fit_transform(X_train_clean)
+
+
+
 
     gpc.fit(X_train_clean, y_train_clean)
 
@@ -717,17 +738,29 @@ def find_thetas(scans, model_name=None, wl = 1, wr = 1):
     print(f'Theta: [theta_0: {theta_0:.3f}, theta_1: {theta_1:.3f}]')
     print(f'Negative Log-Likelihood (NLL): {nll:.3f}')
 
-    return theta_1, theta_0, gpc, X_train_clean, y_train_clean
+    #danae
+    print(f"Kernel used: {gpc.kernel_}")
+    #danae
+
+    return theta_1, theta_0, gpc, X_train_clean, y_train_clean, scaler
+
 
 
 ######scans making the gpc then the data you are validating against#######
-def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
-    
+def find_thetas_cross_validate(scans, validation_data_X, validation_data_Y, wl=1, wr=1):
+    # Train a new model with specified wl and wr
+    theta_1, theta_0, gpc, train_X, train_Y, scaler = find_thetas(scans, model_name=None, wl=wl, wr=wr)
 
-    theta_1,theta_0, gpc, X_train,y_train = find_thetas(scans,model_name='11', wl=wl , wr=wr)
-    score, rep = cross_validate_acc_and_rep(gpc, X_train, y_train)   # Get a performance metric
+    # Use the *training scaler* to transform validation data
+    val_X_clean = scaler.transform(validation_data_X)
 
-    return theta_1, theta_0, gpc, X_train, y_train, score, rep  # Add score to returns
+    # Evaluate accuracy & repeatability on clean validation data
+    score, rep = cross_validate_acc_and_rep(gpc, val_X_clean, validation_data_Y)
+
+    return theta_1, theta_0, gpc, val_X_clean, validation_data_Y, score, rep
+
+
+
 
 
 
@@ -965,18 +998,20 @@ print("-----------------------testcombine_scan----------------")
 # wall_0 = combine_scans(w_corner_0_noise,w_wall_0_noise,w_object_0_noise)
 # w_corner_theta1_0, w_corner_theta2_0, w_gpc_0, w_DataX_0,w_DataY_0 = find_thetas(wall_0,model_name='3')
 
+corner_0 = combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0, c_DataY_0, c_scaler_0 = find_thetas(corner_0, model_name='1')
 
-corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
-c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
+corner_0 = combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0, c_DataY_0, c_scaler_0 = find_thetas(corner_0, model_name='1')
 
-corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
-c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
+corner_0 = combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0, c_DataY_0, c_scaler_0 = find_thetas(corner_0, model_name='1')
 
-corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
-c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
 
-c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
-c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
+
+c_low_noise_DataX, c_low_noise_DataY, _ = clean_data(combine_scans(c_corner_low_noise, c_wall_low_noise, c_object_low_noise))
+c_high_noise_DataX, c_high_noise_DataY, _ = clean_data(combine_scans(c_corner_high_noise, c_wall_high_noise, c_object_high_noise))
+
 
 cc_ranged_far = combine_scans(c_ranged_far,corner_0)
 cc_ranged_near = combine_scans(c_ranged_near,corner_0)
@@ -984,24 +1019,38 @@ cc_rotaion = combine_scans(c_rotaion,corner_0)
 cc_side_left = combine_scans(c_side_left,corner_0)
 cc_side_right = combine_scans(c_side_right,corner_0)
 
-c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0  = clean_data(combine_scans(c_ranged_far,c_wall_0_noise,c_object_0_noise))
-c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0  = clean_data(combine_scans(c_ranged_near,c_wall_0_noise,c_object_0_noise))
-c_rotaion_only_DataX_0,c_rotaion_only_DataY_0   = clean_data(combine_scans(c_rotaion,c_wall_0_noise,c_object_0_noise))
-c_side_left_only_DataX_0,c_side_left_only_DataY_0  = clean_data(combine_scans(c_side_left,c_wall_0_noise,c_object_0_noise))
-c_side_right_only_DataX_0,c_side_right_only_DataY_0  = clean_data(combine_scans(c_side_right,c_wall_0_noise,c_object_0_noise))
+c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0, _ = clean_data(combine_scans(c_ranged_far, c_wall_0_noise, c_object_0_noise))
+c_ranged_near_only_DataX_0, c_ranged_near_only_DataY_0, _ = clean_data(combine_scans(c_ranged_near, c_wall_0_noise, c_object_0_noise))
+c_rotaion_only_DataX_0, c_rotaion_only_DataY_0, _ = clean_data(combine_scans(c_rotaion, c_wall_0_noise, c_object_0_noise))
+c_side_left_only_DataX_0, c_side_left_only_DataY_0, _ = clean_data(combine_scans(c_side_left, c_wall_0_noise, c_object_0_noise))
+c_side_right_only_DataX_0, c_side_right_only_DataY_0, _ = clean_data(combine_scans(c_side_right, c_wall_0_noise, c_object_0_noise))
+
 
 ##centre test data gpc found#####
-__,__, c_ranged_far_gpc_0, c_ranged_far_DataX_0,c_ranged_far_DataY_0 = find_thetas(cc_ranged_far,model_name='4')
-__,__, c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0 = find_thetas(cc_ranged_near,model_name='5')
-__,__, c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0 = find_thetas(cc_rotaion,model_name='6')
-__,__, c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0 = find_thetas(cc_side_left,model_name='7')
-__,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thetas(cc_side_right,model_name='8')
+__,__, c_ranged_far_gpc_0, c_ranged_far_DataX_0, c_ranged_far_DataY_0, _ = find_thetas(cc_ranged_far, model_name='4')
+__,__, c_ranged_near_gpc_0, c_ranged_near_DataX_0, c_ranged_near_DataY_0, _ = find_thetas(cc_ranged_near, model_name='5')
+__,__, c_rotaion_gpc_0, c_rotaion_DataX_0, c_rotaion_DataY_0, _ = find_thetas(cc_rotaion, model_name='6')
+__,__, c_side_left_gpc_0, c_side_left_DataX_0, c_side_left_DataY_0, _ = find_thetas(cc_side_left, model_name='7')
+__,__, c_side_right_gpc_0, c_side_right_DataX_0, c_side_right_DataY_0, _ = find_thetas(cc_side_right, model_name='8')
+
 
 
 ##all together
-__,__, All_gpc_0, All_DataX_0,All_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_ranged_far,c_ranged_near,c_rotaion,c_side_left,c_side_right),model_name='9')
-a,b, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='10', wl= 5 , wr= 5)
-c,d, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='11', wl= 0.1 , wr= 1)
+__, __, All_gpc_0, All_DataX_0, All_DataY_0, _ = find_thetas(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_ranged_far, c_ranged_near, c_rotaion, c_side_left, c_side_right),
+    model_name='9'
+)
+
+a, b, best_gpc_0, best_DataX_0, best_DataY_0, _ = find_thetas(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    model_name='10', wl=5, wr=5
+)
+
+c, d, best_gpc_0, best_DataX_0, best_DataY_0, _ = find_thetas(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    model_name='11', wl=0.1, wr=1
+)
+
 
 
 print("---------------------c_gpc_0----------------------")
@@ -1079,28 +1128,32 @@ wr_values_store = np.zeros((len(wr_values)))
 #def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
 
 # Iterate over all combinations
+training_scans = combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion)
+
 for j, wr in enumerate(wr_values):
-    _, _, _, _,__, score_0, rep_0 = find_thetas_cross_validate(
-        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-        c_DataX_0,
+    _, _, _, _, _, score_0, rep_0 = find_thetas_cross_validate(
+        training_scans,
+        c_DataX_0,  # no noise validation
         c_DataY_0,
         wl=wl,
         wr=wr
     )
-    _, _, _, _,__, score_low, rep_low = find_thetas_cross_validate(
-        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    _, _, _, _, _, score_low, rep_low = find_thetas_cross_validate(
+        training_scans,
         c_low_noise_DataX,
         c_low_noise_DataY,
         wl=wl,
         wr=wr
     )
-    _, _, _, _,__, score_high, rep_high = find_thetas_cross_validate(
-        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    _, _, _, _, _, score_high, rep_high = find_thetas_cross_validate(
+        training_scans,
         c_high_noise_DataX,
         c_high_noise_DataY,
         wl=wl,
         wr=wr
     )
+
+
 
     scores_0[j] = score_0
     reps_0[j] = rep_0
@@ -1129,12 +1182,12 @@ print("max_high",max_high)
 
 
 
-
+plt.figure(figsize=(10, 6))
 plt.axvline(x=wr_values_store[np.argmax(scores_0)], color='b', linestyle='-', alpha=0.3)
 plt.axvline(x=wr_values_store[np.argmax(scores_low)], color='g', linestyle='--', alpha=0.3)
 plt.axvline(x=wr_values_store[np.argmax(scores_high)], color='r', linestyle=':', alpha=0.3)
 
-plt.figure(figsize=(10, 6))
+
 plt.plot(wr_values_store, scores_0, 'b-', label='No Noise', linewidth=2)
 plt.plot(wr_values_store, scores_low, 'g--', label='Low Noise', linewidth=2)
 plt.plot(wr_values_store, scores_high, 'r:', label='High Noise', linewidth=2)
