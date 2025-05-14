@@ -1472,6 +1472,12 @@ print("max_0",max_0)
 print("max_low",max_low)
 print("max_high",max_high)
 
+print("scores_0")
+print(scores_0)
+print("scores_low")
+print(scores_low)
+print("scores_high")
+print(scores_high)
 
 
 
