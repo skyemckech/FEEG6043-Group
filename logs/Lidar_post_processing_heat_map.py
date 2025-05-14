@@ -17,6 +17,9 @@ from sklearn.base import clone
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+import numpy as np
 
 
 # # Create meaningfully different initial kernels
@@ -703,9 +706,6 @@ def clean_data(a):
 
     return X_train_clean, y_train_clean
 
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel
-import numpy as np
 
 def find_thetas(scans, model_name=None, wl = 1, wr = 1):
     """
@@ -1216,7 +1216,11 @@ c_rotaion = format_scan_corner("logs/corner_0_test1_rotation.json", 0,0.1,1)
 c_side_left = format_scan_corner("logs/side_corner_left.json", 0,0.1,1)
 c_side_right = format_scan_corner("logs/side_corner_right_real.json", 0,0.1,1)
 
+c_wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 100,0.1,1)
+c_wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 100,0.1,1)
 
+c_object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 100,50,1)
+c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
 
 
 ##object training###
@@ -1282,6 +1286,15 @@ print("-----------------------testcombine_scan----------------")
 
 corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
 c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
+
+corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
+
+corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
+
+c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
+c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
 
 cc_ranged_far = combine_scans(c_ranged_far,corner_0)
 cc_ranged_near = combine_scans(c_ranged_near,corner_0)
@@ -1379,30 +1392,27 @@ cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
 
 
 # Define ranges for wl and wr
-wl_values = np.arange(0.1, 5.0, 0.25)  # 0.1 to 0.9 in steps of 0.1
-wr_values = np.arange(0.1, 5.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
+wl = 1.85  # 0.1 to 0.9 in steps of 0.1
+wr_values = np.arange(0.1,3.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
 
 # Initialize a grid to store scores
-scores = np.zeros((len(wl_values), len(wr_values)))
-wl_values_store = np.zeros((len(wl_values)))
+scores = np.zeros((len(wr_values)))
 wr_values_store = np.zeros((len(wr_values)))
 
 
 #def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
 
 # Iterate over all combinations
-for i, wl in enumerate(wl_values):
-    for j, wr in enumerate(wr_values):
-        _, _, _, _,__, score = find_thetas_cross_validate(
-            combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-            c_DataX_0,
-            c_DataY_0,
-            wl=wl,
-            wr=wr
-        )
-        scores[i, j] = score  # Store the score
-        wl_values_store[i] = wl
-        wr_values_store[j] = wr
+for j, wr in enumerate(wr_values):
+    _, _, _, _,__, score = find_thetas_cross_validate(
+        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+        c_DataX_0,
+        c_DataY_0,
+        wl=wl,
+        wr=wr
+    )
+    scores[j] = score  # Store the score
+    wr_values_store[j] = wr
 
 print(wl_values_store)
 print(wr_values_store)
@@ -1423,40 +1433,71 @@ best_score = scores[wl_idx, wr_idx]
 print(f"Optimal weights: wl = {best_wl:.2f}, wr = {best_wr:.2f}")
 print(f"Best score: {best_score:.4f}")
 
-# Create meshgrid for 3D plotting
 
-# Set up the figure
-fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(111, projection='3d')
-
-# Plot the surface (grey)
-surf = ax.plot_surface(
-    Wl, Wr, scores.T,  # Transpose scores to match meshgrid
-    cmap='Blues',      # Grey colormap
-    alpha=0.7,         # Slightly transparent
-    edgecolor='none'
+plt.figure(figsize=(10, 6))
+plt.imshow(
+    scores,
+    cmap='viridis',  # Colormap (try 'plasma', 'inferno', 'cividis')
+    origin='lower',  # Place (0,0) at bottom-left
+    aspect='auto',   # Adjust aspect ratio
+    extent=[wr_values.min(), wr_values.max(), wl_values.min(), wl_values.max()]  # Axis labels
 )
 
-# Highlight the optimal point (red)
-ax.scatter(
-    best_wl, best_wr, best_score,
-    color='red',
-    s=100,             # Marker size
-    label=f'Optimal: wl={best_wl:.2f}, wr={best_wr:.2f}\nScore={best_score:.3f}'
-)
+# Highlight optimal point
+plt.scatter(best_wr, best_wl, color='red', s=100, label=f'Best: wl={best_wl:.2f}, wr={best_wr:.2f}')
 
-# Customize the plot
-ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
-ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
-ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
-ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
-ax.legend(loc='upper right')
+# Add colorbar
+cbar = plt.colorbar(label='Score (e.g., Accuracy)')
 
-# Add a colorbar for the surface
-fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
-
-plt.tight_layout()
+# Labels and title
+plt.xlabel('wr (RBF Length Scale)')
+plt.ylabel('wl (Kernel Multiplier)')
+plt.title('Heatmap of Scores for wl and wr')
+plt.legend()
 plt.show()
+
+
+
+
+
+
+
+
+
+# Create meshgrid for 3D plotting
+#######3D plot########
+# # Set up the figure
+# fig = plt.figure(figsize=(12, 8))
+# ax = fig.add_subplot(111, projection='3d')
+
+# # Plot the surface (grey)
+# surf = ax.plot_surface(
+#     Wl, Wr, scores.T,  # Transpose scores to match meshgrid
+#     cmap='Blues',      # Grey colormap
+#     alpha=0.7,         # Slightly transparent
+#     edgecolor='none'
+# )
+
+# # Highlight the optimal point (red)
+# ax.scatter(
+#     best_wl, best_wr, best_score,
+#     color='red',
+#     s=100,             # Marker size
+#     label=f'Optimal: wl={best_wl:.2f}, wr={best_wr:.2f}\nScore={best_score:.3f}'
+# )
+
+# # Customize the plot
+# ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
+# ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
+# ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
+# ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
+# ax.legend(loc='upper right')
+
+# # Add a colorbar for the surface
+# fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
+
+# plt.tight_layout()
+# plt.show()
 
 
 # ##wall test data gpc found#####
