@@ -20,34 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 import numpy as np
-
-
-# # Create meaningfully different initial kernels
-# gpc_0_R_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.8),
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_0_R = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.5),  # Different initial length scale
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_0 = GaussianProcessClassifier(
-#     kernel=ConstantKernel(0.8) * RBF(length_scale=2.0),  # Different constant value
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.2) * RBF(length_scale=1.0),  # Distinct configuration
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-
+from sklearn.preprocessing import StandardScaler
 
 p = Vector(3); 
 
@@ -149,62 +122,6 @@ def fit_circle_to_points(points, fit_error_tolerance=0.005):
     else:
         return None, None, None, None
 
-
-# def show_scan(p_eb, lidar, observations, show_lines = True):
-#     """ Plots observations, field of view and robot pose
-#     """
-
-#     ######################## Calculate FOV    
-#     range_max = lidar.distance_range[1]
-#     range_min = lidar.distance_range[0]    
-#     fov = lidar.scan_fov
-        
-#     r_ = []
-#     theta_ = []    
-    
-#     # for field of view
-#     theta = np.linspace(-fov / 2, fov / 2, 30)    
-        
-#     for i in theta:
-#         r_.append(range_max)
-#         theta_.append(i)        
-#     for i in reversed(theta):
-#         r_.append(range_min)
-#         theta_.append(i)    
-#     r_.append(range_max)
-#     theta_.append(-fov/2)
-
-#     fov = l2m([r_,theta_])
-#     ######################## Plot the FOV        
-    
-#     t_lm = Vector(2) # lidar frame measurement placeholder    
-#     t_em = Vector(2) # environment frame measurement
-    
-#     fov_x = []
-#     fov_y = []
-
-#     H_eb = HomogeneousTransformation(p_eb[0:2],p_eb[2])
-        
-#     for z_fov in fov:    
-#         t_lm[0],t_lm[1] = polar2cartesian(z_fov[0],z_fov[1])      
-#         t_em = t2v((H_eb.H@lidar.H_bl.H)@v2t(t_lm))
-    
-#         fov_x.append(t_em[0])
-#         fov_y.append(t_em[1])  
-        
-#     if show_lines == True: plt.plot(fov_y, fov_x,'orange')
-
-#     if len(observations) != 0:            
-#         for z_lm in observations:    
-#             t_lm[0],t_lm[1] = polar2cartesian(z_lm[0],z_lm[1])
-#             show_observation(H_eb,t2v(lidar.H_bl.H@v2t(t_lm)),Matrix(2,2),None,ax, show_lines)        
-        
-#     else:        
-#         cf=plot_2dframe(['pose','b','b'],[H_eb.H,H_eb.H],False,False)
-        
-#     plt.xlabel('Eastings, m')
-#     plt.ylabel('Northings, m')
-#     plt.axis('equal')
 
 def show_scan(p_eb, lidar, observations, show_lines = True):
     """ Plots observations, field of view and robot pose
@@ -475,11 +392,6 @@ def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
             corner_training.append(new_observation)
 
 
-    # for i in range(len(corner_training)):
-    #     print('Entry:', i, ', Class', corner_training[i].label, ', Size', corner_training[i].data_filled[:, 0].size)
-    #     print('Data type: Radius', corner_training[i].data_filled[:, 0])
-    #     print('Data type:Theta', corner_training[i].data_filled[:, 1])
-    
     return corner_training
 
 
@@ -678,36 +590,44 @@ def format_scan_wall(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fi
     
     return corner_training
 
-def clean_data(a):
+def clean_data(a, scaler=None, fit_scaler=True):
     target_size = a[0].data_filled[:, 0].size
     X_train = []
     y_train = []
 
-    # Data preparation
     for i in range(len(a)):
         if a[i].label is None:
             continue
-            
+
         data = a[i].data_filled[:, 0]
         if data.size < target_size:
-            padded = np.pad(data, (0, target_size - data.size), 
-                        'constant', constant_values=np.nan)
+            padded = np.pad(data, (0, target_size - data.size),
+                            'constant', constant_values=np.nan)
         else:
             padded = data[:target_size]
-        
+
         if np.isnan(padded).any():
             continue
-            
+
         X_train.append(padded)
         y_train.append(a[i].label)
 
     X_train_clean = np.array(X_train)
     y_train_clean = np.array(y_train)
 
-    return X_train_clean, y_train_clean
+    if scaler is None:
+        scaler = StandardScaler()
+
+    if fit_scaler:
+        X_train_clean = scaler.fit_transform(X_train_clean)
+    else:
+        X_train_clean = scaler.transform(X_train_clean)
+
+    return X_train_clean, y_train_clean, scaler
 
 
-def find_thetas(scans, model_name=None, wl = 1.85, wr = 1.7):
+
+def find_thetas(scans, model_name=None, wl = 1, wr = 1):
     """
     Trains a GaussianProcessClassifier with model-specific hyperparameters.
     
@@ -774,7 +694,12 @@ def find_thetas(scans, model_name=None, wl = 1.85, wr = 1.7):
 
     # kernel = ConstantKernel(settings['constant'], settings['constant_bounds']) * \
     #          RBF(settings['length'], settings['length_bounds'])
-    kernel =  wl* RBF(wr)
+    
+    #kernel =  wl* RBF(wr)
+
+#danae 
+    kernel = ConstantKernel(constant_value=wl, constant_value_bounds=(1e-3, 1e3)) * RBF(length_scale=wr, length_scale_bounds=(1e-3, 1e3))
+#danae 
 
     # --- Fit GPC ---
     # gpc = GaussianProcessClassifier(
@@ -792,6 +717,13 @@ def find_thetas(scans, model_name=None, wl = 1.85, wr = 1.7):
         random_state=settings['seed'],
         copy_X_train=False
     )
+    #danae 
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    X_train_clean = scaler.fit_transform(X_train_clean)
+
+
+
 
     gpc.fit(X_train_clean, y_train_clean)
 
@@ -806,217 +738,30 @@ def find_thetas(scans, model_name=None, wl = 1.85, wr = 1.7):
     print(f'Theta: [theta_0: {theta_0:.3f}, theta_1: {theta_1:.3f}]')
     print(f'Negative Log-Likelihood (NLL): {nll:.3f}')
 
-    return theta_1, theta_0, gpc, X_train_clean, y_train_clean
+    #danae
+    print(f"Kernel used: {gpc.kernel_}")
+    #danae
+
+    return theta_1, theta_0, gpc, X_train_clean, y_train_clean, scaler
+
 
 
 ######scans making the gpc then the data you are validating against#######
-def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
-    
+def find_thetas_cross_validate(scans, validation_data_X, validation_data_Y, wl=1, wr=1):
+    # Train a new model with specified wl and wr
+    theta_1, theta_0, gpc, train_X, train_Y, scaler = find_thetas(scans, model_name=None, wl=wl, wr=wr)
 
-    theta_1,theta_0, gpc, X_train,y_train = find_thetas(scans,model_name='11', wl=wl , wr=wr)
-    score, rep = cross_validate_acc_and_rep(gpc, X_train, y_train)   # Get a performance metric
+    # Use the *training scaler* to transform validation data
+    val_X_clean = scaler.transform(validation_data_X)
 
-    return theta_1, theta_0, gpc, X_train, y_train, score, rep  # Add score to returns
+    # Evaluate accuracy & repeatability on clean validation data
+    score, rep = cross_validate_acc_and_rep(gpc, val_X_clean, validation_data_Y)
 
-def find_thetas_old_1(a, model_name=None):
-    target_size = a[0].data_filled[:, 0].size
-    X_train = []
-    y_train = []
+    return theta_1, theta_0, gpc, val_X_clean, validation_data_Y, score, rep
 
-    # Data preparation
-    for i in range(len(a)):
-        if a[i].label is None:
-            continue
-            
-        data = a[i].data_filled[:, 0]
-        if data.size < target_size:
-            padded = np.pad(data, (0, target_size - data.size), 
-                          'constant', constant_values=np.nan)
-        else:
-            padded = data[:target_size]
-        
-        if np.isnan(padded).any():
-            continue
-            
-        X_train.append(padded)
-        y_train.append(a[i].label)
 
-    X_train_clean = np.array(X_train)
-    y_train_clean = np.array(y_train)
 
-    # Force different optimization paths based on model name
-    if model_name == '1':
-        kernel = ConstantKernel(1.02, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.1, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 1
-        random_state = 1
-    elif model_name == '2':
-        kernel = ConstantKernel(1.019, constant_value_bounds=(1e-2, 1e2)) * \
-        RBF(length_scale=1.2, length_scale_bounds=(1e-2, 1e2))
-        n_restarts = 4
-        random_state = 4
-    elif model_name == '3':
-        kernel = ConstantKernel(1.018, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=1.3, length_scale_bounds=(1e-1, 1e1))
-        n_restarts = 3
-        random_state = 3
-    elif model_name == '4':
-        kernel = ConstantKernel(1.017, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.4, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 2
-        random_state = 2
-    elif model_name == '5':
-        kernel = ConstantKernel(1.016, constant_value_bounds=(1e-2, 1e2)) * \
-        RBF(length_scale=1.5, length_scale_bounds=(1e-2, 1e2))
-        n_restarts = 4
-        random_state = 4
-    elif model_name == '6':
-        kernel = ConstantKernel(1.015, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=1.6, length_scale_bounds=(1e-1, 1e1))
-        n_restarts = 3
-        random_state = 3
-    elif model_name == '7':
-        kernel = ConstantKernel(1.014, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=1.7, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 2
-        random_state = 2
-    elif model_name == '8':
-        kernel = ConstantKernel(1.013, constant_value_bounds=(1e-2, 1e2)) * \
-                RBF(length_scale=1.8, length_scale_bounds=(1e-2, 1e2))
-        n_restarts = 4
-        random_state = 4
-    elif model_name == '9':
-        kernel = ConstantKernel(1.012, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=1.9, length_scale_bounds=(1e-1, 1e1))
-        n_restarts = 3
-        random_state = 3
-    elif model_name == '10':
-        kernel = ConstantKernel(1.011, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=2.0, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 2
-        random_state = 2
-    elif model_name == '11':
-        kernel = ConstantKernel(1.01, constant_value_bounds=(1e-2, 1e2)) * \
-        RBF(length_scale=2.1, length_scale_bounds=(1e-2, 1e2))
-        n_restarts = 4
-        random_state = 4
-    elif model_name == '12':
-        kernel = ConstantKernel(1.009, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.2, length_scale_bounds=(1e-1, 1e1))
-        n_restarts = 3
-        random_state = 3
-    elif model_name == '13':
-        kernel = ConstantKernel(1.008, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=2.3, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 2
-        random_state = 2
-    elif model_name == '14':
-        kernel = ConstantKernel(1.007, constant_value_bounds=(1e-2, 1e2)) * \
-        RBF(length_scale=2.4, length_scale_bounds=(1e-2, 1e2))
-        n_restarts = 4
-        random_state = 4
-    elif model_name == '15':
-        kernel = ConstantKernel(1.006, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.5, length_scale_bounds=(1e-1, 1e1))
-        n_restarts = 3
-        random_state = 3
-    elif model_name == '16':
-        kernel = ConstantKernel(1.005, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=2.6, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 2
-        random_state = 2
-    elif model_name == '17':
-        kernel = ConstantKernel(1.004, constant_value_bounds=(1e-2, 1e2)) * \
-                RBF(length_scale=2.7, length_scale_bounds=(1e-2, 1e2))
-        n_restarts = 4
-        random_state = 4
-    elif model_name == '18':
-        kernel = ConstantKernel(1.003, constant_value_bounds=(1e-1, 1e1)) * \
-                RBF(length_scale=2.8, length_scale_bounds=(1e-1, 1e1))
-        n_restarts = 3
-        random_state = 3
-    elif model_name == '19':
-        kernel = ConstantKernel(1.002, constant_value_bounds=(1e-3, 1e3)) * \
-                RBF(length_scale=2.9, length_scale_bounds=(1e-3, 1e3))
-        n_restarts = 2
-        random_state = 2
-    else:
-        kernel = ConstantKernel(1.001) * RBF(length_scale=1.0)
-        n_restarts = 1
-        random_state = 1
 
-    # Lock the kernel parameters initially
-    #kernel = kernel.clone_with_theta(kernel.theta)
-    
-    gpc = GaussianProcessClassifier(
-        kernel=kernel,
-        optimizer='fmin_l_bfgs_b',
-        n_restarts_optimizer=n_restarts,
-        random_state=random_state,
-        copy_X_train=False  # Prevent data copying that might affect optimization
-    ).fit(X_train_clean, y_train_clean)
-
-    # Get optimized parameters
-    optimized_kernel = gpc.kernel_
-    theta_1 = optimized_kernel.k2.length_scale
-    theta_0 = np.sqrt(optimized_kernel.k1.constant_value)
-
-    print(f'\n=== {model_name} ===')
-    print(f'Initial kernel: {kernel}')
-    print(f'Optimized kernel: {optimized_kernel}')
-    print(f'Theta: [{theta_0:.3f}, {theta_1:.3f}]')
-    print(f'NLL: {-gpc.log_marginal_likelihood_value_:.3f}')
-
-    return theta_1, theta_0, gpc, X_train_clean, y_train_clean
-
-def find_thetas_old_2(a):
-
-    target_size = a[0].data_filled[:, 0].size  # or define manually
-    X_train = []
-    y_train = []
-
-    #makes clean data for any size array: (clean data is the data without the first instance will all zeros in it)
-    for i in range(len(a)):
-        data = a[i].data_filled[:, 0]
-        if a[i].label is not None:
-            if data.size < target_size:
-                # pad with NaNs or zeros
-                padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=np.nan)
-            else:
-                # trim to target size
-                padded = data[:target_size]
-            X_train.append(padded)
-            y_train.append(a[i].label)
-
-    X_train = np.array(X_train)
-    y_train = np.array(y_train)
-
-    X_train_clean = []
-    y_train_clean = []
-
-    for i in range(len(y_train)):
-        if y_train[i] is not None:
-            X_train_clean.append(X_train[i])
-            y_train_clean.append(y_train[i])
-
-    X_train_clean = np.array(X_train_clean)
-    y_train_clean = np.array(y_train_clean)
-
-    # gpc_corner is the instnace of the classifier which we used with the weighting comands ###########Change These#############
-    kernel = 1.0 * RBF(1.0)
-    gpc_corner = GaussianProcessClassifier(kernel=kernel,random_state=0).fit(X_train_clean, y_train_clean)
-
-    ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
-    print("Score",gpc_corner.score(X_train_clean, y_train_clean))
-    print("classes",gpc_corner.classes_)
-
-    # Obtain optimized kernel parameters
-    sklearn_theta_1 = gpc_corner.kernel_.k2.get_params()['length_scale']
-    sklearn_theta_0 = np.sqrt(gpc_corner.kernel_.k1.get_params()['constant_value'])
-
-    print(f'Optimized theta = [{sklearn_theta_0:.3f}, {sklearn_theta_1:.3f}], negative log likelihood = {-gpc_corner.log_marginal_likelihood_value_:.3f}')
-
-    return sklearn_theta_1,sklearn_theta_0, gpc_corner, X_train_clean, y_train_clean
 
 
 def cross_validate(original_gpc, X_train_clean, y_train_clean):
@@ -1051,52 +796,6 @@ def cross_validate_acc_and_rep(original_gpc, X_train_clean, y_train_clean):
 
     return scores.mean(), rep
 
-def cross_validate_old(original_gpc, X_train_clean, y_train_clean):
-    # Create a true independent copy
-    model = clone(original_gpc)
-    model.set_params(**original_gpc.get_params())  # Preserve all parameters
-    
-    # Verify kernel preservation
-    # print(f"\nOriginal kernel: {original_gpc.kernel}")
-    # print(f"Cloned kernel: {model.kernel}")
-    
-    # Fit with verbose output
-    model.fit(X_train_clean, y_train_clean)
-    #print(f"Optimized kernel: {model.kernel_}")
-    
-    # Cross-validation
-    scores = cross_val_score(model, X_train_clean, y_train_clean, cv=5)
-    print(f"Mean accuracy: {scores.mean():.4f}")
-    print(f"Repeatability: {1 - scores.std()/scores.mean():.4f}")
-    
-    return scores.mean()
-
-def cross_validate_danae(gpc_corner,X_train_clean,y_train_clean):
-
-    ### i think gpc_corner is an instance of the kernal which we train and the thetas are auto-populated  usinging the data from GaussianProcessClassifier::
-    #print("Score",gpc_corner.score(X_train_clean, y_train_clean))
-    #print("classes",gpc_corner.classes_)
-
-    ### Evaluate the model using cross-validation
-    gpc_corner.fit(X_train_clean, y_train_clean)
-    scores = cross_val_score(gpc_corner, X_train_clean, y_train_clean, cv=5)
-    #print("Cross-validated accuracy scores:", scores)
-    print("Mean accuracy:", scores.mean())
-
-    #print("Standard deviation of accuracy:", scores.std())
-    #print("Mean accuracy (std):", scores.mean(), "+/-", scores.std())
-    print("Repeatability (1 - std/mean):", 1 - scores.std()/scores.mean()) ## basicly saying where less of the data is likely to be!!!!
-
-    
-    # repeatability = evaluate_repeatability(scores)
-    # print("Repeatability (1 - std/mean):", repeatability)
-
-    # Generate a classification report based on the trained model
-    print("Classification Report:")
-    y_pred = gpc_corner.predict(X_train_clean)  # Predictions using the trained model
-    print(classification_report(y_train_clean, y_pred))  # Detailed classification report
-
-    return scores.mean()
 
 def combine_scans(*scans):
     """
@@ -1238,9 +937,6 @@ c_wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 100,0.1,1)
 c_object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 100,50,1)
 c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
 
-c_object_vhigh_noise = format_scan_corner("logs/object_x10R.json", 100,50,1)
-c_wall_vhigh_noise = format_scan_corner("logs/wall_x10R.json", 100,0.1,1)
-c_corner_vhigh_noise = format_scan_corner("logs/corner_x10R.json", 0.00001,0.1,1)
 
 ##object training###
 o_corner_0_noise = format_scan_object("logs/corner_perfect_lidar.json", 10,0.00001,1)
@@ -1302,14 +998,20 @@ print("-----------------------testcombine_scan----------------")
 # wall_0 = combine_scans(w_corner_0_noise,w_wall_0_noise,w_object_0_noise)
 # w_corner_theta1_0, w_corner_theta2_0, w_gpc_0, w_DataX_0,w_DataY_0 = find_thetas(wall_0,model_name='3')
 
+corner_0 = combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0, c_DataY_0, c_scaler_0 = find_thetas(corner_0, model_name='1')
 
-corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
-c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
+corner_0 = combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0, c_DataY_0, c_scaler_0 = find_thetas(corner_0, model_name='1')
+
+corner_0 = combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise)
+c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0, c_DataY_0, c_scaler_0 = find_thetas(corner_0, model_name='1')
 
 
-c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
-c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
-c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
+
+c_low_noise_DataX, c_low_noise_DataY, _ = clean_data(combine_scans(c_corner_low_noise, c_wall_low_noise, c_object_low_noise))
+c_high_noise_DataX, c_high_noise_DataY, _ = clean_data(combine_scans(c_corner_high_noise, c_wall_high_noise, c_object_high_noise))
+
 
 cc_ranged_far = combine_scans(c_ranged_far,corner_0)
 cc_ranged_near = combine_scans(c_ranged_near,corner_0)
@@ -1317,95 +1019,39 @@ cc_rotaion = combine_scans(c_rotaion,corner_0)
 cc_side_left = combine_scans(c_side_left,corner_0)
 cc_side_right = combine_scans(c_side_right,corner_0)
 
-c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0  = clean_data(combine_scans(c_ranged_far,c_wall_0_noise,c_object_0_noise))
-c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0  = clean_data(combine_scans(c_ranged_near,c_wall_0_noise,c_object_0_noise))
-c_rotaion_only_DataX_0,c_rotaion_only_DataY_0   = clean_data(combine_scans(c_rotaion,c_wall_0_noise,c_object_0_noise))
-c_side_left_only_DataX_0,c_side_left_only_DataY_0  = clean_data(combine_scans(c_side_left,c_wall_0_noise,c_object_0_noise))
-c_side_right_only_DataX_0,c_side_right_only_DataY_0  = clean_data(combine_scans(c_side_right,c_wall_0_noise,c_object_0_noise))
+c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0, _ = clean_data(combine_scans(c_ranged_far, c_wall_0_noise, c_object_0_noise))
+c_ranged_near_only_DataX_0, c_ranged_near_only_DataY_0, _ = clean_data(combine_scans(c_ranged_near, c_wall_0_noise, c_object_0_noise))
+c_rotaion_only_DataX_0, c_rotaion_only_DataY_0, _ = clean_data(combine_scans(c_rotaion, c_wall_0_noise, c_object_0_noise))
+c_side_left_only_DataX_0, c_side_left_only_DataY_0, _ = clean_data(combine_scans(c_side_left, c_wall_0_noise, c_object_0_noise))
+c_side_right_only_DataX_0, c_side_right_only_DataY_0, _ = clean_data(combine_scans(c_side_right, c_wall_0_noise, c_object_0_noise))
+
 
 ##centre test data gpc found#####
-__,__, c_ranged_far_gpc_0, c_ranged_far_DataX_0,c_ranged_far_DataY_0 = find_thetas(cc_ranged_far,model_name='4')
-__,__, c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0 = find_thetas(cc_ranged_near,model_name='5')
-__,__, c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0 = find_thetas(cc_rotaion,model_name='6')
-__,__, c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0 = find_thetas(cc_side_left,model_name='7')
-__,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thetas(cc_side_right,model_name='8')
+__,__, c_ranged_far_gpc_0, c_ranged_far_DataX_0, c_ranged_far_DataY_0, _ = find_thetas(cc_ranged_far, model_name='4')
+__,__, c_ranged_near_gpc_0, c_ranged_near_DataX_0, c_ranged_near_DataY_0, _ = find_thetas(cc_ranged_near, model_name='5')
+__,__, c_rotaion_gpc_0, c_rotaion_DataX_0, c_rotaion_DataY_0, _ = find_thetas(cc_rotaion, model_name='6')
+__,__, c_side_left_gpc_0, c_side_left_DataX_0, c_side_left_DataY_0, _ = find_thetas(cc_side_left, model_name='7')
+__,__, c_side_right_gpc_0, c_side_right_DataX_0, c_side_right_DataY_0, _ = find_thetas(cc_side_right, model_name='8')
+
 
 
 ##all together
-__,__, All_gpc_0, All_DataX_0,All_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_ranged_far,c_ranged_near,c_rotaion,c_side_left,c_side_right),model_name='9')
-a,b, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='10', wl= 5 , wr= 5)
-c,d, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='11', wl= 0.1 , wr= 1)
+__, __, All_gpc_0, All_DataX_0, All_DataY_0, _ = find_thetas(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_ranged_far, c_ranged_near, c_rotaion, c_side_left, c_side_right),
+    model_name='9'
+)
+
+a, b, best_gpc_0, best_DataX_0, best_DataY_0, _ = find_thetas(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    model_name='10', wl=5, wr=5
+)
+
+c, d, best_gpc_0, best_DataX_0, best_DataY_0, _ = find_thetas(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    model_name='11', wl=0.1, wr=1
+)
 
 
-def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
-    return theta_1, theta_0, gpc, X_train, y_train, score, rep  # Add score to returns
-
-
-
-##############old weightings##########
- __,__,__,__,__,c_ac_0,c_rep_0=find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_DataX_0,
-                            c_DataY_0,
-                            wl=1,
-                            wr=1)
-
-
- __,__,__,__,__,c_ac_low,c_rep_low =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_low_noise_DataX,
-                            c_low_noise_DataY,
-                            wl=1,
-                            wr=1)
-
- __,__,__,__,__,c_ac_high,c_rep_high =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_high_noise_DataX,
-                            c_high_noise_DataY,
-                            wl=1,
-                            wr=1)
- __,__,__,__,__,c_ac_vhigh,c_rep_vhigh =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_vhigh_noise_DataX,
-                            c_vhigh_noise_DataY,
-                            wl=1,
-                            wr=1)
-
-##############test new weightings and other##########
-
- __,__,__,__,__,c_ac_0,c_rep_0=find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_DataX_0,
-                            c_DataY_0,
-                            wl=1.85,
-                            wr=1.7)
-
-
- __,__,__,__,__,c_ac_low,c_rep_low =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_low_noise_DataX,
-                            c_low_noise_DataY,
-                            wl=1.85,
-                            wr=1.7)
-
- __,__,__,__,__,c_ac_high,c_rep_high =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_high_noise_DataX,
-                            c_high_noise_DataY,
-                            wl=1.85,
-                            wr=1.7)
-
- __,__,__,__,__,c_ac_vhigh,c_rep_vhigh =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_vhigh_noise_DataX,
-                            c_vhigh_noise_DataY,
-                            wl=1.85,
-                            wr=1.7)
-
-
-# print("----------------validate vs themselves---------------")
-# print("----------c_ranged_far_gpc_0 vs c_DataX_0")
-# cross_validate(c_ranged_far_gpc_0, c_DataX_0,c_DataY_0)
-# print("----------c_ranged_near_gpc_0 vs c_DataX_0")
-# cross_validate(c_ranged_near_gpc_0, c_DataX_0,c_DataY_0)
-# print("----------c_rotaion_gpc_0 vs c_DataX_0")
-# cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
-# print("----------c_side_left_gpc_0 vs c_DataX_0")
-# cross_validate(c_side_left_gpc_0, c_DataX_0,c_DataY_0)
-# print("----------c_side_right_gpc_0 vs c_DataX_0")
-# cross_validate(c_side_right_gpc_0, c_DataX_0,c_DataY_0)
 
 print("---------------------c_gpc_0----------------------")
 print("c_gpc_0 vs c_DataX_0")
@@ -1466,288 +1112,126 @@ cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
 
 
 # Define ranges for wl and wr
-wl = 1.85  # 0.1 to 0.9 in steps of 0.1
-wr_values = np.arange(0.1,3.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
+wl_values = np.arange(0.1, 5.0, 0.25)  # 0.1 to 0.9 in steps of 0.1
+wr_values = np.arange(0.1, 5.0, 0.25)   # 1.0 to 4.5 in steps of 0.5
 
 # Initialize a grid to store scores
-scores_0 = np.zeros((len(wr_values)))
-scores_low = np.zeros((len(wr_values)))
-scores_high = np.zeros((len(wr_values)))
-reps_0 = np.zeros((len(wr_values)))
-reps_low = np.zeros((len(wr_values)))
-reps_high = np.zeros((len(wr_values)))
+scores = np.zeros((len(wl_values), len(wr_values)))
+reps = np.zeros((len(wl_values), len(wr_values)))
+wl_values_store = np.zeros((len(wl_values)))
 wr_values_store = np.zeros((len(wr_values)))
 
 
-# #def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
+#def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
 
-# # Iterate over all combinations
-# for j, wr in enumerate(wr_values):
-#     _, _, _, _,__, score_0, rep_0 = find_thetas_cross_validate(
-#         combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-#         c_DataX_0,
-#         c_DataY_0,
-#         wl=wl,
-#         wr=wr
-#     )
-#     _, _, _, _,__, score_low, rep_low = find_thetas_cross_validate(
-#         combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-#         c_low_noise_DataX,
-#         c_low_noise_DataY,
-#         wl=wl,
-#         wr=wr
-#     )
-#     _, _, _, _,__, score_high, rep_high = find_thetas_cross_validate(
-#         combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-#         c_high_noise_DataX,
-#         c_high_noise_DataY,
-#         wl=wl,
-#         wr=wr
-#     )
+# Iterate over all combinations
+for i, wl in enumerate(wl_values):
+    for j, wr in enumerate(wr_values):
+        _, _, _, _,__, score, rep = find_thetas_cross_validate(
+            combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+            c_DataX_0,
+            c_DataY_0,
+            wl=wl,
+            wr=wr
+        )
+        scores[i, j] = score  # Store the score
+        reps[i,j] = rep
+        wl_values_store[i] = wl
+        wr_values_store[j] = wr
 
-#     scores_0[j] = score_0
-#     reps_0[j] = rep_0
-#     scores_low[j] = score_low
-#     reps_low[j] = rep_low
-#     scores_high[j] = score_high
-#     reps_high[j] = rep_high    # Store the score
+print(wl_values_store)
+print(wr_values_store)
+print(scores)
 
-#     wr_values_store[j] = wr
+np.savez('optimization_results.npz', wl_values=wl_values, wr_values=wr_values, scores=scores)
 
+# Create a grid for plotting
+Wr, Wl = np.meshgrid(wl_values, wr_values)
 
-# #print(wl_values_store)
-# print(wr_values_store)
+max_idx = np.argmax(scores) # Index of max value in flattened array
+max_idx_rep = np.argmax(reps)
+wl_idx, wr_idx = np.unravel_index(max_idx, scores.shape)
+wl_idx_rep, wr_idx_rep = np.unravel_index(max_idx_rep, reps.shape)  # Convert to 2D indices
 
+best_wl = wl_values[wl_idx]
+best_wr = wr_values[wr_idx]
+best_score = scores[wl_idx, wr_idx]
 
-# max_idx_0 = np.argmax(scores_0)  # Index of max value in flattened array
-# max_idx_low = np.argmax(scores_low)
-# max_idx_high = np.argmax(scores_high)
+best_wl_rep = wl_values[wl_idx_rep]
+best_wr_rep = wr_values[wr_idx_rep]
+best_score_rep = scores[wl_idx_rep, wr_idx_rep]
 
-# max_0 = scores_0[max_idx_0]
-# max_low = scores_low[max_idx_low]
-# max_high = scores_high[max_idx_high]
-# print("max_0",max_0)
-# print("max_low",max_low)
-# print("max_high",max_high)
+print(f"Optimal weights: wl = {best_wl:.2f}, wr = {best_wr:.2f}")
+print(f"Best score: {best_score:.4f}")
 
-# print("scores_0")
-# print(scores_0)
-# print("scores_low")
-# print(scores_low)
-# print("scores_high")
-# print(scores_high)
-
-
-
-# plt.axvline(x=wr_values_store[np.argmax(scores_0)], color='b', linestyle='-', alpha=0.3)
-# plt.axvline(x=wr_values_store[np.argmax(scores_low)], color='g', linestyle='--', alpha=0.3)
-# plt.axvline(x=wr_values_store[np.argmax(scores_high)], color='r', linestyle=':', alpha=0.3)
-
-# plt.figure(figsize=(10, 6))
-# plt.plot(wr_values_store, scores_0, 'b-', label='No Noise', linewidth=2)
-# plt.plot(wr_values_store, scores_low, 'g--', label='Low Noise', linewidth=2)
-# plt.plot(wr_values_store, scores_high, 'r:', label='High Noise', linewidth=2)
-
-# plt.xlabel('RBF Length Scale (wl)', fontsize=12)
-# plt.ylabel('Accuracy (Score)', fontsize=12)
-# plt.title('Impact of Length Scale (wl) on Accuracy at Different Noise Levels', fontsize=14)
-# plt.legend(fontsize=10)
-# plt.grid(True, linestyle='--', alpha=0.6)
-# plt.show()
-
-
-# plt.figure(figsize=(10, 6))
-# plt.plot(wr_values_store, reps_0, 'b-', label='No Noise', linewidth=2)
-# plt.plot(wr_values_store, reps_low, 'g--', label='Low Noise', linewidth=2)
-# plt.plot(wr_values_store, reps_high, 'r:', label='High Noise', linewidth=2)
-
-# plt.xlabel('RBF Length Scale (wl)', fontsize=12)
-# plt.ylabel('Repeatability', fontsize=12)
-# plt.title('Impact of Length Scale (wl) on Repeatability at Different Noise Levels', fontsize=14)
-# plt.legend(fontsize=10)
-# plt.grid(True, linestyle='--', alpha=0.6)
-# plt.show()
-
-
-
-
-
+print(f"Optimal weights: wl = {best_wl_rep:.2f}, wr = {best_wr_rep:.2f}")
+print(f"Best score: {best_score_rep:.4f}")
 
 # Create meshgrid for 3D plotting
-#######3D plot########
-# # Set up the figure
-# fig = plt.figure(figsize=(12, 8))
-# ax = fig.add_subplot(111, projection='3d')
 
-# # Plot the surface (grey)
-# surf = ax.plot_surface(
-#     Wl, Wr, scores.T,  # Transpose scores to match meshgrid
-#     cmap='Blues',      # Grey colormap
-#     alpha=0.7,         # Slightly transparent
-#     edgecolor='none'
-# )
+# Set up the figure
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
 
-# # Highlight the optimal point (red)
-# ax.scatter(
-#     best_wl, best_wr, best_score,
-#     color='red',
-#     s=100,             # Marker size
-#     label=f'Optimal: wl={best_wl:.2f}, wr={best_wr:.2f}\nScore={best_score:.3f}'
-# )
+# Plot the surface (grey)
+surf = ax.plot_surface(
+    Wl, Wr, scores.T,  # Transpose scores to match meshgrid
+    cmap='Blues',      # Grey colormap
+    alpha=0.7,         # Slightly transparent
+    edgecolor='none'
+)
 
-# # Customize the plot
-# ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
-# ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
-# ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
-# ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
-# ax.legend(loc='upper right')
+# Highlight the optimal point (red)
+ax.scatter(
+    best_wl, best_wr, best_score,
+    color='red',
+    s=100,             # Marker size
+    label=f'Optimal: wl={best_wl:.2f}, wr={best_wr:.2f}\nScore={best_score:.3f}'
+)
 
-# # Add a colorbar for the surface
-# fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
+# Customize the plot
+ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
+ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
+ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
+ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
+ax.legend(loc='upper right')
 
-# plt.tight_layout()
-# plt.show()
+# Add a colorbar for the surface
+fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
 
-
-# ##wall test data gpc found#####
-# __,__, w_ranged_far_gpc_0, w_ranged_far_DataX_0,w_ranged_far_DataY_0 = find_thetas(w_ranged_far,model_name='9')
-# __,__, w_ranged_near_gpc_0, w_ranged_near_DataX_0,w_ranged_near_DataY_0 = find_thetas(w_ranged_near,model_name='10')
-# __,__, w_rotaion_gpc_0, w_rotaion_DataX_0,w_rotaion_DataY_0 = find_thetas(w_rotaion,model_name='11')
-# __,__, w_side_left_gpc_0, w_side_left_DataX_0,w_side_left_DataY_0 = find_thetas(w_side_left,model_name='12')
-# __,__, w_side_right_gpc_0, w_side_right_DataX_0,w_side_right_DataY_0 = find_thetas(w_side_right,model_name='13')
+plt.tight_layout()
+plt.show()
 
 
-# ##object test data gpc found#####
-# __,__, o_ranged_far_gpc_0, o_ranged_far_DataX_0,o_ranged_far_DataY_0 = find_thetas(o_ranged_far,model_name='15')
-# __,__, o_ranged_near_gpc_0, o_ranged_near_DataX_0,o_ranged_near_DataY_0 = find_thetas(o_ranged_near,model_name='16')
-# __,__, o_rotaion_gpc_0, o_rotaion_DataX_0,o_rotaion_DataY_0 = find_thetas(o_rotaion,model_name='17')
-# __,__, o_side_left_gpc_0, o_side_left_DataX_0,o_side_left_DataY_0 = find_thetas(o_side_left,model_name='18')
-# __,__, o_side_right_gpc_0, o_side_right_DataX_0,o_side_right_DataY_0 = find_thetas(o_side_right,model_name='14')
+# Set up the figure
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
 
+# Plot the surface (grey)
+surf = ax.plot_surface(
+    Wl, Wr, reps.T,  # Transpose scores to match meshgrid
+    cmap='Blues',      # Grey colormap
+    alpha=0.7,         # Slightly transparent
+    edgecolor='none'
+)
 
+# Highlight the optimal point (red)
+ax.scatter(
+    best_wl_rep, best_wr_rep, best_score_rep,
+    color='red',
+    s=100,             # Marker size
+    label=f'Optimal: wl={best_wl_rep:.2f}, wr={best_wr_rep:.2f}\nScore={best_score_rep:.3f}'
+)
 
+# Customize the plot
+ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
+ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
+ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
+ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
+ax.legend(loc='upper right')
 
+# Add a colorbar for the surface
+fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
 
-
-# print("corner_0_R_H")
-# for i in range(len(corner_0_R_H)):
-#       print('Entry:', i, ', Class', corner_0_R_H[i].label)
-
-# print("corner_0_R")
-# for i in range(len(corner_0_R)):
-#       print('Entry:', i, ', Class', corner_0_R[i].label)
-
-# print("corner_0")
-# for i in range(len(corner_0)):
-#       print('Entry:', i, ', Class', corner_0[i].label)
-
-# print("corner_H")
-# for i in range(len(corner_H)):
-#       print('Entry:', i, ', Class', corner_H[i].label)
-
-#print("object_theta1:",object_theta1, "object_theta2:",object_theta2)
-# # print("corner_theta1_0_R_H:",corner_theta1_0_R_H, "corner_theta2_0_R_H:",corner_theta2_0_R_H)
-# print("corner_theta1_0_R:",corner_theta1_0_R, "corner_theta2_0_R:",corner_theta2_0_R)
-# print("corner_theta1_0:",corner_theta1_0, "corner_theta2_0:",corner_theta2_0)
-# print("corner_theta1_H:",corner_theta1_H, "corner_theta2_H:",corner_theta2_H)
-
-
-
-
-# Verify initial kernel differences
-# print("\n=== Initial Model Kernels ===")
-# print(f"gpc_0_R_H: {gpc_0_R_H.kernel}")
-# print(f"gpc_0_R: {gpc_0_R.kernel}") 
-# print(f"gpc_0: {gpc_0.kernel}")
-# print(f"gpc_H: {gpc_H.kernel}")
-
-# print("\n=== Initial Model Kernels ===")
-# print(f"gpc_0_R_H: {gpc_0_R_H}")
-# print(f"gpc_0_R: {gpc_0_R}") 
-# print(f"gpc_0: {gpc_0}")
-# print(f"gpc_H: {gpc_H}")
-
-# # # Verify data differences
-# # print("\n=== Data Verification ===")
-# # print(f"Data_0_R_H shape: {DataX_0_R_H_.shape}")
-# # print(f"Data_0_R shape: {DataX_0_R.shape}")
-# # print(f"Unique y counts:\nData_0_R_H: {np.unique(DataY_0_R_H_, return_counts=True)}\nData_0_R: {np.unique(DataY_0_R, return_counts=True)}")
-
-
-# # # Verify model differences
-# # print("\n=== Model Differences Verification ===")
-# # models = {
-# #     'gpc_0_R_H': gpc_0_R_H,
-# #     'gpc_0_R': gpc_0_R,
-# #     'gpc_0': gpc_0,
-# #     'gpc_H': gpc_H
-# # }
-
-# # for name, model in models.items():
-# #     print(f"{name} kernel: {model.kernel}")
-# #     print(f"{name} params: {model.get_params()['kernel']}\n")
-
-
-# # for i, model in enumerate([gpc_0_R_H, gpc_0_R, gpc_0, gpc_H]):
-# #     model.kernel.theta = [i+1] * len(model.kernel.theta)  # Force different starting point
-
-# print("-----------------gpc_0_R_H vs Data_0_R_H_---------------")
-# meanacc1 = cross_validate(gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_0_R_H vs Data_0_R---------------")
-# meanacc2 = cross_validate(gpc_0_R_H,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_0_R_H vs Data_0---------------")
-# meanacc3 = cross_validate(gpc_0_R_H,DataX_0,DataY_0)
-
-# print("-----------------gpc_0_R_H vs Data_H---------------")
-# meanacc4 = cross_validate(gpc_0_R_H,DataX_H,DataY_H)
-
-
-
-
-# print("-----------------gpc_0_R vs Data_0_R_H_---------------")
-# meanacc5 = cross_validate(gpc_0_R,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_0_R vs Data_0_R---------------")
-# meanacc6 = cross_validate(gpc_0_R,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_0_R vs Data_0---------------")
-# meanacc7 = cross_validate(gpc_0_R,DataX_0,DataY_0)
-
-# print("-----------------gpc_0_R vs Data_H---------------")
-# meanacc8 = cross_validate(gpc_0_R,DataX_H,DataY_H)
-
-
-
-
-
-# print("-----------------gpc_0 vs Data_0_R_H_---------------")
-# meanacc9 = cross_validate(gpc_0,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_0 vs Data_0_R---------------")
-# meanacc10 = cross_validate(gpc_0,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_0 vs Data_0---------------")
-# meanacc11 = cross_validate(gpc_0,DataX_0,DataY_0)
-
-# print("-----------------gpc_0 vs Data_H---------------")
-# meanacc12 = cross_validate(gpc_0,DataX_H,DataY_H)
-
-
-
-
-# print("-----------------gpc_H vs Data_0_R_H_---------------")
-# meanacc13 = cross_validate(gpc_H,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_H vs Data_0_R---------------")
-# meanacc14 = cross_validate(gpc_H,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_H vs Data_0---------------")
-# meanacc15 = cross_validate(gpc_H,DataX_0,DataY_0)
-
-# print("-----------------gpc_H vs Data_H---------------")
-# meanacc16 = cross_validate(gpc_H,DataX_H,DataY_H)
-
-# # print(f"Data shapes - 0_R_H: {DataX_0_R_H_.shape}, 0_R: {DataX_0_R.shape}")
-# # print(f"Data equality check: {np.array_equal(DataX_0_R_H_, DataX_0_R)}")
+plt.tight_layout()
+plt.show()
