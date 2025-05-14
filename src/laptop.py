@@ -78,8 +78,8 @@ class LaptopPilot:
         self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
 
-        self.lidar_rangenoise = 0.000025
-        self.lidar_anglenoise = 0.0003
+        self.lidar_rangenoise = 0*0.000025
+        self.lidar_anglenoise = 0*0.0003
         
         self.initialise_control = True # False once control gains is initialised 
 
