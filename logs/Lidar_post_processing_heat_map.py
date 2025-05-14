@@ -707,7 +707,7 @@ def clean_data(a):
     return X_train_clean, y_train_clean
 
 
-def find_thetas(scans, model_name=None, wl = 1, wr = 1):
+def find_thetas(scans, model_name=None, wl = 1.85, wr = 1.7):
     """
     Trains a GaussianProcessClassifier with model-specific hyperparameters.
     
@@ -1238,6 +1238,9 @@ c_wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 100,0.1,1)
 c_object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 100,50,1)
 c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
 
+c_object_vhigh_noise = format_scan_corner("logs/object_x10R.json", 100,50,1)
+c_wall_vhigh_noise = format_scan_corner("logs/wall_x10R.json", 100,0.1,1)
+c_corner_vhigh_noise = format_scan_corner("logs/corner_x10R.json", 0.00001,0.1,1)
 
 ##object training###
 o_corner_0_noise = format_scan_object("logs/corner_perfect_lidar.json", 10,0.00001,1)
@@ -1303,14 +1306,10 @@ print("-----------------------testcombine_scan----------------")
 corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
 c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
 
-corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
-c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
-
-corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
-c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
 
 c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
 c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
+c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
 
 cc_ranged_far = combine_scans(c_ranged_far,corner_0)
 cc_ranged_near = combine_scans(c_ranged_near,corner_0)
@@ -1336,6 +1335,65 @@ __,__, c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0 = find_thet
 __,__, All_gpc_0, All_DataX_0,All_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_ranged_far,c_ranged_near,c_rotaion,c_side_left,c_side_right),model_name='9')
 a,b, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='10', wl= 5 , wr= 5)
 c,d, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='11', wl= 0.1 , wr= 1)
+
+
+def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
+    return theta_1, theta_0, gpc, X_train, y_train, score, rep  # Add score to returns
+
+
+
+##############old weightings##########
+ __,__,__,__,__,c_ac_0,c_rep_0=find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+                            c_DataX_0,
+                            c_DataY_0,
+                            wl=1,
+                            wr=1)
+
+
+ __,__,__,__,__,c_ac_low,c_rep_low =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+                            c_low_noise_DataX,
+                            c_low_noise_DataY,
+                            wl=1,
+                            wr=1)
+
+ __,__,__,__,__,c_ac_high,c_rep_high =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+                            c_high_noise_DataX,
+                            c_high_noise_DataY,
+                            wl=1,
+                            wr=1)
+ __,__,__,__,__,c_ac_vhigh,c_rep_vhigh =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+                            c_vhigh_noise_DataX,
+                            c_vhigh_noise_DataY,
+                            wl=1,
+                            wr=1)
+
+##############test new weightings and other##########
+
+ __,__,__,__,__,c_ac_0,c_rep_0=find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
+                            c_DataX_0,
+                            c_DataY_0,
+                            wl=1.85,
+                            wr=1.7)
+
+
+ __,__,__,__,__,c_ac_low,c_rep_low =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
+                            c_low_noise_DataX,
+                            c_low_noise_DataY,
+                            wl=1.85,
+                            wr=1.7)
+
+ __,__,__,__,__,c_ac_high,c_rep_high =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
+                            c_high_noise_DataX,
+                            c_high_noise_DataY,
+                            wl=1.85,
+                            wr=1.7)
+
+ __,__,__,__,__,c_ac_vhigh,c_rep_vhigh =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
+                            c_vhigh_noise_DataX,
+                            c_vhigh_noise_DataY,
+                            wl=1.85,
+                            wr=1.7)
+
 
 # print("----------------validate vs themselves---------------")
 # print("----------c_ranged_far_gpc_0 vs c_DataX_0")
@@ -1421,94 +1479,94 @@ reps_high = np.zeros((len(wr_values)))
 wr_values_store = np.zeros((len(wr_values)))
 
 
-#def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
+# #def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
 
-# Iterate over all combinations
-for j, wr in enumerate(wr_values):
-    _, _, _, _,__, score_0, rep_0 = find_thetas_cross_validate(
-        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-        c_DataX_0,
-        c_DataY_0,
-        wl=wl,
-        wr=wr
-    )
-    _, _, _, _,__, score_low, rep_low = find_thetas_cross_validate(
-        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-        c_low_noise_DataX,
-        c_low_noise_DataY,
-        wl=wl,
-        wr=wr
-    )
-    _, _, _, _,__, score_high, rep_high = find_thetas_cross_validate(
-        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-        c_high_noise_DataX,
-        c_high_noise_DataY,
-        wl=wl,
-        wr=wr
-    )
+# # Iterate over all combinations
+# for j, wr in enumerate(wr_values):
+#     _, _, _, _,__, score_0, rep_0 = find_thetas_cross_validate(
+#         combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+#         c_DataX_0,
+#         c_DataY_0,
+#         wl=wl,
+#         wr=wr
+#     )
+#     _, _, _, _,__, score_low, rep_low = find_thetas_cross_validate(
+#         combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+#         c_low_noise_DataX,
+#         c_low_noise_DataY,
+#         wl=wl,
+#         wr=wr
+#     )
+#     _, _, _, _,__, score_high, rep_high = find_thetas_cross_validate(
+#         combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+#         c_high_noise_DataX,
+#         c_high_noise_DataY,
+#         wl=wl,
+#         wr=wr
+#     )
 
-    scores_0[j] = score_0
-    reps_0[j] = rep_0
-    scores_low[j] = score_low
-    reps_low[j] = rep_low
-    scores_high[j] = score_high
-    reps_high[j] = rep_high    # Store the score
+#     scores_0[j] = score_0
+#     reps_0[j] = rep_0
+#     scores_low[j] = score_low
+#     reps_low[j] = rep_low
+#     scores_high[j] = score_high
+#     reps_high[j] = rep_high    # Store the score
 
-    wr_values_store[j] = wr
-
-
-#print(wl_values_store)
-print(wr_values_store)
+#     wr_values_store[j] = wr
 
 
-max_idx_0 = np.argmax(scores_0)  # Index of max value in flattened array
-max_idx_low = np.argmax(scores_low)
-max_idx_high = np.argmax(scores_high)
-
-max_0 = scores_0[max_idx_0]
-max_low = scores_low[max_idx_low]
-max_high = scores_high[max_idx_high]
-print("max_0",max_0)
-print("max_low",max_low)
-print("max_high",max_high)
-
-print("scores_0")
-print(scores_0)
-print("scores_low")
-print(scores_low)
-print("scores_high")
-print(scores_high)
+# #print(wl_values_store)
+# print(wr_values_store)
 
 
+# max_idx_0 = np.argmax(scores_0)  # Index of max value in flattened array
+# max_idx_low = np.argmax(scores_low)
+# max_idx_high = np.argmax(scores_high)
 
-plt.axvline(x=wr_values_store[np.argmax(scores_0)], color='b', linestyle='-', alpha=0.3)
-plt.axvline(x=wr_values_store[np.argmax(scores_low)], color='g', linestyle='--', alpha=0.3)
-plt.axvline(x=wr_values_store[np.argmax(scores_high)], color='r', linestyle=':', alpha=0.3)
+# max_0 = scores_0[max_idx_0]
+# max_low = scores_low[max_idx_low]
+# max_high = scores_high[max_idx_high]
+# print("max_0",max_0)
+# print("max_low",max_low)
+# print("max_high",max_high)
 
-plt.figure(figsize=(10, 6))
-plt.plot(wr_values_store, scores_0, 'b-', label='No Noise', linewidth=2)
-plt.plot(wr_values_store, scores_low, 'g--', label='Low Noise', linewidth=2)
-plt.plot(wr_values_store, scores_high, 'r:', label='High Noise', linewidth=2)
-
-plt.xlabel('RBF Length Scale (wl)', fontsize=12)
-plt.ylabel('Accuracy (Score)', fontsize=12)
-plt.title('Impact of Length Scale (wl) on Accuracy at Different Noise Levels', fontsize=14)
-plt.legend(fontsize=10)
-plt.grid(True, linestyle='--', alpha=0.6)
-plt.show()
+# print("scores_0")
+# print(scores_0)
+# print("scores_low")
+# print(scores_low)
+# print("scores_high")
+# print(scores_high)
 
 
-plt.figure(figsize=(10, 6))
-plt.plot(wr_values_store, reps_0, 'b-', label='No Noise', linewidth=2)
-plt.plot(wr_values_store, reps_low, 'g--', label='Low Noise', linewidth=2)
-plt.plot(wr_values_store, reps_high, 'r:', label='High Noise', linewidth=2)
 
-plt.xlabel('RBF Length Scale (wl)', fontsize=12)
-plt.ylabel('Repeatability', fontsize=12)
-plt.title('Impact of Length Scale (wl) on Repeatability at Different Noise Levels', fontsize=14)
-plt.legend(fontsize=10)
-plt.grid(True, linestyle='--', alpha=0.6)
-plt.show()
+# plt.axvline(x=wr_values_store[np.argmax(scores_0)], color='b', linestyle='-', alpha=0.3)
+# plt.axvline(x=wr_values_store[np.argmax(scores_low)], color='g', linestyle='--', alpha=0.3)
+# plt.axvline(x=wr_values_store[np.argmax(scores_high)], color='r', linestyle=':', alpha=0.3)
+
+# plt.figure(figsize=(10, 6))
+# plt.plot(wr_values_store, scores_0, 'b-', label='No Noise', linewidth=2)
+# plt.plot(wr_values_store, scores_low, 'g--', label='Low Noise', linewidth=2)
+# plt.plot(wr_values_store, scores_high, 'r:', label='High Noise', linewidth=2)
+
+# plt.xlabel('RBF Length Scale (wl)', fontsize=12)
+# plt.ylabel('Accuracy (Score)', fontsize=12)
+# plt.title('Impact of Length Scale (wl) on Accuracy at Different Noise Levels', fontsize=14)
+# plt.legend(fontsize=10)
+# plt.grid(True, linestyle='--', alpha=0.6)
+# plt.show()
+
+
+# plt.figure(figsize=(10, 6))
+# plt.plot(wr_values_store, reps_0, 'b-', label='No Noise', linewidth=2)
+# plt.plot(wr_values_store, reps_low, 'g--', label='Low Noise', linewidth=2)
+# plt.plot(wr_values_store, reps_high, 'r:', label='High Noise', linewidth=2)
+
+# plt.xlabel('RBF Length Scale (wl)', fontsize=12)
+# plt.ylabel('Repeatability', fontsize=12)
+# plt.title('Impact of Length Scale (wl) on Repeatability at Different Noise Levels', fontsize=14)
+# plt.legend(fontsize=10)
+# plt.grid(True, linestyle='--', alpha=0.6)
+# plt.show()
 
 
 
