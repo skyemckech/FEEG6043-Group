@@ -814,9 +814,9 @@ def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
     
 
     theta_1,theta_0, gpc, X_train,y_train = find_thetas(scans,model_name='11', wl=wl , wr=wr)
-    score = cross_validate(gpc, X_train, y_train)   # Get a performance metric
+    score, rep = cross_validate_acc_and_rep(gpc, X_train, y_train)   # Get a performance metric
 
-    return theta_1, theta_0, gpc, X_train, y_train, score  # Add score to returns
+    return theta_1, theta_0, gpc, X_train, y_train, score, rep  # Add score to returns
 
 def find_thetas_old_1(a, model_name=None):
     target_size = a[0].data_filled[:, 0].size
@@ -1031,9 +1031,25 @@ def cross_validate(original_gpc, X_train_clean, y_train_clean):
     
     print(f"Mean accuracy: {scores.mean():.4f}")
     print(f"Repeatability: {1 - scores.std()/scores.mean():.4f}")
-    
+    rep = 1 - scores.std()/scores.mean()
+
     return scores.mean()
 
+def cross_validate_acc_and_rep(original_gpc, X_train_clean, y_train_clean):
+    # Clone the trained model and preserve the fitted kernel
+    kernel = original_gpc.kernel_
+    
+    # Build a new GPC with fixed kernel and NO further optimization
+    model = GaussianProcessClassifier(kernel=kernel, optimizer=None)
+    
+    # Cross-validation without fitting again (scikit-learn handles this safely)
+    scores = cross_val_score(model, X_train_clean, y_train_clean, cv=5)
+    
+    print(f"Mean accuracy: {scores.mean():.4f}")
+    print(f"Repeatability: {1 - scores.std()/scores.mean():.4f}")
+    rep = 1 - scores.std()/scores.mean()
+
+    return scores.mean(), rep
 
 def cross_validate_old(original_gpc, X_train_clean, y_train_clean):
     # Create a true independent copy
@@ -1396,7 +1412,12 @@ wl = 1.85  # 0.1 to 0.9 in steps of 0.1
 wr_values = np.arange(0.1,3.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
 
 # Initialize a grid to store scores
-scores = np.zeros((len(wr_values)))
+scores_0 = np.zeros((len(wr_values)))
+scores_low = np.zeros((len(wr_values)))
+scores_high = np.zeros((len(wr_values)))
+reps_0 = np.zeros((len(wr_values)))
+reps_low = np.zeros((len(wr_values)))
+reps_high = np.zeros((len(wr_values)))
 wr_values_store = np.zeros((len(wr_values)))
 
 
@@ -1404,17 +1425,40 @@ wr_values_store = np.zeros((len(wr_values)))
 
 # Iterate over all combinations
 for j, wr in enumerate(wr_values):
-    _, _, _, _,__, score = find_thetas_cross_validate(
+    _, _, _, _,__, score_0, rep_0 = find_thetas_cross_validate(
         combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
         c_DataX_0,
         c_DataY_0,
         wl=wl,
         wr=wr
     )
-    scores[j] = score  # Store the score
+    _, _, _, _,__, score_low, rep_low = find_thetas_cross_validate(
+        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+        c_low_noise_DataX,
+        c_low_noise_DataY,
+        wl=wl,
+        wr=wr
+    )
+    _, _, _, _,__, score_high, rep_high = find_thetas_cross_validate(
+        combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+        c_high_noise_DataX,
+        c_high_noise_DataY,
+        wl=wl,
+        wr=wr
+    )
+
+    scores_0[j] = score_0
+    reps_0[j] = rep_0
+    scores_low[j] = score_low
+    reps_low[j] = rep_low
+    scores_high[j] = score_high
+    reps_high[j] = rep_high    # Store the score
     wr_values_store[j] = wr
 
-print(wl_values_store)
+c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
+c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
+
+#print(wl_values_store)
 print(wr_values_store)
 print(scores)
 
@@ -1426,7 +1470,7 @@ Wr, Wl = np.meshgrid(wl_values, wr_values)
 max_idx = np.argmax(scores)  # Index of max value in flattened array
 wl_idx, wr_idx = np.unravel_index(max_idx, scores.shape)  # Convert to 2D indices
 
-best_wl = wl_values[wl_idx]
+#best_wl = wl_values[wl_idx]
 best_wr = wr_values[wr_idx]
 best_score = scores[wl_idx, wr_idx]
 
@@ -1440,7 +1484,7 @@ plt.imshow(
     cmap='viridis',  # Colormap (try 'plasma', 'inferno', 'cividis')
     origin='lower',  # Place (0,0) at bottom-left
     aspect='auto',   # Adjust aspect ratio
-    extent=[wr_values.min(), wr_values.max(), wl_values.min(), wl_values.max()]  # Axis labels
+    extent=[wr_values.min(), wr_values.max()]  # Axis labels
 )
 
 # Highlight optimal point
