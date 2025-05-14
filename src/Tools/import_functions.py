@@ -313,6 +313,62 @@ def juice_graph(graph):
     initial_flag = True
 
     residual_threshold = 1E-12 #if result changes by <1
+    delta_threshold = 1/10 #if result changes by <1
+    lim_iterations = 20
+
+    n_iterations = 0
+    delta_residual = initial_residual
+    residual = initial_residual
+
+    visualise_flag = False
+    iteration_continue = True 
+    residual_continue = True
+    converge_continue = True
+
+    cpu_start_solver = datetime.now()
+
+    graph_opt = graphslam_backend(graph)
+
+    while iteration_continue and residual_continue and converge_continue:    
+        graph_opt.solve()
+        
+        prev_residual = residual
+        residual = graph_opt.residual
+
+        delta_residual = abs((prev_residual - residual) /prev_residual)
+        n_iterations += 1
+
+        print('**************  Residual = ',residual,' ***************')        
+        residual_continue = (residual > residual_threshold)
+        print('Residual above threshold?',residual_continue)    
+        
+        print('************** Iteration = ',n_iterations,' ***************')
+        iteration_continue = (n_iterations <= lim_iterations)
+        print('Iterations below limit?',iteration_continue)
+        
+        print('********* Delta Residual = ',delta_residual,' ***************')
+        converge_continue = (delta_residual > delta_threshold)
+        print('Residual still changing?',converge_continue)
+        
+        #reconstruct the graph with these nodes
+        graph_opt = graphslam_frontend( graph_opt )   # Task
+        graph_opt.construct_graph(  ) # Task
+        graph_opt = graphslam_backend( graph_opt )    # Task
+        
+
+    cpu_end_solver = datetime.now()
+    delta =  cpu_end_solver - cpu_start_solver       
+    print('********* Final solution took:',(delta.total_seconds()),'s ***************')      
+
+
+    return graphslam_frontend( graph_opt )
+
+def reduce_graph(graph):
+    graph_opt = graph
+    initial_residual = 100 #just needs to be a big number to avoid triggering convergence if the first iteration has large residuals
+    initial_flag = True
+
+    residual_threshold = 1E-12 #if result changes by <1
     delta_threshold = 1/1000 #if result changes by <1
     lim_iterations = 20
 
@@ -372,3 +428,27 @@ def make_not_zero(value):
     if value == 0:
         value = 0.001
     return value
+
+def plot_graph_square(graph, pose_ground_truth):
+    m_e3 = Vector(2)
+    m_e3[0] = 0
+    m_e3[1] = 0
+
+    m_e0 = Vector(2)
+    m_e0[0] = 2
+    m_e0[1] = 0
+
+    m_e1 = Vector(2)
+    m_e1[0] = 2
+    m_e1[1] = 2
+
+    m_e2 = Vector(2)
+    m_e2[0] = 0
+    m_e2[1] = 2
+    map_ground_truth = [m_e0, m_e1, m_e2, m_e3]
+    map_labels = ['m1', 'm2', 'm3', 'm4']
+
+    em = Vector(2)
+    H_em = HomogeneousTransformation(em,0)
+
+    plot_graph(graph, pose_ground_truth, H_em, map_ground_truth, map_labels)

@@ -11,6 +11,8 @@ import numpy as np
 import argparse
 import time
 import openpyxl
+import pickle
+import sys
 
 from datetime import datetime
 from drivers.aruco_udp_driver import ArUcoUDPDriver
@@ -24,6 +26,7 @@ from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 
 from matplotlib import pyplot as plt
 from openpyxl import load_workbook
+
 
 # add more libraries here
 N = 0
@@ -75,7 +78,7 @@ class LaptopPilot:
         wheel_distance = 0.174/2 # m 
         wheel_diameter = 0.07 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
-
+    
         # self.lidar_rangenoise = 0.000025
         # self.lidar_anglenoise = 0.0003
         self.lidar_rangenoise = 0 
@@ -99,6 +102,7 @@ class LaptopPilot:
         self.count = 0
         self.p_ = 0
         self.sigma_ = 0
+        self.pose_groundtruth = []
         
         # classifiers
         self.cornerClassifier = None
@@ -118,7 +122,7 @@ class LaptopPilot:
         self.jacobian = None
         self.covariance = None
         self.uncertainty = None
-
+        self.covariancetracker = []
         #>Communication>#
         #################
     
@@ -380,15 +384,26 @@ class LaptopPilot:
         def get_initial_uncertainty(self):
             # Create process uncertainty matrix
             sigma = Matrix(3,3) 
-            sigma[0,0]=0.1
-            sigma[0,1]=0.01
-            sigma[1,0]=0.01
-            sigma[1,1]=0.1
-            sigma[0,2]=0.01
-            sigma[1,2]=0.01
-            sigma[2,0]=0.01
-            sigma[2,1]=0.01
-            sigma[2,2]=0.1
+            sigma[0,0]=0.0
+            sigma[0,1]=0.0
+            sigma[1,0]=0.0
+            sigma[1,1]=0.0
+            sigma[0,2]=0.0
+            sigma[1,2]=0.0
+            sigma[2,0]=0.0
+            sigma[2,1]=0.0
+            sigma[2,2]=0.0
+
+            # sigma = Matrix(3,3) 
+            # sigma[0,0]=0.1
+            # sigma[0,1]=0.01
+            # sigma[1,0]=0.01
+            # sigma[1,1]=0.1
+            # sigma[0,2]=0.01
+            # sigma[1,2]=0.01
+            # sigma[2,0]=0.01
+            # sigma[2,1]=0.01
+            # sigma[2,2]=0.1
 
             return sigma
 
@@ -396,11 +411,11 @@ class LaptopPilot:
             #Motion model linear noise due to v and w
             sigma_motion=Matrix(3,2)
             sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
-            sigma_motion[0,1]= np.deg2rad(0.1)**2 # impact of w angular velocity on x
-            sigma_motion[1,0]=0.3**2 # impact of v linear velocity on y
-            sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
+            sigma_motion[0,1]= np.deg2rad(1)**2 # impact of w angular velocity on x
+            sigma_motion[1,0]=0.1**2 # impact of v linear velocity on y
+            sigma_motion[1,1]=np.deg2rad(1)**2 # impact of w angular velocity on y
             sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
-            sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(1)**2 # impact of w angular velocity on gamma
 
             return sigma_motion
 
@@ -429,6 +444,10 @@ class LaptopPilot:
             Ql[N,E] = 0
             Ql[E,N] = np.deg2rad(5)**2
             Ql[E,E] = 0
+            # Ql[N,N] = 0
+            # Ql[N,E] = 0
+            # Ql[E,N] = 0
+            # Ql[E,E] = 0
 
             return Ql
 
@@ -479,6 +498,38 @@ class LaptopPilot:
     def reset_previous_state(self):
         self.p_ = self.state
         self.sigma_ = self.covariance
+
+    def save_object(self, object, filename):
+        with open(filename, "wb") as f:
+            pickle.dump(object, f)
+
+    def classify_lidar(self):
+        if self.new_lidar == True:
+                self.new_lidar = False
+                # self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
+                observation = GPC_input_output(self.raw_lidar, None)
+                #Check for corners
+                corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
+                # Remove lidar points with a range below 5cm (for real life lidar)
+                observation.data_filled = observation.data_filled[observation.data[:, 0] > 0.01]
+                print(corner_probability)  
+                # Only check for corners if there are at least 10 points
+                if corner_probability[0][0] > 0.5 and len(observation.data_filled) > 10:  
+                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
+                    print(label)
+                    # Check for corners                
+                    z_lm = Vector(2)
+                    z_lm[0], z_lm[1], loc = find_corner(observation, 0.003)
+                    z_lm_checker = z_lm.shape == (2,1) and np.issubdtype(z_lm.dtype, np.floating) and not np.isnan(z_lm).any()
+                    # If the corner exists and its coordinates are not nan
+                    if loc is not None and z_lm_checker:
+                        # Record landmarks for graphslam
+                        self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
+                        if not np.isnan(self.landmark).any():
+                            print(label, "at", self.landmark)
+                            self.new_landmark = True
+                else:
+                    self.landmark = None
 
     def infinite_loop(self):
         """Main control loop
@@ -545,32 +596,8 @@ class LaptopPilot:
             # Lidar observation 
             ######################################
             #If a new observation is available
-            if self.new_lidar == True:
-                self.new_lidar = False
-                # self.raw_lidar = self.lidar_addnoise(self.raw_lidar)
-                observation = GPC_input_output(self.raw_lidar, None)
-                #Check for corners
-                corner_probability = self.cornerClassifier.classifier.predict_proba([observation.data_filled[:, 0]])
-                # Remove lidar points with a range below 5cm (for real life lidar)
-                observation.data_filled = observation.data_filled[observation.data[:, 0] > 0.01]
-                print(corner_probability)  
-                # Only check for corners if there are at least 10 points
-                if corner_probability[0][0] > 0.6 and len(observation.data_filled) > 10:  
-                    label = (self.cornerClassifier.classifier.classes_[np.argmax(corner_probability)])
-                    print(label)
-                    # Check for corners                
-                    z_lm = Vector(2)
-                    z_lm[0], z_lm[1], loc = find_corner(observation, 0.003)
-                    # If the corner exists and its coordinates are not nan
-                    if loc is not None and not (np.isnan(z_lm).any() or np.isinf(z_lm).any()):
-                        # Record landmarks for graphslam
-                        self.landmark = self.lidar.rangeangle_to_loc(self.state, z_lm)
-                        # self.landmark = self.landmark.flatten()
-                        print(label, "at", self.landmark)
-                        self.new_landmark = True
-                else:
-                    self.landmark = None
-
+            
+            self.classify_lidar()
             #####################################
             # Graphslam frontend
             #####################################
@@ -579,9 +606,10 @@ class LaptopPilot:
             sigma_lidar = self.uncertainty.get_lidar_uncertainty()
 
             # Save previous pose and smegma
-            self.state, self.covariance, _, _ =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
-            dp = self.state - self.p_
+            self.state, self.covariance, dp, _ =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
+            self.covariancetracker.append(self.covariance)
             # Log landmark
+            dp_ = self.state - self.p_
             if self.new_landmark is True:
                 self.new_landmark = False
                 _, _, t_lm, sigma_observe_xy = self.lidar.loc_to_rangeangle(p_eb=self.state,t_em=self.landmark,sigma_observe=sigma_lidar)
@@ -596,11 +624,13 @@ class LaptopPilot:
                     self.stop_to_think = True
                     self.za_warudo_part_one = True
                 else:
-                    self.graph.motion(self.p_, self.sigma_, dp, final=False)
-                self.reset_previous_state()
+                    self.graph.motion(self.p_, self.sigma_, dp_, final=False)
+                    self.pose_groundtruth.append(self.groundtruth_update())
+                    self.reset_previous_state()
             # If no landmarks and moving, business as usual 
             elif u.all() != 0 and self.count > 10:
-                self.graph.motion(self.p_, self.sigma_, dp, final=False)
+                self.graph.motion(self.p_, self.sigma_, dp_, final=False)
+                self.pose_groundtruth.append(self.groundtruth_update())
                 self.reset_previous_state()
                 self.count = 0
             self.count += 1
@@ -609,13 +639,23 @@ class LaptopPilot:
             if self.za_warudo_part_two:
                     self.za_warudo_part_two = False
                     self.robo_stop()
-                    self.graph.motion(self.p_, self.sigma_, dp, final=True)
+                    self.graph.motion(self.p_, self.sigma_, dp_, final=True)
+                    self.reset_previous_state()
+                    self.pose_groundtruth.append(self.groundtruth_update())
                     self.graph.construct_graph() 
+                    init_graph = self.graph
+                    self.save_object(init_graph,filename="init_graph.pkl")
                     self.graph = juice_graph(self.graph)
                     # Update position
                     print("old state", self.state)
                     self.state = self.graph.pose[-1:][0]
                     print("new state", self.state)
+
+                    self.save_object(self.pose_groundtruth, "gaytruth.pkl")
+                    self.save_object(self.graph,filename="final_graph.pkl")
+
+
+
                     
             # update for show_laptop.py            
             self.update_estimated_pose()

@@ -72,14 +72,17 @@ class plot_2dframe:
         xhat[0] = 1
         yhat = Vector(2)
         yhat[1] = 1
+
+        unit_factor = 1
         
         # Plotting 2 unit vectors    
-        plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2, color='k')
-        plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1, color='k')
-        circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05, color='k',label='$e$')
+        plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2*unit_factor, color='k')
+        plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1*unit_factor, color='k')
+        circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05*unit_factor, color='k',label='$e$')
         plt.gca().add_patch(circle)
 
     def _point(self):
+        unit_factor = 0.1
         # plot the point as id1 and the pose it was seen from as id0
         if self.object_type == 'point' or self.object_type == 'map' or self.object_type == 'point_only':              
             c=self.H@self.t
@@ -92,7 +95,7 @@ class plot_2dframe:
                 size = 0.01
                 colour = 'r'            
 
-            circle = plt.Circle((c[1], c[0]), size, color=colour, label=self.id1)
+            circle = plt.Circle((c[1], c[0]), size*unit_factor, color=colour, label=self.id1)
             plt.gca().add_patch(circle)
                 
                 
@@ -104,11 +107,11 @@ class plot_2dframe:
             origin[1] = H_.t[1]
                 
             xhat = Vector(2)
-            xhat[0] = 1
+            xhat[0] = 1*unit_factor
             xhat = v2t(xhat)            
                 
             yhat = Vector(2)
-            yhat[1] = 1        
+            yhat[1] = 1*unit_factor   
             yhat = v2t(yhat)
                 
             xhat=H_.H_R@xhat
@@ -119,14 +122,14 @@ class plot_2dframe:
 
             if self.object_type == 'point' or self.object_type == 'map':            
                 if np.all(H_.H == HomogeneousTransformation().H):
-                    plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2, color='k')
-                    plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1, color='k')
-                    circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05, color='k', label=self.id0)
+                    plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2*unit_factor, color='k')
+                    plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1*unit_factor, color='k')
+                    circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05*unit_factor, color='k', label=self.id0)
 
                 else:
-                    plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2, color='b')
-                    plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1, color='b')
-                    circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05, color='b', label=self.id0)
+                    plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2*unit_factor, color='b')
+                    plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1*unit_factor, color='b')
+                    circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05*unit_factor, color='b', label=self.id0)
                 plt.gca().add_patch(circle)                                
 
                 
@@ -135,7 +138,7 @@ class plot_2dframe:
             H_ = HomogeneousTransformation()
             H_.H=self.H            
                                 
-            plt.plot([H_.t[1],c[1]],[H_.t[0],c[0]], 'r--', linewidth = 1)
+            plt.plot([H_.t[1],c[1]],[H_.t[0],c[0]], 'r--', linewidth = 1*unit_factor)
             
     def _pose(self):
         # plot pose id0 and pose id1 that it moves to
@@ -143,15 +146,15 @@ class plot_2dframe:
 
             if self.object_type == 'pose':                
                 colour = 'b'    
-                unit_factor=1
+                unit_factor=0.1
 
             elif self.object_type == 'pose_gt':                 
                 colour = 'g'            
-                unit_factor=0.5
+                unit_factor=0.05
                 
             elif self.object_type == 'pose_ref':                 
                 colour = 'r'            
-                unit_factor=0.5                
+                unit_factor=0.05                
                 
 
             H0_ = HomogeneousTransformation()
@@ -177,7 +180,7 @@ class plot_2dframe:
                 
             plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2*unit_factor, color=colour)
             plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1*unit_factor, color=colour)
-            circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05, color=colour, label=self.id0)
+            circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05*unit_factor, color=colour, label=self.id0)
             plt.gca().add_patch(circle)
             
             H1_ = HomogeneousTransformation()
@@ -203,14 +206,14 @@ class plot_2dframe:
                 
             plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2*unit_factor, color=colour)
             plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1*unit_factor, color=colour)
-            circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05, color=colour, label=self.id1)
+            circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05*unit_factor, color=colour, label=self.id1)
             plt.gca().add_patch(circle)
 
             # visualise the edge (or line) connecting pose id0 and pose id1
             if self.edge_flag == True:                                
-                if self.object_type == 'pose': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'b--', linewidth = 1*unit_factor)
-                if self.object_type == 'pose_gt': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'g--', linewidth = 1*unit_factor)
-                if self.object_type == 'pose_ref': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'r--', linewidth = 1*unit_factor)                    
+                if self.object_type == 'pose': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'b--', linewidth = 5*unit_factor)
+                if self.object_type == 'pose_gt': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'g--', linewidth = 5*unit_factor)
+                if self.object_type == 'pose_ref': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'r--', linewidth = 5*unit_factor)                    
 
     def _pose_coloured(self):
         # plot pose id0 as blue and pose id1 as different colours
@@ -218,18 +221,18 @@ class plot_2dframe:
 
             if self.object_type == 'pose':                
                 colour = 'b'    
-                unit_factor=1
+                unit_factor=0.1
 
             elif self.object_type == 'pose_gt':                 
                 colour = 'g'            
-                unit_factor=0.5
+                unit_factor=0.05
                 
             elif self.object_type == 'pose_ref':                 
                 colour = 'r'            
-                unit_factor=0.5                
+                unit_factor=0.05                
             elif self.object_type == 'pose_ends':  
                 colour = 'r'            
-                unit_factor=1                                
+                unit_factor=0.1                                
                 
 
             H0_ = HomogeneousTransformation()
@@ -286,14 +289,14 @@ class plot_2dframe:
 
             # visualise the edge (or line) connecting pose id0 and pose id1
             if self.edge_flag == True:                                
-                if self.object_type == 'pose': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'c--', linewidth = 1*unit_factor)
-                if self.object_type == 'pose_gt': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'g--', linewidth = 1*unit_factor)
-                if self.object_type == 'pose_ref': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'r--', linewidth = 1*unit_factor)                    
+                if self.object_type == 'pose': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'c--', linewidth = 5*unit_factor)
+                if self.object_type == 'pose_gt': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'g--', linewidth = 5*unit_factor)
+                if self.object_type == 'pose_ref': plt.plot([H0_.t[1],H1_.t[1]],[H0_.t[0],H1_.t[0]], 'r--', linewidth = 5*unit_factor)                    
 
                     
     def _observation(self):
         # plot pose id0 as blue and pose id1 as different colours
-
+            unit_factor = 10000
             H0_ = HomogeneousTransformation()
             H0_.H=self.H0
             origin = Vector(2)
@@ -315,9 +318,9 @@ class plot_2dframe:
             xhat = t2v(xhat)
             yhat = t2v(yhat)                
                 
-            plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2, color='b')
-            plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1, color='b')
-            circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05, color='b', label=self.id0)
+            plt.arrow(*origin.reshape(2)[::-1], *xhat.reshape(2)[::-1], head_width=0.2*unit_factor, color='b')
+            plt.arrow(*origin.reshape(2)[::-1], *yhat.reshape(2)[::-1], head_width=0.1*unit_factor, color='b')
+            circle = plt.Circle((*origin.reshape(2)[::-1], *origin.reshape(2)[::-1]), 0.05*unit_factor, color='b', label=self.id0)
             plt.gca().add_patch(circle)
             
             H1_ = HomogeneousTransformation()
@@ -1593,7 +1596,6 @@ def plot_graph(graph_object, p_gt_path, H_em, m_gt, m_labels):
             e=sigma_contour([x[1],x[0]],[[s[1][1],s[1][0]],[s[0][1],s[0][0]]],'g')
             e.set_facecolor('none')
             ax.add_patch(e)            
-
 
             X_jgt = HomogeneousTransformation(p_gt_path[j][0:2],p_gt_path[j][2])
             X_j = HomogeneousTransformation(graph.pose[j][0:2],graph.pose[j][2])                    
