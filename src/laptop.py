@@ -78,8 +78,8 @@ class LaptopPilot:
         self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
 
-        self.lidar_rangenoise = 0*0.000025
-        self.lidar_anglenoise = 0*0.0003
+        self.lidar_rangenoise = 10000*0.000025
+        self.lidar_anglenoise = 100*0.0003
         
         self.initialise_control = True # False once control gains is initialised 
 
@@ -189,6 +189,57 @@ class LaptopPilot:
 
         self.datalog.log(msg, topic_name="/true_wheel_speeds")
 
+    # def lidar_callback(self, msg):
+    #     # This is a callback function that is called whenever a message is received        
+    #     print("Received lidar message", msg.header.seq)        
+    #     if self.sim_init == True:
+    #         self.sim_time_offset = datetime.utcnow().timestamp()-msg.header.stamp
+    #         self.sim_init = False     
+
+    #     msg.header.stamp += self.sim_time_offset
+
+    #     rangenoise = self.add_noise(self.lidar_rangenoise,0,len(msg.ranges))
+    #     anglenoise = self.add_noise(self.lidar_anglenoise,0,len(msg.angles))
+
+    #     msg.ranges += rangenoise
+    #     msg.angles += anglenoise
+
+    #     # msg.ranges = [a + b for a, b in zip(msg.ranges, rangenoise)]
+    #     # msg.angles = [a + b for a, b in zip(msg.angles, anglenoise)]
+    #     ###############(imported)#########################
+    #     self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
+    #     self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
+    #     self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
+    #     self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+
+    #     ###############(imported)#########################
+    #     self.datalog.log(msg, topic_name="/lidar")
+
+    #     ###############(imported)#########################
+    #     # b to e frame
+    #     p_eb = Vector(3)
+    #     p_eb[0] = self.est_pose_northings_m #robot pose northings (see Task 3)
+    #     p_eb[1] = self.est_pose_eastings_m #robot pose eastings (see Task 3)
+    #     p_eb[2] = self.est_pose_yaw_rad #robot pose yaw (see Task 3)
+
+    #     # m to e frame
+    #     self.lidar_data = np.zeros((len(msg.ranges), 2))        
+                    
+    #     z_lm = Vector(2)        
+    #     # for each map measurement
+    #     for i in range(len(msg.ranges)):
+    #         z_lm[0] = msg.ranges[i]
+    #         z_lm[1] = msg.angles[i]
+                
+    #         t_em = self.lidar.rangeangle_to_loc(p_eb, z_lm) # see tutotial
+
+    #         self.lidar_data[i,0] = t_em[0]
+    #         self.lidar_data[i,1] = t_em[1]
+
+    #     # this filters out any 
+    #     self.lidar_data = self.lidar_data[~np.isnan(self.lidar_data).any(axis=1)]
+
+
     def lidar_callback(self, msg):
         # This is a callback function that is called whenever a message is received        
         print("Received lidar message", msg.header.seq)        
@@ -197,21 +248,11 @@ class LaptopPilot:
             self.sim_init = False     
 
         msg.header.stamp += self.sim_time_offset
-
-        rangenoise = self.add_noise(self.lidar_rangenoise,0,len(msg.ranges))
-        anglenoise = self.add_noise(self.lidar_anglenoise,0,len(msg.angles))
-
-        msg.ranges += rangenoise
-        msg.angles += anglenoise
-
-        # msg.ranges = [a + b for a, b in zip(msg.ranges, rangenoise)]
-        # msg.angles = [a + b for a, b in zip(msg.angles, anglenoise)]
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
-
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
@@ -238,7 +279,6 @@ class LaptopPilot:
 
         # this filters out any 
         self.lidar_data = self.lidar_data[~np.isnan(self.lidar_data).any(axis=1)]
-
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
         self.groundtruth_northings = msg.position.x
