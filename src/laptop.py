@@ -137,12 +137,21 @@ class LaptopPilot:
         self.p_reference_tracker = None
         self.p_groundtruth_tracker = None
 
+######forward distance, angle, time take####
         self.pathstage = 0
         self.inprogress = False
         self.starttime = None
         self.commands = [(0.01, 0, 1),
-                            (0, np.pi/-12, 2.5),
-                            (0, np.pi/6, 2.5),
+                            (1, 0, 4.5),
+                            (0, np.pi, 1.55),
+                            (1, 0, 4.5),
+                            (0, np.pi, 1.55),
+                            (1, 0, 4.5),
+                            (0, np.pi, 1.5),
+                            (1, 0, 4.5),
+                            (0, np.pi, 1.5),
+                            (1, 0, 4.5),
+                            (0, np.pi/4, 4),
                             (0, -np.pi/6, 2.5),
                             (0, np.pi/6, 2.5),
                             (0, -np.pi/6, 2.5),
