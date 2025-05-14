@@ -1453,55 +1453,56 @@ for j, wr in enumerate(wr_values):
     reps_low[j] = rep_low
     scores_high[j] = score_high
     reps_high[j] = rep_high    # Store the score
+
     wr_values_store[j] = wr
 
-c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
-c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
 
 #print(wl_values_store)
 print(wr_values_store)
-print(scores)
 
-np.savez('optimization_results.npz', wl_values=wl_values, wr_values=wr_values, scores=scores)
 
-# Create a grid for plotting
-Wr, Wl = np.meshgrid(wl_values, wr_values)
+max_idx_0 = np.argmax(scores_0)  # Index of max value in flattened array
+max_idx_low = np.argmax(scores_low)
+max_idx_high = np.argmax(scores_high)
 
-max_idx = np.argmax(scores)  # Index of max value in flattened array
-wl_idx, wr_idx = np.unravel_index(max_idx, scores.shape)  # Convert to 2D indices
+max_0 = scores_0[max_idx_0]
+max_low = scores_low[max_idx_low]
+max_high = scores_high[max_idx_high]
+print("max_0",max_0)
+print("max_low",max_low)
+print("max_high",max_high)
 
-#best_wl = wl_values[wl_idx]
-best_wr = wr_values[wr_idx]
-best_score = scores[wl_idx, wr_idx]
 
-print(f"Optimal weights: wl = {best_wl:.2f}, wr = {best_wr:.2f}")
-print(f"Best score: {best_score:.4f}")
 
+
+plt.axvline(x=wr_values_store[np.argmax(scores_0)], color='b', linestyle='-', alpha=0.3)
+plt.axvline(x=wr_values_store[np.argmax(scores_low)], color='g', linestyle='--', alpha=0.3)
+plt.axvline(x=wr_values_store[np.argmax(scores_high)], color='r', linestyle=':', alpha=0.3)
 
 plt.figure(figsize=(10, 6))
-plt.imshow(
-    scores,
-    cmap='viridis',  # Colormap (try 'plasma', 'inferno', 'cividis')
-    origin='lower',  # Place (0,0) at bottom-left
-    aspect='auto',   # Adjust aspect ratio
-    extent=[wr_values.min(), wr_values.max()]  # Axis labels
-)
+plt.plot(wr_values_store, scores_0, 'b-', label='No Noise', linewidth=2)
+plt.plot(wr_values_store, scores_low, 'g--', label='Low Noise', linewidth=2)
+plt.plot(wr_values_store, scores_high, 'r:', label='High Noise', linewidth=2)
 
-# Highlight optimal point
-plt.scatter(best_wr, best_wl, color='red', s=100, label=f'Best: wl={best_wl:.2f}, wr={best_wr:.2f}')
-
-# Add colorbar
-cbar = plt.colorbar(label='Score (e.g., Accuracy)')
-
-# Labels and title
-plt.xlabel('wr (RBF Length Scale)')
-plt.ylabel('wl (Kernel Multiplier)')
-plt.title('Heatmap of Scores for wl and wr')
-plt.legend()
+plt.xlabel('RBF Length Scale (wl)', fontsize=12)
+plt.ylabel('Accuracy (Score)', fontsize=12)
+plt.title('Impact of Length Scale (wl) on Accuracy at Different Noise Levels', fontsize=14)
+plt.legend(fontsize=10)
+plt.grid(True, linestyle='--', alpha=0.6)
 plt.show()
 
 
+plt.figure(figsize=(10, 6))
+plt.plot(wr_values_store, reps_0, 'b-', label='No Noise', linewidth=2)
+plt.plot(wr_values_store, reps_low, 'g--', label='Low Noise', linewidth=2)
+plt.plot(wr_values_store, reps_high, 'r:', label='High Noise', linewidth=2)
 
+plt.xlabel('RBF Length Scale (wl)', fontsize=12)
+plt.ylabel('Repeatability', fontsize=12)
+plt.title('Impact of Length Scale (wl) on Repeatability at Different Noise Levels', fontsize=14)
+plt.legend(fontsize=10)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
 
 
 
