@@ -384,15 +384,15 @@ class LaptopPilot:
         def get_initial_uncertainty(self):
             # Create process uncertainty matrix
             sigma = Matrix(3,3) 
-            sigma[0,0]=0.0
-            sigma[0,1]=0.0
-            sigma[1,0]=0.0
-            sigma[1,1]=0.0
-            sigma[0,2]=0.0
-            sigma[1,2]=0.0
-            sigma[2,0]=0.0
-            sigma[2,1]=0.0
-            sigma[2,2]=0.0
+            sigma[0,0]=0.0005**2
+            sigma[0,1]=0.0001**2
+            sigma[1,0]=0.0001**2
+            sigma[1,1]=0.0005**2
+            sigma[0,2]=0.0001**2
+            sigma[1,2]=0.0001**2
+            sigma[2,0]=0.0001**2
+            sigma[2,1]=0.0001**2
+            sigma[2,2]=0.0005**2
 
             # sigma = Matrix(3,3) 
             # sigma[0,0]=0.1
@@ -410,13 +410,13 @@ class LaptopPilot:
         def get_process_uncertainty3x3(self):
             #Motion model linear noise due to v and w
             sigma_motion=Matrix(3,2)
-            sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
-            sigma_motion[0,1]= np.deg2rad(1)**2 # impact of w angular velocity on x
-            sigma_motion[1,0]=0.1**2 # impact of v linear velocity on y
-            sigma_motion[1,1]=np.deg2rad(1)**2 # impact of w angular velocity on y
-            sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
-            sigma_motion[2,1]=np.deg2rad(1)**2 # impact of w angular velocity on gamma
-
+            sigma_motion[0,0]= 0.001**2 # impact of v linear velocity on x           #Task
+            sigma_motion[0,1]= np.deg2rad(0.001)**2# impact of w angular velocity on x
+            sigma_motion[1,0]=0.3**2# impact of v linear velocity on y
+            sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
+            sigma_motion[2,0]=0.001**2 # impact of v linear velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(0.001)**2 # impact of w angular velocity on gamma
+            
             return sigma_motion
 
         def get_p_sensor_uncertainty(self):
@@ -474,7 +474,8 @@ class LaptopPilot:
             self.graph = graphslam_frontend()
             self.graph.anchor(self.covariance)
 
-            self.reset_previous_state()
+            H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
+            self.reset_previous_state(H_eb)
 
             # get current time and determine timestep
             self.t_prev = datetime.utcnow().timestamp() #initialise the time
@@ -495,9 +496,10 @@ class LaptopPilot:
         self.wheel_speed_pub.publish(wheel_speed_msg)
         self.datalog.log(wheel_speed_msg, topic_name="/wheel_speeds_cmd")
 
-    def reset_previous_state(self):
+    def reset_previous_state(self, H_eb):
         self.p_ = self.state
         self.sigma_ = self.covariance
+        self.sigma_ = H_eb.H_R @ self.sigma_ @ H_eb.H_R.T
 
     def save_object(self, object, filename):
         with open(filename, "wb") as f:
@@ -602,12 +604,14 @@ class LaptopPilot:
             # Graphslam frontend
             #####################################
             # Get current pose to pose uncertainty
+            # Save previous pose and smegma
+            H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
             sigma_motion = self.uncertainty.get_process_uncertainty3x3()
             sigma_lidar = self.uncertainty.get_lidar_uncertainty()
 
-            # Save previous pose and smegma
+            # Progress motion model
             self.state, self.covariance, dp, _ =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
-            self.covariancetracker.append(self.covariance)
+
             # Log landmark
             dp_ = self.state - self.p_
             if self.new_landmark is True:
@@ -626,12 +630,13 @@ class LaptopPilot:
                 else:
                     self.graph.motion(self.p_, self.sigma_, dp_, final=False)
                     self.pose_groundtruth.append(self.groundtruth_update())
-                    self.reset_previous_state()
+                    self.reset_previous_state(H_eb)
+                self.count = 0
             # If no landmarks and moving, business as usual 
             elif u.all() != 0 and self.count > 10:
                 self.graph.motion(self.p_, self.sigma_, dp_, final=False)
                 self.pose_groundtruth.append(self.groundtruth_update())
-                self.reset_previous_state()
+                self.reset_previous_state(H_eb)
                 self.count = 0
             self.count += 1
 
@@ -640,22 +645,22 @@ class LaptopPilot:
                     self.za_warudo_part_two = False
                     self.robo_stop()
                     self.graph.motion(self.p_, self.sigma_, dp_, final=True)
-                    self.reset_previous_state()
+                    self.reset_previous_state(H_eb)
                     self.pose_groundtruth.append(self.groundtruth_update())
                     self.graph.construct_graph() 
                     init_graph = self.graph
+                    np.savetxt("output.csv", self.graph.H, delimiter=",", fmt='%d')
                     self.save_object(init_graph,filename="init_graph.pkl")
+                    self.save_object(self.pose_groundtruth, "gaytruth.pkl")
+                    # Optimise graph and update position
                     self.graph = juice_graph(self.graph)
-                    # Update position
                     print("old state", self.state)
                     self.state = self.graph.pose[-1:][0]
                     print("new state", self.state)
-
-                    self.save_object(self.pose_groundtruth, "gaytruth.pkl")
                     self.save_object(self.graph,filename="final_graph.pkl")
 
 
-
+            
                     
             # update for show_laptop.py            
             self.update_estimated_pose()
@@ -677,7 +682,6 @@ class LaptopPilot:
 
                 dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
-                H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
                 ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
 
                 # compute control gains for the initial condition (where the robot is stationalry)
