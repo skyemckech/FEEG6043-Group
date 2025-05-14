@@ -77,6 +77,9 @@ class LaptopPilot:
         self.v_max = 0.6 # m/s fastest the robot can go
         self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
+
+        self.lidar_rangenoise = 0.000025
+        self.lidar_anglenoise = 0.0003
         
         self.initialise_control = True # False once control gains is initialised 
 
@@ -199,6 +202,7 @@ class LaptopPilot:
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+        self.lidar_data = self.lidar_addnoise(self.lidar_data)
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
@@ -262,6 +266,23 @@ class LaptopPilot:
         else: quat.from_euler(0, 0, msg[6])
         pose_msg.pose.orientation = quat        
         return pose_msg
+    
+    def lidar_addnoise(self, lidardata):
+        rangenoise = add_noise(self.lidar_rangenoise,0,len(lidardata[:,0]))
+        anglenoise = add_noise(self.lidar_anglenoise,0,len(lidardata[:,1]))
+
+        lidardata[:,0] += rangenoise
+        lidardata[:,1] += anglenoise
+
+        return lidardata
+
+    def add_noise(self, variance, mean = 0, number = 100):
+            # Add random normal noise
+            noise = np.random.normal(mean, np.sqrt(variance), number) 
+            # first is the mean of the normal distribution you are choosing from
+            # second is the standard deviation of the normal distribution
+            # third is the number of elements you get in array noise
+            return noise
 
     def generate_trajectory(self):
     # pick waypoints as current pose relative or absolute northings and eastings
