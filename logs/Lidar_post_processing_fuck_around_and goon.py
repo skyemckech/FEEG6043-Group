@@ -424,16 +424,16 @@ def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
 
         ####plotting funcitons####
         
-        # if j < 6:
-        #     j = j + 1
-        #     fig,ax = plt.subplots()
-        #     show_scan(p, lidar, observation)
-        #     ax.scatter(m_y, m_x,s=0.01)
-        #     plt.title(loc)
-        #     plt.show()
-        #     print(j)
-        # else:
-        #     print("yummy cummy")
+        if j < 1000:
+            j = j + 1
+            fig,ax = plt.subplots()
+            show_scan(p, lidar, observation)
+            ax.scatter(m_y, m_x,s=0.01)
+            plt.title(loc)
+            plt.show()
+            print(j)
+        else:
+            print("yummy cummy")
 
             ####if the number of nan's is more than X of the total size then pass#######
         if np.count_nonzero(~np.isnan(values[:,0])) > 0.1 * len(values[:,0]):
@@ -1198,7 +1198,14 @@ def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
         return "nothing homie"
 
 
-
+print("c_full_test_0")
+c_full_test_0 = format_scan_object("logs/full_test_0_noise.json", 10,50,1)
+print("c_full_test_1")
+c_full_test_1 = format_scan_object("logs/full_test_1_noise.json", 10,50,1)
+print("c_full_test_3")
+c_full_test_3 = format_scan_object("logs/full_test_3_noise.json", 10,50,1)
+print("c_full_test_10")
+c_full_test_10 = format_scan_object("logs/full_test_10_noise.json", 10,50,1)
 
 #0.0005
 ##corner training### 
@@ -1225,6 +1232,8 @@ c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
 c_object_vhigh_noise = format_scan_corner("logs/circle_x10R.json", 100,50,1)
 c_wall_vhigh_noise = format_scan_corner("logs/wall_x10R.json", 100,0.1,1)
 c_corner_vhigh_noise = format_scan_corner("logs/corner_x10R.json", 0.00001,0.1,1)
+
+
 
 ##object training###
 o_corner_0_noise = format_scan_object("logs/corner_perfect_lidar.json", 10,0.00001,1)
@@ -1292,6 +1301,10 @@ c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas
 c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
 c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
 c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
+
+#full test
+c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
+c_full_test_0
 
 c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
 c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
