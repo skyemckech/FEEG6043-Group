@@ -828,7 +828,7 @@ def verify_model_differences():
         print(f"{name} NLL: {-model.log_marginal_likelihood_value_:.3f}\n")
 
 
-def gpc_example(corner_0_noise, gpc_0, threshold=0.5, scan=None):
+def gpc_example(corner_0_noise, gpc_0, threshold=0.85, scan=None):
     """
     Calculate average probabilities across all scans or a specific scan in corner_0_noise
     
