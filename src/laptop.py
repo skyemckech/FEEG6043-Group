@@ -197,12 +197,21 @@ class LaptopPilot:
             self.sim_init = False     
 
         msg.header.stamp += self.sim_time_offset
+
+        rangenoise = self.add_noise(self.lidar_rangenoise,0,len(msg.ranges))
+        anglenoise = self.add_noise(self.lidar_anglenoise,0,len(msg.angles))
+
+        msg.ranges += rangenoise
+        msg.angles += anglenoise
+
+        # msg.ranges = [a + b for a, b in zip(msg.ranges, rangenoise)]
+        # msg.angles = [a + b for a, b in zip(msg.angles, anglenoise)]
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
         self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
-        self.lidar_data = self.lidar_addnoise(self.lidar_data)
+
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
