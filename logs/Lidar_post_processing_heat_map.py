@@ -1238,7 +1238,7 @@ c_wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 100,0.1,1)
 c_object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 100,50,1)
 c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
 
-c_object_vhigh_noise = format_scan_corner("logs/object_x10R.json", 100,50,1)
+c_object_vhigh_noise = format_scan_corner("logs/circle_x10R.json", 100,50,1)
 c_wall_vhigh_noise = format_scan_corner("logs/wall_x10R.json", 100,0.1,1)
 c_corner_vhigh_noise = format_scan_corner("logs/corner_x10R.json", 0.00001,0.1,1)
 
@@ -1337,63 +1337,86 @@ a,b, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_
 c,d, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise,c_rotaion),model_name='11', wl= 0.1 , wr= 1)
 
 
-def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
-    return theta_1, theta_0, gpc, X_train, y_train, score, rep  # Add score to returns
 
 
 
 ##############old weightings##########
- __,__,__,__,__,c_ac_0,c_rep_0=find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_DataX_0,
-                            c_DataY_0,
-                            wl=1,
-                            wr=1)
 
+_, _, _, _, _, c_ac_0, c_rep_0 = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+    c_DataX_0,
+    c_DataY_0,
+    wl=1,
+    wr=1
+)
 
- __,__,__,__,__,c_ac_low,c_rep_low =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_low_noise_DataX,
-                            c_low_noise_DataY,
-                            wl=1,
-                            wr=1)
+_, _, _, _, _, c_ac_low, c_rep_low = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+    c_low_noise_DataX,
+    c_low_noise_DataY,
+    wl=1,
+    wr=1
+)
 
- __,__,__,__,__,c_ac_high,c_rep_high =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_high_noise_DataX,
-                            c_high_noise_DataY,
-                            wl=1,
-                            wr=1)
- __,__,__,__,__,c_ac_vhigh,c_rep_vhigh =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-                            c_vhigh_noise_DataX,
-                            c_vhigh_noise_DataY,
-                            wl=1,
-                            wr=1)
+_, _, _, _, _, c_ac_high, c_rep_high = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+    c_high_noise_DataX,
+    c_high_noise_DataY,
+    wl=1,
+    wr=1
+)
 
-##############test new weightings and other##########
+_, _, _, _, _, c_ac_vhigh, c_rep_vhigh = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
+    c_vhigh_noise_DataX,
+    c_vhigh_noise_DataY,
+    wl=1,
+    wr=1
+)
 
- __,__,__,__,__,c_ac_0,c_rep_0=find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_DataX_0,
-                            c_DataY_0,
-                            wl=1.85,
-                            wr=1.7)
+############## Test new weightings and other ##########
 
+_, _, _, _, _, cali_c_ac_0, cali_c_rep_0 = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    c_DataX_0,
+    c_DataY_0,
+    wl=1.85,
+    wr=1.7
+)
 
- __,__,__,__,__,c_ac_low,c_rep_low =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_low_noise_DataX,
-                            c_low_noise_DataY,
-                            wl=1.85,
-                            wr=1.7)
+_, _, _, _, _, cali_c_ac_low, cali_c_rep_low = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    c_low_noise_DataX,
+    c_low_noise_DataY,
+    wl=1.85,
+    wr=1.7
+)
 
- __,__,__,__,__,c_ac_high,c_rep_high =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_high_noise_DataX,
-                            c_high_noise_DataY,
-                            wl=1.85,
-                            wr=1.7)
+_, _, _, _, _, cali_c_ac_high, cali_c_rep_high = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    c_high_noise_DataX,
+    c_high_noise_DataY,
+    wl=1.85,
+    wr=1.7
+)
 
- __,__,__,__,__,c_ac_vhigh,c_rep_vhigh =find_thetas_cross_validate(combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise,c_rotaion),
-                            c_vhigh_noise_DataX,
-                            c_vhigh_noise_DataY,
-                            wl=1.85,
-                            wr=1.7)
+_, _, _, _, _, cali_c_ac_vhigh, cali_c_rep_vhigh = find_thetas_cross_validate(
+    combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+    c_vhigh_noise_DataX,
+    c_vhigh_noise_DataY,
+    wl=1.85,
+    wr=1.7
+)
 
+print("c_ac_0",c_ac_0,"c_rep_0",c_rep_0)
+print("c_ac_low",c_ac_low,"c_rep_low",c_rep_low)
+print("c_ac_high",c_ac_high,"c_rep_high",c_rep_high)
+print("c_ac_vhigh",c_ac_vhigh,"c_rep_vhigh",c_rep_vhigh)
+
+print("cali_c_ac_0",cali_c_ac_0,"cali_c_rep_0",cali_c_rep_0)
+print("cali_c_ac_low",cali_c_ac_low,"cali_c_rep_low",cali_c_rep_low)
+print("cali_c_ac_high",cali_c_ac_high,"cali_c_rep_high",cali_c_rep_high)
+print("cali_c_ac_vhigh",cali_c_ac_vhigh,"cali_c_rep_vhigh",cali_c_rep_vhigh)
 
 # print("----------------validate vs themselves---------------")
 # print("----------c_ranged_far_gpc_0 vs c_DataX_0")
@@ -1407,76 +1430,76 @@ def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
 # print("----------c_side_right_gpc_0 vs c_DataX_0")
 # cross_validate(c_side_right_gpc_0, c_DataX_0,c_DataY_0)
 
-print("---------------------c_gpc_0----------------------")
-print("c_gpc_0 vs c_DataX_0")
-cross_validate(c_gpc_0, c_DataX_0,c_DataY_0)
-print("c_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(c_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("c_gpc_0 vs c_ranged_near_only_DataX_0")
-cross_validate(c_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
-print("c_gpc_0 vs c_rotaion_only_DataX_0")
-cross_validate(c_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
-print("c_gpc_0 vs c_side_left_only_DataX_0")
-cross_validate(c_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
-print("c_gpc_0 vs c_side_right_only_DataX_0")
-cross_validate(c_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
+                        # print("---------------------c_gpc_0----------------------")
+                        # print("c_gpc_0 vs c_DataX_0")
+                        # cross_validate(c_gpc_0, c_DataX_0,c_DataY_0)
+                        # print("c_gpc_0 vs c_ranged_far_only_DataX_0")
+                        # cross_validate(c_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+                        # print("c_gpc_0 vs c_ranged_near_only_DataX_0")
+                        # cross_validate(c_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
+                        # print("c_gpc_0 vs c_rotaion_only_DataX_0")
+                        # cross_validate(c_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
+                        # print("c_gpc_0 vs c_side_left_only_DataX_0")
+                        # cross_validate(c_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
+                        # print("c_gpc_0 vs c_side_right_only_DataX_0")
+                        # cross_validate(c_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
 
 
-print("----------------validate vs themselves---------------")
-print("----------c_ranged_far_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(c_ranged_far_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("----------c_ranged_near_gpc_0 vs c_ranged_near_DataX_0")
-cross_validate(c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0)
-print("----------c_rotaion_gpc_0 vs c_rotaion_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
-print("----------c_side_left_gpc_0 vs c_side_left_DataX_0")
-cross_validate(c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0)
-print("----------c_side_right_gpc_0 vs c_side_right_DataX_0")
-cross_validate(c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0)
+                        # print("----------------validate vs themselves---------------")
+                        # print("----------c_ranged_far_gpc_0 vs c_ranged_far_only_DataX_0")
+                        # cross_validate(c_ranged_far_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+                        # print("----------c_ranged_near_gpc_0 vs c_ranged_near_DataX_0")
+                        # cross_validate(c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0)
+                        # print("----------c_rotaion_gpc_0 vs c_rotaion_DataX_0")
+                        # cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
+                        # print("----------c_side_left_gpc_0 vs c_side_left_DataX_0")
+                        # cross_validate(c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0)
+                        # print("----------c_side_right_gpc_0 vs c_side_right_DataX_0")
+                        # cross_validate(c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0)
 
 
-print("---------------------ALL----------------------")
-print("c_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(All_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("c_gpc_0 vs c_ranged_near_only_DataX_0")
-cross_validate(All_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
-print("c_gpc_0 vs c_rotaion_only_DataX_0")
-cross_validate(All_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
-print("c_gpc_0 vs c_side_left_only_DataX_0")
-cross_validate(All_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
-print("c_gpc_0 vs c_side_right_only_DataX_0")
-cross_validate(All_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
-print("c_gpc_0 vs c_DataX_0")
-cross_validate(All_gpc_0, c_DataX_0,c_DataY_0)
+                        # print("---------------------ALL----------------------")
+                        # print("c_gpc_0 vs c_ranged_far_only_DataX_0")
+                        # cross_validate(All_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+                        # print("c_gpc_0 vs c_ranged_near_only_DataX_0")
+                        # cross_validate(All_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
+                        # print("c_gpc_0 vs c_rotaion_only_DataX_0")
+                        # cross_validate(All_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
+                        # print("c_gpc_0 vs c_side_left_only_DataX_0")
+                        # cross_validate(All_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
+                        # print("c_gpc_0 vs c_side_right_only_DataX_0")
+                        # cross_validate(All_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
+                        # print("c_gpc_0 vs c_DataX_0")
+                        # cross_validate(All_gpc_0, c_DataX_0,c_DataY_0)
 
 
-print("---------------------Best----------------------")
-print("best_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("best_gpc_0 vs c_ranged_near_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
-print("best_gpc_0 vs c_rotaion_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
-print("best_gpc_0 vs c_side_left_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
-print("best_gpc_0 vs c_side_right_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
-print("best_gpc_0 vs c_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
+                        # print("---------------------Best----------------------")
+                        # print("best_gpc_0 vs c_ranged_far_only_DataX_0")
+                        # cross_validate(c_rotaion_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
+                        # print("best_gpc_0 vs c_ranged_near_only_DataX_0")
+                        # cross_validate(c_rotaion_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
+                        # print("best_gpc_0 vs c_rotaion_only_DataX_0")
+                        # cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
+                        # print("best_gpc_0 vs c_side_left_only_DataX_0")
+                        # cross_validate(c_rotaion_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
+                        # print("best_gpc_0 vs c_side_right_only_DataX_0")
+                        # cross_validate(c_rotaion_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
+                        # print("best_gpc_0 vs c_DataX_0")
+                        # cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
 
 
 # Define ranges for wl and wr
-wl = 1.85  # 0.1 to 0.9 in steps of 0.1
-wr_values = np.arange(0.1,3.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
+            # wl = 1.85  # 0.1 to 0.9 in steps of 0.1
+            # wr_values = np.arange(0.1,3.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
 
-# Initialize a grid to store scores
-scores_0 = np.zeros((len(wr_values)))
-scores_low = np.zeros((len(wr_values)))
-scores_high = np.zeros((len(wr_values)))
-reps_0 = np.zeros((len(wr_values)))
-reps_low = np.zeros((len(wr_values)))
-reps_high = np.zeros((len(wr_values)))
-wr_values_store = np.zeros((len(wr_values)))
+            # # Initialize a grid to store scores
+            # scores_0 = np.zeros((len(wr_values)))
+            # scores_low = np.zeros((len(wr_values)))
+            # scores_high = np.zeros((len(wr_values)))
+            # reps_0 = np.zeros((len(wr_values)))
+            # reps_low = np.zeros((len(wr_values)))
+            # reps_high = np.zeros((len(wr_values)))
+            # wr_values_store = np.zeros((len(wr_values)))
 
 
 # #def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
