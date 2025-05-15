@@ -77,7 +77,7 @@ class LaptopPilot:
         self.v_max = 0.6 # m/s fastest the robot can go
         self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
-
+####5 deg angle//0.1mm range
         self.lidar_rangenoise = 10*0.000025
         self.lidar_anglenoise = 10*0.0003
         
