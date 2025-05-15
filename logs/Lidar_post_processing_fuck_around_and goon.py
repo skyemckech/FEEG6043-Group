@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
-from matplotlib.widgets import Button, label_selector
+from matplotlib.widgets import Button
 
 
 
@@ -360,7 +360,113 @@ class ImportLog:
                 extracted_data.append(np.array([data]))
 
         return extracted_data
+def format_scan_lablee(filepath, threshold=0.001, fit_error_tolerance=0.01, fit_error_tolerance_wall=0.005):
+    class LabelSelector:
+        def __init__(self):
+            self.label = None
+        
+        def corner(self, event):
+            self.label = 'corner'
+            plt.close()
+        
+        def not_corner(self, event):
+            self.label = 'not corner'
+            plt.close()
 
+    # Initialize label selector outside the loop
+    label_selector = LabelSelector()
+
+    # ... (keep all your original data loading and validation code) ...
+    fit_error = None
+    variables = ImportLog(filepath)
+    r = variables.extract_data("/lidar", ["message", "ranges"])
+    theta = variables.extract_data("/lidar", ["message", "angles"])
+    timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+    j = 0
+
+    ###########________random bull shit which fixes formating_______###########
+
+    if not isinstance(r, list):
+        raise TypeError("Expected r to be a list, got {} instead.".format(type(r)))
+    if not isinstance(theta, list):
+        raise TypeError("Expected theta to be a list, got {} instead.".format(type(theta)))
+
+    if len(r) == 0 or len(theta) == 0:
+        raise ValueError("Extracted r or theta is empty. Ensure your logs have valid data.")
+
+    if isinstance(r[0], list) or isinstance(r[0], np.ndarray):
+        r[0] = np.array(r[0])
+    else:
+        r = [np.array(r)]  
+
+    if isinstance(theta[0], list) or isinstance(theta[0], np.ndarray):
+        theta[0] = np.array(theta[0])
+    else:
+        theta = [np.array(theta)]  
+
+    observation = np.column_stack((r[0], theta[0]))  
+    corner_example = GPC_input_output(observation, None)
+    corner_training = [corner_example]
+
+    for i in range(len(r)):
+        if isinstance(r[i], list) or isinstance(r[i], np.ndarray):
+            r[i] = np.array(r[i])
+        else:
+            print(f"Warning: Unexpected type for r[{i}]. Skipping.")
+            continue
+
+        if isinstance(theta[i], list) or isinstance(theta[i], np.ndarray):
+            theta[i] = np.array(theta[i])
+        else:
+            print(f"Warning: Unexpected type for theta[{i}]. Skipping.")
+            continue
+
+        observation = np.column_stack((r[i], theta[i]))  
+        z_lm = Vector(2)
+
+        z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
+        #print(z_lm, loc)
+
+        new_observation = GPC_input_output(observation, None)
+        values = new_observation.data
+
+        corner_training = []
+
+
+        # ... (keep your existing data processing code) ...
+
+        if j < 1000:
+            j = j + 1
+            fig, ax = plt.subplots()
+            show_scan(p, lidar, observation)
+            ax.scatter(m_y, m_x, s=0.01)
+            plt.title(loc)
+
+            # Create fresh buttons for each plot
+            ax_corner = plt.axes([0.4, 0.05, 0.1, 0.075])
+            ax_not_corner = plt.axes([0.55, 0.05, 0.1, 0.075])
+            
+            btn_corner = Button(ax_corner, 'Corner')
+            btn_not_corner = Button(ax_not_corner, 'Not Corner')
+            
+            # Connect buttons to the label selector instance
+            btn_corner.on_clicked(label_selector.corner)
+            btn_not_corner.on_clicked(label_selector.not_corner)
+            
+            plt.show()
+            
+            # Assign the selected label
+            new_observation.label = label_selector.label
+            print(f"Scan {j} labeled as: {new_observation.label}")
+            
+            # Reset for next iteration
+            label_selector.label = None
+
+        # ... (rest of your processing logic) ...
+
+        corner_training.append(new_observation)
+
+    return corner_training
     
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
 def format_scan_lable(filepath, threshold=0.001, fit_error_tolerance=0.01, fit_error_tolerance_wall=0.005):
@@ -1282,13 +1388,21 @@ def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
         return "nothing homie"
 
 print("c_full_test_0")
-c_full_test_0 = format_scan_lable("logs/full_test_0_noise_rr.json", 10,50,1)
+c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", 10,50,1)
+
+
+
+for i in range(len(c_full_test_0.label)):
+    print('Entry:', i, ', Class', c_full_test_0[i].label, ', Size', c_full_test_0[i].data_filled[:, 0].size)
+    # print('Data type: Radius', c_full_test_0[i].data_filled[:, 0])
+    # print('Data type:Theta', c_full_test_0[i].data_filled[:, 1])
+
 print("c_full_test_1")
-c_full_test_1 = format_scan_lable("logs/full_test_1_noise_rr.json", 10,50,1)
+c_full_test_1 = format_scan_lablee("logs/full_test_1_noise_rr.json", 10,50,1)
 print("c_full_test_3")
-c_full_test_3 = format_scan_lable("logs/full_test_3_noise_rr.json", 10,50,1)
+c_full_test_3 = format_scan_lablee("logs/full_test_3_noise_rr.json", 10,50,1)
 print("c_full_test_10")
-c_full_test_10 = format_scan_lable("logs/full_test_10_noise_rr.json", 10,50,1)
+c_full_test_10 = format_scan_lablee("logs/full_test_10_noise_rr.json", 10,50,1)
 
 #0.0005
 ##corner training### 
