@@ -384,38 +384,38 @@ class LaptopPilot:
         def get_initial_uncertainty(self):
             # Create process uncertainty matrix
             sigma = Matrix(3,3) 
-            sigma[0,0]=0.0005**2
-            sigma[0,1]=0.0001**2
-            sigma[1,0]=0.0001**2
-            sigma[1,1]=0.0005**2
-            sigma[0,2]=0.0001**2
-            sigma[1,2]=0.0001**2
-            sigma[2,0]=0.0001**2
-            sigma[2,1]=0.0001**2
-            sigma[2,2]=0.0005**2
+            # sigma[0,0]=0.0005**2
+            # sigma[0,1]=0.0001**2
+            # sigma[1,0]=0.0001**2
+            # sigma[1,1]=0.0005**2
+            # sigma[0,2]=0.0001**2
+            # sigma[1,2]=0.0001**2
+            # sigma[2,0]=0.0001**2
+            # sigma[2,1]=0.0001**2
+            # sigma[2,2]=0.0005**2
 
-            # sigma = Matrix(3,3) 
-            # sigma[0,0]=0.1
-            # sigma[0,1]=0.01
-            # sigma[1,0]=0.01
-            # sigma[1,1]=0.1
-            # sigma[0,2]=0.01
-            # sigma[1,2]=0.01
-            # sigma[2,0]=0.01
-            # sigma[2,1]=0.01
-            # sigma[2,2]=0.1
+            sigma = Matrix(3,3) 
+            sigma[0,0]=0.1
+            sigma[0,1]=0.01
+            sigma[1,0]=0.01
+            sigma[1,1]=0.1
+            sigma[0,2]=0.01
+            sigma[1,2]=0.01
+            sigma[2,0]=0.01
+            sigma[2,1]=0.01
+            sigma[2,2]=0.1
 
             return sigma
 
         def get_process_uncertainty3x3(self):
             #Motion model linear noise due to v and w
             sigma_motion=Matrix(3,2)
-            sigma_motion[0,0]= 0.001**2 # impact of v linear velocity on x           #Task
-            sigma_motion[0,1]= np.deg2rad(0.001)**2# impact of w angular velocity on x
+            sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
+            sigma_motion[0,1]= np.deg2rad(0.1)**2# impact of w angular velocity on x
             sigma_motion[1,0]=0.3**2# impact of v linear velocity on y
             sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
-            sigma_motion[2,0]=0.001**2 # impact of v linear velocity on gamma
-            sigma_motion[2,1]=np.deg2rad(0.001)**2 # impact of w angular velocity on gamma
+            sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
             
             return sigma_motion
 
@@ -445,7 +445,7 @@ class LaptopPilot:
             Ql[E,N] = np.deg2rad(5)**2
             Ql[E,E] = 0
             # Ql[N,N] = 0
-            # Ql[N,E] = 0
+            # Ql[N,E] = 0#
             # Ql[E,N] = 0
             # Ql[E,E] = 0
 
@@ -623,6 +623,7 @@ class LaptopPilot:
                 self.graph.observation(self.landmark, sigma_observe_xy, landmark_id, t_lm)
                 # Check if landmark is older than 1 observation
                 if new_id is False and landmark_id != self.graph.landmark_id_array[-2]:
+                # if landmark_id != 0:
                     # Stop robot motion cause it needsa think
                     self.robo_stop()
                     self.stop_to_think = True
@@ -651,16 +652,15 @@ class LaptopPilot:
                     init_graph = self.graph
                     np.savetxt("output.csv", self.graph.H, delimiter=",", fmt='%d')
                     self.save_object(init_graph,filename="init_graph.pkl")
-                    self.save_object(self.pose_groundtruth, "gaytruth.pkl")
+                    self.save_object(self.pose_groundtruth, "grdtruth.pkl")
                     # Optimise graph and update position
                     self.graph = juice_graph(self.graph)
                     print("old state", self.state)
                     self.state = self.graph.pose[-1:][0]
                     print("new state", self.state)
                     self.save_object(self.graph,filename="final_graph.pkl")
+                    #
 
-
-            
                     
             # update for show_laptop.py            
             self.update_estimated_pose()

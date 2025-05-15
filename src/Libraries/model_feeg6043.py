@@ -1532,9 +1532,7 @@ def discrete_motion_model(particles, gamma, u, dt, process_noise):
             particles.gamma_dot[i] = u_noise[1] 
 			
 								   
-														  
-																				 
-																										
+																												
 class graphslam_frontend:
     """
     This class implements the graph SLAM frontend
@@ -1775,7 +1773,8 @@ class graphslam_frontend:
             
             e_ij = Vector(3) 
             e_ij[0:2] = Z_ij.R.T@(X_i.R.T@(X_j.t-X_i.t)-Z_ij.t)
-            e_ij[2] = (X_j.gamma -  X_i.gamma - Z_ij.gamma + np.pi) % (2 * np.pi ) - np.pi        
+
+            e_ij[2] = 0    
             
             if visualise_flag == True:
                 print('e_ij[0:2]',e_ij[0:2])
@@ -1900,6 +1899,9 @@ class graphslam_backend:
         print('Update nodes')
         self.state_vector += self.dx                
         
+        for i in range(self.n):
+            self.state_vector[3*i+2] = angle_diff(self.state_vector[3*i+2], 0)
+
         for i in range(self.n+self.m):
             if i<self.n:
                 self.pose[i] = self.state_vector[3*i:3*i+3]
@@ -2102,3 +2104,7 @@ def find_corner(corner, threshold = 0.01):
 
     else:
         return None, None, None  # No inflection points found  
+    
+def angle_diff(a, b):
+    diff = a - b
+    return (diff + np.pi) % (2*np.pi) - np.pi

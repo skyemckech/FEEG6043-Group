@@ -352,7 +352,7 @@ def juice_graph(graph):
         
         #reconstruct the graph with these nodes
         graph_opt = graphslam_frontend( graph_opt )   # Task
-        graph_opt.construct_graph(  ) # Task
+        graph_opt.construct_graph() # Task
         graph_opt = graphslam_backend( graph_opt )    # Task
         
 
