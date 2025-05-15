@@ -1197,15 +1197,14 @@ def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
     else:
         return "nothing homie"
 
-
-print("c_full_test_0")
-c_full_test_0 = format_scan_object("logs/full_test_0_noise.json", 10,50,1)
-print("c_full_test_1")
-c_full_test_1 = format_scan_object("logs/full_test_1_noise.json", 10,50,1)
-print("c_full_test_3")
-c_full_test_3 = format_scan_object("logs/full_test_3_noise.json", 10,50,1)
-print("c_full_test_10")
-c_full_test_10 = format_scan_object("logs/full_test_10_noise.json", 10,50,1)
+# print("c_full_test_0")
+# c_full_test_0 = format_scan_object("logs/full_test_0_noise_r.json", 10,50,1)
+# print("c_full_test_1")
+# c_full_test_1 = format_scan_object("logs/full_test_1_noise_r.json", 10,50,1)
+# print("c_full_test_3")
+# c_full_test_3 = format_scan_object("logs/full_test_3_noise_r.json", 10,50,1)
+# print("c_full_test_10")
+# c_full_test_10 = format_scan_object("logs/full_test_10_noise_r.json", 10,50,1)
 
 #0.0005
 ##corner training### 
