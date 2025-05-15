@@ -1379,7 +1379,7 @@ cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
 
 
 # Define ranges for wl and wr
-wl_values = np.arange(0.1, 5.0, 0.25)  # 0.1 to 0.9 in steps of 0.1
+wl_values = np.arange(1.3, 2.5, 0.25)  # 0.1 to 0.9 in steps of 0.1
 wr_values = np.arange(0.1, 5.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
 
 # Initialize a grid to store scores
@@ -1432,7 +1432,7 @@ ax = fig.add_subplot(111, projection='3d')
 # Plot the surface (grey)
 surf = ax.plot_surface(
     Wl, Wr, scores.T,  # Transpose scores to match meshgrid
-    cmap='Blues',      # Grey colormap
+    cmap='RdBu',      # Grey colormap
     alpha=0.7,         # Slightly transparent
     edgecolor='none'
 )
