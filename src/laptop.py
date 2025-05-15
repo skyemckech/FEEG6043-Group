@@ -75,7 +75,7 @@ class LaptopPilot:
         self.eastings_path = lapy+lapy+lapy
         self.relative_path = True #False if you want it to be absolute  
         # modelling parameters
-        wheel_distance = 0.174/2 # m 
+        wheel_distance = 0.17/2 # m 
         wheel_diameter = 0.07 # m
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
     
@@ -412,8 +412,7 @@ class LaptopPilot:
             sigma_motion=Matrix(3,2)
             sigma_motion[0,0]= 0.01**2 # impact of v linear velocity on x           #Task
             sigma_motion[0,1]= np.deg2rad(0.01)**2# impact of w angular velocity on x
-            sigma_motion[1,0]=1**2# impact of v linear ve   locity on y
-            sigma_motion[1,1]=np.deg2rad(1)**2 # impact of w angular velocity on y
+            sigma_motion[1,0]=1.5**2# impact of v linear ve   locity on y            sigma_motion[1,1]=np.deg2rad(1)**2 # impact of w angular velocity on y
             sigma_motion[2,0]=0.01**2 # impact of v linear velocity on gamma
             sigma_motion[2,1]=np.deg2rad(0.03)**2 # impact of w angular velocity on gamma
             
@@ -750,8 +749,8 @@ class LaptopPilot:
 
                 uncertainty = Vector3Stamped()
                 uncertainty.vector.x = self.covariance[0,0] # Right wheelspeed rad/s
-                uncertainty.vector.y = self.covariance[1,0] # Left wheelspeed rad/s
-                uncertainty.vector.y = self.covariance[2,0]
+                uncertainty.vector.y = self.covariance[1,1] # Left wheelspeed rad/s
+                uncertainty.vector.y = self.covariance[2,2]
                 self.datalog.log(uncertainty, topic_name="/uncertainty")
                 
 
