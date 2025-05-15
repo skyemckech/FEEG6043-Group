@@ -78,8 +78,8 @@ class LaptopPilot:
         self.w_max = np.deg2rad(120) # fastest the robot can turn
         self.timeout = 10 #s
 
-        self.lidar_rangenoise = 10000*0.000025
-        self.lidar_anglenoise = 100*0.0003
+        self.lidar_rangenoise = 10*0.000025
+        self.lidar_anglenoise = 10*0.0003
         
         self.initialise_control = True # False once control gains is initialised 
 
@@ -248,13 +248,24 @@ class LaptopPilot:
             self.sim_init = False     
 
         msg.header.stamp += self.sim_time_offset
+
+        rangenoise = self.add_noise(self.lidar_rangenoise,0,len(msg.ranges))
+        anglenoise = self.add_noise(self.lidar_anglenoise,0,len(msg.angles))
+
+        msg.ranges += rangenoise
+        msg.angles += anglenoise
+
         ###############(imported)#########################
         self.lidar_timestamp_s = msg.header.stamp #we want the lidar measurement timestamp here
-        self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data
+        self.lidar_data = np.zeros((len(msg.ranges), 2)) #specify length of the lidar data        
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
+            #maybe put the noise here####          
+
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
+
+
 
         ###############(imported)#########################
         # b to e frame
@@ -316,14 +327,6 @@ class LaptopPilot:
         pose_msg.pose.orientation = quat        
         return pose_msg
     
-    def lidar_addnoise(self, lidardata):
-        rangenoise = add_noise(self.lidar_rangenoise,0,len(lidardata[:,0]))
-        anglenoise = add_noise(self.lidar_anglenoise,0,len(lidardata[:,1]))
-
-        lidardata[:,0] += rangenoise
-        lidardata[:,1] += anglenoise
-
-        return lidardata
 
     def add_noise(self, variance, mean = 0, number = 100):
             # Add random normal noise
@@ -332,6 +335,15 @@ class LaptopPilot:
             # second is the standard deviation of the normal distribution
             # third is the number of elements you get in array noise
             return noise
+    
+    def lidar_addnoise(self, lidardata):
+        rangenoise = self.add_noise(self.lidar_rangenoise,0,len(lidardata[:,0]))
+        anglenoise = self.add_noise(self.lidar_anglenoise,0,len(lidardata[:,1]))
+
+        lidardata[:,0] += rangenoise
+        lidardata[:,1] += anglenoise
+
+        return lidardata
 
     def generate_trajectory(self):
     # pick waypoints as current pose relative or absolute northings and eastings
