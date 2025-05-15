@@ -47,7 +47,7 @@ class LaptopPilot:
         self.sim_time_offset = 0 #used to deal with webots timestamps
         self.sim_init = False #used to deal with webots timestamps
         self.simulation = simulation
-        self.aruco = False
+        self.aruco = True
 
         if self.simulation:
             self.robot_ip = "127.0.0.1"          
@@ -122,7 +122,7 @@ class LaptopPilot:
         self.jacobian = None
         self.covariance = None
         self.uncertainty = None
-        self.covariancetracker = []
+        self.dptracker = []
         #>Communication>#
         #################
     
@@ -383,39 +383,39 @@ class LaptopPilot:
         #Class to keep track of model uncertainty
         def get_initial_uncertainty(self):
             # Create process uncertainty matrix
-            sigma = Matrix(3,3) 
-            # sigma[0,0]=0.0005**2
-            # sigma[0,1]=0.0001**2
-            # sigma[1,0]=0.0001**2
-            # sigma[1,1]=0.0005**2
-            # sigma[0,2]=0.0001**2
-            # sigma[1,2]=0.0001**2
-            # sigma[2,0]=0.0001**2
-            # sigma[2,1]=0.0001**2
-            # sigma[2,2]=0.0005**2
+            # sigma = Matrix(3,3) 
+            # sigma[0,0]=0.01**2
+            # sigma[0,1]=0.001**2
+            # sigma[1,0]=0.001**2
+            # sigma[1,1]=0.001**2
+            # sigma[0,2]=0.01**2
+            # sigma[1,2]=0.001**2
+            # sigma[2,0]=0.001**2
+            # sigma[2,1]=0.001**2
+            # sigma[2,2]=0.01**2
 
             sigma = Matrix(3,3) 
-            sigma[0,0]=0.1
-            sigma[0,1]=0.01
-            sigma[1,0]=0.01
-            sigma[1,1]=0.1
-            sigma[0,2]=0.01
-            sigma[1,2]=0.01
-            sigma[2,0]=0.01
-            sigma[2,1]=0.01
-            sigma[2,2]=0.1
+            sigma[0,0]=0.005
+            sigma[0,1]=0.0005
+            sigma[1,0]=0.0005
+            sigma[1,1]=0.005
+            sigma[0,2]=0.0005
+            sigma[1,2]=0.0005
+            sigma[2,0]=0.0005
+            sigma[2,1]=0.0005
+            sigma[2,2]=0.005
 
             return sigma
 
         def get_process_uncertainty3x3(self):
             #Motion model linear noise due to v and w
             sigma_motion=Matrix(3,2)
-            sigma_motion[0,0]= 0.1**2 # impact of v linear velocity on x           #Task
-            sigma_motion[0,1]= np.deg2rad(0.1)**2# impact of w angular velocity on x
-            sigma_motion[1,0]=0.3**2# impact of v linear velocity on y
-            sigma_motion[1,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on y
-            sigma_motion[2,0]=0.1**2 # impact of v linear velocity on gamma
-            sigma_motion[2,1]=np.deg2rad(0.3)**2 # impact of w angular velocity on gamma
+            sigma_motion[0,0]= 0.01**2 # impact of v linear velocity on x           #Task
+            sigma_motion[0,1]= np.deg2rad(0.01)**2# impact of w angular velocity on x
+            sigma_motion[1,0]=0.05**2# impact of v linear velocity on y
+            sigma_motion[1,1]=np.deg2rad(0.05)**2 # impact of w angular velocity on y
+            sigma_motion[2,0]=0.01**2 # impact of v linear velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(0.03)**2 # impact of w angular velocity on gamma
             
             return sigma_motion
 
@@ -440,9 +440,9 @@ class LaptopPilot:
             # Get lidar uncertainty
             Ql = Identity(2)
 
-            Ql[N,N] = 0.1**2
+            Ql[N,N] = 0.1**2 #range
             Ql[N,E] = 0
-            Ql[E,N] = np.deg2rad(5)**2
+            Ql[E,N] = np.deg2rad(5)**2 #Angle from range
             Ql[E,E] = 0
             # Ql[N,N] = 0
             # Ql[N,E] = 0#
@@ -476,6 +476,7 @@ class LaptopPilot:
 
             H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
             self.reset_previous_state(H_eb)
+            self.new_cov = Identity(3)
 
             # get current time and determine timestep
             self.t_prev = datetime.utcnow().timestamp() #initialise the time
@@ -499,7 +500,8 @@ class LaptopPilot:
     def reset_previous_state(self, H_eb):
         self.p_ = self.state
         self.sigma_ = self.covariance
-        self.sigma_ = H_eb.H_R @ self.sigma_ @ H_eb.H_R.T
+        self.dp_ = 0
+        # self.sigma_ = H_eb.H_R @ self.sigma_ @ H_eb.H_R.T
 
     def save_object(self, object, filename):
         with open(filename, "wb") as f:
@@ -608,12 +610,13 @@ class LaptopPilot:
             H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
             sigma_motion = self.uncertainty.get_process_uncertainty3x3()
             sigma_lidar = self.uncertainty.get_lidar_uncertainty()
-
+            
             # Progress motion model
             self.state, self.covariance, dp, _ =  rigid_body_kinematics(self.state,u,dt=dt,mu_gt=None,sigma_motion=sigma_motion,sigma_xy=self.covariance)
-
+            self.dp_ += dp
+            self.dptracker.append(dp)
             # Log landmark
-            dp_ = self.state - self.p_
+
             if self.new_landmark is True:
                 self.new_landmark = False
                 _, _, t_lm, sigma_observe_xy = self.lidar.loc_to_rangeangle(p_eb=self.state,t_em=self.landmark,sigma_observe=sigma_lidar)
@@ -623,19 +626,18 @@ class LaptopPilot:
                 self.graph.observation(self.landmark, sigma_observe_xy, landmark_id, t_lm)
                 # Check if landmark is older than 1 observation
                 if new_id is False and landmark_id != self.graph.landmark_id_array[-2]:
-                # if landmark_id != 0:
                     # Stop robot motion cause it needsa think
                     self.robo_stop()
                     self.stop_to_think = True
                     self.za_warudo_part_one = True
                 else:
-                    self.graph.motion(self.p_, self.sigma_, dp_, final=False)
+                    self.graph.motion(self.p_, self.sigma_, self.dp_, final=False)
                     self.pose_groundtruth.append(self.groundtruth_update())
                     self.reset_previous_state(H_eb)
                 self.count = 0
             # If no landmarks and moving, business as usual 
             elif u.all() != 0 and self.count > 10:
-                self.graph.motion(self.p_, self.sigma_, dp_, final=False)
+                self.graph.motion(self.p_, self.sigma_, self.dp_, final=False)
                 self.pose_groundtruth.append(self.groundtruth_update())
                 self.reset_previous_state(H_eb)
                 self.count = 0
@@ -645,7 +647,7 @@ class LaptopPilot:
             if self.za_warudo_part_two:
                     self.za_warudo_part_two = False
                     self.robo_stop()
-                    self.graph.motion(self.p_, self.sigma_, dp_, final=True)
+                    self.graph.motion(self.p_, self.sigma_, self.dp_, final=True)
                     self.reset_previous_state(H_eb)
                     self.pose_groundtruth.append(self.groundtruth_update())
                     self.graph.construct_graph() 
@@ -739,6 +741,8 @@ class LaptopPilot:
                 dp_truth = p_ref - p_robot_truth
                 
                 dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+            
+            
 
 
 if __name__ == "__main__":
