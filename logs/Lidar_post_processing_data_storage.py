@@ -20,34 +20,37 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 from matplotlib.widgets import Button
+import pickle
+import os
+from collections import defaultdict
+from pyton_skin import data_manager
 
 
+class ScanDataManager:
+    def __init__(self, storage_file='scan_data.pkl'):
+        self.storage_file = storage_file
+        self.labeled_scans = defaultdict(list)
+        self._load_data()
 
-# # Create meaningfully different initial kernels
-# gpc_0_R_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.8),
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
+    def _load_data(self):
+        if os.path.exists(self.storage_file):
+            with open(self.storage_file, 'rb') as f:
+                self.labeled_scans = pickle.load(f)
 
-# gpc_0_R = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.5),  # Different initial length scale
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
+    def save_scan(self, scan_data, label, source_file):
+        key = f"{label}_{os.path.basename(source_file)}"
+        self.labeled_scans[key].append(scan_data)
+        self._save_data()
 
-# gpc_0 = GaussianProcessClassifier(
-#     kernel=ConstantKernel(0.8) * RBF(length_scale=2.0),  # Different constant value
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
+    def _save_data(self):
+        with open(self.storage_file, 'wb') as f:
+            pickle.dump(self.labeled_scans, f)
 
-# gpc_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.2) * RBF(length_scale=1.0),  # Distinct configuration
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
+    def get_scans_by_label(self, label_pattern):
+        return {k: v for k, v in self.labeled_scans.items() if label_pattern in k}
 
+# Singleton instance
+data_manager = ScanDataManager()
 
 
 p = Vector(3); 
@@ -360,7 +363,7 @@ class ImportLog:
                 extracted_data.append(np.array([data]))
 
         return extracted_data
-def format_scan_lablee(filepath, threshold=0.001, fit_error_tolerance=0.01, fit_error_tolerance_wall=0.005):
+def format_scan_lablee(filepath, savepath, threshold=0.001, fit_error_tolerance=0.01, fit_error_tolerance_wall=0.005):
     class LabelSelector:
         def __init__(self):
             self.label = None
@@ -457,6 +460,15 @@ def format_scan_lablee(filepath, threshold=0.001, fit_error_tolerance=0.01, fit_
             new_observation.label = label_selector.label
             print(f"Scan {j} labeled as: {new_observation.label}")
             corner_training.append(new_observation)
+
+            data_manager.save_scan(
+                scan_data={
+                    'observation': observation,
+                    'values': values,
+                },
+                label=new_observation.label,
+                source_file=savepath
+            )
 
 
     return corner_training
@@ -1381,12 +1393,12 @@ def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
         return "nothing homie"
 
 print("c_full_test_0")
-c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", 10,50,1)
+c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", "logs/___test_file_big_ballz____.json",10,50,1)
 
 for i in range(len(c_full_test_0)):
     print('Entry:', i, ', Class', c_full_test_0[i].label, ', Size', c_full_test_0[i].data_filled[:, 0].size)
-    # print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
-    # print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
+#     # print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
+#     # print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
 
 # print("c_full_test_1")
 # c_full_test_1 = format_scan_lablee("logs/full_test_1_noise_rr.json", 10,50,1)
@@ -1397,9 +1409,9 @@ for i in range(len(c_full_test_0)):
 
 #0.0005
 ##corner training### 
-# c_corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
-# c_wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 10,0.1,1)
-# c_object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
+c_corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
+c_wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 10,0.1,1)
+c_object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
 
 # c_corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
 # c_corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)

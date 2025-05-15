@@ -20,33 +20,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 from matplotlib.widgets import Button
+from pyton_skin import data_manager
 
-
-
-# # Create meaningfully different initial kernels
-# gpc_0_R_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.8),
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_0_R = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.5),  # Different initial length scale
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_0 = GaussianProcessClassifier(
-#     kernel=ConstantKernel(0.8) * RBF(length_scale=2.0),  # Different constant value
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.2) * RBF(length_scale=1.0),  # Distinct configuration
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
 
 
 
@@ -84,6 +59,27 @@ H_eb = HomogeneousTransformation(p[0:2],p[2])
 H_el = HomogeneousTransformation()
 H_el.H = H_eb.H@lidar.H_bl.H
 fig,ax = plt.subplots()
+
+def analyze_scans():
+    # Get all corner scans
+    corners = data_manager.get_scans_by_label('corner')
+    print(f"Found {sum(len(v) for v in corners.values())} corner scans")
+    
+    # Get all non-corner scans
+    non_corners = data_manager.get_scans_by_label('not_corner')
+    print(f"Found {sum(len(v) for v in non_corners.values())} non-corner scans")
+    
+    # Example: Plot the first corner scan from each file
+    for file_key, scans in corners.items():
+        if scans:
+            scan = scans[0]
+            plt.figure()
+            plt.scatter(scan['observation'][:, 1], scan['observation'][:, 0], s=1)
+            plt.title(f"Corner scan from {file_key}")
+            plt.show()
+
+if __name__ == "__main__":
+    analyze_scans()
 
 
 def fit_line_to_points(points,fit_error_tolerance = 0.5 ):
@@ -1380,11 +1376,11 @@ def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
     else:
         return "nothing homie"
 
-print("c_full_test_0")
-c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", 10,50,1)
+# print("c_full_test_0")
+# c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", 10,50,1)
 
-for i in range(len(c_full_test_0)):
-    print('Entry:', i, ', Class', c_full_test_0[i].label, ', Size', c_full_test_0[i].data_filled[:, 0].size)
+# for i in range(len(c_full_test_0)):
+#     print('Entry:', i, ', Class', c_full_test_0[i].label, ', Size', c_full_test_0[i].data_filled[:, 0].size)
     # print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
     # print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
 
@@ -1397,70 +1393,70 @@ for i in range(len(c_full_test_0)):
 
 #0.0005
 ##corner training### 
-# c_corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
-# c_wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 10,0.1,1)
-# c_object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
+c_corner_0_noise = format_scan_corner("logs/corner_perfect_lidar.json", 0.001,0.1,1)
+c_wall_0_noise = format_scan_corner("logs/wall_perfect_lidar.json", 10,0.1,1)
+c_object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
 
-# c_corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
-# c_corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
+c_corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
+c_corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
 
 
 # for i in range(len(c_corner_0_noise)):
 #     print('Entry:', i, ', Class', c_corner_0_noise[i].label, ', Size', c_corner_0_noise[i].data_filled[:, 0].size)
-    # print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
-    # print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
+#     print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
+#     print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
 
-#########extended corner data#######
-# c_ranged_far = format_scan_corner("logs/Corner_range_far.json", 0,0.1,1)
-# c_ranged_near = format_scan_corner("logs/corner_range_near.json", 0,0.1,1)
-# c_rotaion = format_scan_corner("logs/corner_0_test1_rotation.json", 0,0.1,1)
-# c_side_left = format_scan_corner("logs/side_corner_left.json", 0,0.1,1)
-# c_side_right = format_scan_corner("logs/side_corner_right_real.json", 0,0.1,1)
+########extended corner data#######
+c_ranged_far = format_scan_corner("logs/Corner_range_far.json", 0,0.1,1)
+c_ranged_near = format_scan_corner("logs/corner_range_near.json", 0,0.1,1)
+c_rotaion = format_scan_corner("logs/corner_0_test1_rotation.json", 0,0.1,1)
+c_side_left = format_scan_corner("logs/side_corner_left.json", 0,0.1,1)
+c_side_right = format_scan_corner("logs/side_corner_right_real.json", 0,0.1,1)
 
-# c_wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 100,0.1,1)
-# c_wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 100,0.1,1)
+c_wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 100,0.1,1)
+c_wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 100,0.1,1)
 
-# c_object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 100,50,1)
-# c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
+c_object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 100,50,1)
+c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
 
-# c_object_vhigh_noise = format_scan_corner("logs/circle_x10R.json", 100,50,1)
-# c_wall_vhigh_noise = format_scan_corner("logs/wall_x10R.json", 100,0.1,1)
-# c_corner_vhigh_noise = format_scan_corner("logs/corner_x10R.json", 0.00001,0.1,1)
-
-
-
-# ##object training###
-# o_corner_0_noise = format_scan_object("logs/corner_perfect_lidar.json", 10,0.00001,1)
-# o_wall_0_noise = format_scan_object("logs/wall_perfect_lidar.json", 10,0.00001,1)
-# o_object_0_noise = format_scan_object("logs/object_perfect_lidar.json", 10,50,1)
-
-# o_object_low_noise = format_scan_object("logs/object_1_deg_5mm.json", 10,50,1)
-# o_object_high_noise = format_scan_object("logs/object_3deg_15mm.json", 10,50,1)
-
-# ########extended object data######
-# o_ranged_far = format_scan_object("logs/object_range_far.json", 10,50,1)
-# o_ranged_near = format_scan_object("logs/Range_object_near.json", 10,50,1)
-# o_rotaion = format_scan_object("logs/object_0_extended_rotation.json", 10,50,1)
-# o_side_left = format_scan_object("logs/object_side_left.json", 10,50,1)
-# o_side_right = format_scan_object("logs/object_side_right.json", 10,50,1)
+c_object_vhigh_noise = format_scan_corner("logs/circle_x10R.json", 100,50,1)
+c_wall_vhigh_noise = format_scan_corner("logs/wall_x10R.json", 100,0.1,1)
+c_corner_vhigh_noise = format_scan_corner("logs/corner_x10R.json", 0.00001,0.1,1)
 
 
 
+##object training###
+o_corner_0_noise = format_scan_object("logs/corner_perfect_lidar.json", 10,0.00001,1)
+o_wall_0_noise = format_scan_object("logs/wall_perfect_lidar.json", 10,0.00001,1)
+o_object_0_noise = format_scan_object("logs/object_perfect_lidar.json", 10,50,1)
 
-# ##wall training###
-# w_corner_0_noise = format_scan_wall("logs/corner_perfect_lidar.json", 10,0.1,10)
-# w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0,1)
-# w_object_0_noise = format_scan_wall("logs/object_perfect_lidar.json", 10,0.1,0)
+o_object_low_noise = format_scan_object("logs/object_1_deg_5mm.json", 10,50,1)
+o_object_high_noise = format_scan_object("logs/object_3deg_15mm.json", 10,50,1)
 
-# w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0,10)
-# w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0,10)
+########extended object data######
+o_ranged_far = format_scan_object("logs/object_range_far.json", 10,50,1)
+o_ranged_near = format_scan_object("logs/Range_object_near.json", 10,50,1)
+o_rotaion = format_scan_object("logs/object_0_extended_rotation.json", 10,50,1)
+o_side_left = format_scan_object("logs/object_side_left.json", 10,50,1)
+o_side_right = format_scan_object("logs/object_side_right.json", 10,50,1)
 
-# #extended data
-# w_ranged_far = format_scan_wall("logs/range_wall_far.json", 10,0,1)
-# w_ranged_near = format_scan_wall("logs/range_wall_near.json", 10,0,1)
-# w_rotaion = format_scan_wall("logs/Wall_0_extended_rotation.json", 10,0,1)
-# w_side_left = format_scan_wall("logs/side_wall_left.json", 10,0,1)
-# w_side_right = format_scan_wall("logs/side_wall_right.json", 10,0,1)
+
+
+
+##wall training###
+w_corner_0_noise = format_scan_wall("logs/corner_perfect_lidar.json", 10,0.1,10)
+w_wall_0_noise = format_scan_wall("logs/wall_perfect_lidar.json", 10,0,1)
+w_object_0_noise = format_scan_wall("logs/object_perfect_lidar.json", 10,0.1,0)
+
+w_wall_low_noise = format_scan_wall("logs/wall_1_deg_5mm.json", 10,0,10)
+w_wall_high_noise = format_scan_wall("logs/wall_3deg_15mm.json", 10,0,10)
+
+#extended data
+w_ranged_far = format_scan_wall("logs/range_wall_far.json", 10,0,1)
+w_ranged_near = format_scan_wall("logs/range_wall_near.json", 10,0,1)
+w_rotaion = format_scan_wall("logs/Wall_0_extended_rotation.json", 10,0,1)
+w_side_left = format_scan_wall("logs/side_wall_left.json", 10,0,1)
+w_side_right = format_scan_wall("logs/side_wall_right.json", 10,0,1)
 
 
 
@@ -1498,7 +1494,6 @@ c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhi
 
 #full test
 c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
-c_full_test_0
 
 c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
 c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
