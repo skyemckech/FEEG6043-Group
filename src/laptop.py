@@ -410,12 +410,12 @@ class LaptopPilot:
         def get_process_uncertainty3x3(self):
             #Motion model linear noise due to v and w
             sigma_motion=Matrix(3,2)
-            sigma_motion[0,0]= 0.0155**2 # impact of v linear velocity on x           #Task
-            sigma_motion[0,1]= np.deg2rad(0.0009)**2# impact of w angular velocity on x
-            sigma_motion[1,0]= 0.0155**2# impact of v linear ve   locity on y
-            sigma_motion[1,1]=np.deg2rad(0.0009)**2 # impact of w angular velocity on y
-            sigma_motion[2,0]= 0.0155**2 # impact of v linear velocity on gamma
-            sigma_motion[2,1]=np.deg2rad(0.0009)**2 # impact of w linear velocity on gamma
+            sigma_motion[0,0]= 0.005**2 # impact of v linear velocity on x           #Task
+            sigma_motion[0,1]= np.deg2rad(0.0006)**2# impact of w angular velocity on x
+            sigma_motion[1,0]= 0.005**2# impact of v linear ve   locity on y
+            sigma_motion[1,1]=np.deg2rad(0.0006)**2 # impact of w angular velocity on y
+            sigma_motion[2,0]= 0.005**2 # impact of v linear velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(0.0006)**2 # impact of w linear velocity on gamma
             
             return sigma_motion
 
