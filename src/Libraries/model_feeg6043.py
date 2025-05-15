@@ -1710,7 +1710,7 @@ class graphslam_frontend:
                     print('A_ij',A_ij)         
                     print('self.bij',self.bij)
                     
-                sigma_ij = self.pose_covariance[j]-self.pose_covariance[i]#-
+                sigma_ij = A_ij @ self.pose_covariance[j] @ A_ij.T + self.bij @ self.pose_covariance[i] @ self.bij.T #-
 
                 # populate information vector and matrix
                 self.b[3*i:3*i+3] += (e_ij.T@Inverse(sigma_ij)@A_ij).T
