@@ -1379,20 +1379,20 @@ def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
     else:
         return "nothing homie"
 
-# print("c_full_test_0")
-# c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", 10,50,1)
+print("c_full_test_0")
+c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", 10,50,1)
 
-# for i in range(len(c_full_test_0)):
-#     print('Entry:', i, ', Class', c_full_test_0[i].label, ', Size', c_full_test_0[i].data_filled[:, 0].size)
+for i in range(len(c_full_test_0)):
+    print('Entry:', i, ', Class', c_full_test_0[i].label, ', Size', c_full_test_0[i].data_filled[:, 0].size)
     # print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
     # print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
 
-# print("c_full_test_1")
-# c_full_test_1 = format_scan_lablee("logs/full_test_1_noise_rr.json", 10,50,1)
-# print("c_full_test_3")
-# c_full_test_3 = format_scan_lablee("logs/full_test_3_noise_rr.json", 10,50,1)
-# print("c_full_test_10")
-# c_full_test_10 = format_scan_lablee("logs/full_test_10_noise_rr.json", 10,50,1)
+print("c_full_test_1")
+c_full_test_1 = format_scan_lablee("logs/full_test_1_noise_rr.json", 10,50,1)
+print("c_full_test_3")
+c_full_test_3 = format_scan_lablee("logs/full_test_3_noise_rr.json", 10,50,1)
+print("c_full_test_10")
+c_full_test_10 = format_scan_lablee("logs/full_test_10_noise_rr.json", 10,50,1)
 
 #0.0005
 ##corner training### 
@@ -1495,11 +1495,10 @@ c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noi
 c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
 c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
 
-print("\n--- 🔍 Noise Sanity Check ---")
-print("Mean diff (0 vs Low):", np.mean(np.abs(c_DataX_0[0] - c_low_noise_DataX[0])))
-print("Mean diff (0 vs High):", np.mean(np.abs(c_DataX_0[0] - c_high_noise_DataX[0])))
-print("Mean diff (0 vs VHigh):", np.mean(np.abs(c_DataX_0[0] - c_vhigh_noise_DataX[0])))
-
+c_0_noise_DataX, c_0_noise_DataY = clean_data(c_full_test_0)
+c_1_noise_DataX, c_1_noise_DataY = clean_data(c_full_test_1)
+c_3_noise_DataX, c_3_noise_DataY = clean_data(c_full_test_3)
+c_10_noise_DataX, c_10_noise_DataY = clean_data(c_full_test_10)
 
 #full test
 c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
@@ -1544,34 +1543,39 @@ c,d, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_
 # print("----------c_side_right_gpc_0 vs c_DataX_0")
 # cross_validate(c_side_right_gpc_0, c_DataX_0,c_DataY_0)
 
+c_0_noise_DataX, c_0_noise_DataY = clean_data(c_full_test_0)
+c_1_noise_DataX, c_1_noise_DataY = clean_data(c_full_test_1)
+c_3_noise_DataX, c_3_noise_DataY = clean_data(c_full_test_3)
+c_10_noise_DataX, c_10_noise_DataY = clean_data(c_full_test_10)
+
 _, _, _, _, _, c_ac_0, c_rep_0 = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-    c_DataX_0,
-    c_DataY_0,
+    c_0_noise_DataX,
+    c_0_noise_DataY,
     wl=1,
     wr=1
 )
 
 _, _, _, _, _, c_ac_low, c_rep_low = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-    c_low_noise_DataX,
-    c_low_noise_DataY,
+    c_1_noise_DataX,
+    c_1_noise_DataY,
     wl=1,
     wr=1
 )
 
 _, _, _, _, _, c_ac_high, c_rep_high = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-    c_high_noise_DataX,
-    c_high_noise_DataY,
+    c_3_noise_DataX,
+    c_3_noise_DataY,
     wl=1,
     wr=1
 )
 
 _, _, _, _, _, c_ac_vhigh, c_rep_vhigh = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise),
-    c_vhigh_noise_DataX,
-    c_vhigh_noise_DataY,
+    c_10_noise_DataX,
+    c_10_noise_DataY,
     wl=1,
     wr=1
 )
@@ -1580,32 +1584,32 @@ _, _, _, _, _, c_ac_vhigh, c_rep_vhigh = find_thetas_cross_validate(
 
 _, _, _, _, _, cali_c_ac_0, cali_c_rep_0 = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-    c_DataX_0,
-    c_DataY_0,
+    c_0_noise_DataX,
+    c_0_noise_DataY,
     wl=1.85,
     wr=1.7
 )
 
 _, _, _, _, _, cali_c_ac_low, cali_c_rep_low = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-    c_low_noise_DataX,
-    c_low_noise_DataY,
+    c_1_noise_DataX,
+    c_1_noise_DataY,
     wl=1.85,
     wr=1.7
 )
 
 _, _, _, _, _, cali_c_ac_high, cali_c_rep_high = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-    c_high_noise_DataX,
-    c_high_noise_DataY,
+    c_3_noise_DataX,
+    c_3_noise_DataY,
     wl=1.85,
     wr=1.7
 )
 
 _, _, _, _, _, cali_c_ac_vhigh, cali_c_rep_vhigh = find_thetas_cross_validate(
     combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-    c_vhigh_noise_DataX,
-    c_vhigh_noise_DataY,
+    c_10_noise_DataX,
+    c_10_noise_DataY,
     wl=1.85,
     wr=1.7
 )
