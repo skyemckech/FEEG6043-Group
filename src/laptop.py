@@ -739,7 +739,9 @@ class LaptopPilot:
                 self.p_groundtruth_tracker = p_robot_truth[0:3,0]
 
                 dp_truth = p_ref - p_robot_truth
-                
+                drift = self.state - dp_truth 
+                self.datalog.log(drift, topic_name="/drift")
+                self.datalog.log(self.covariance, topic_name="/covar")
                 dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
             
             
