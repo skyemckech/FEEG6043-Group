@@ -1,2 +1,2 @@
 from .Classifier import *
-from .import_functions import cross_val_score, cross_validate, show_scan, ImportLog, format_scan, find_thetas, combine_scans, add_noise, euclidean_distance, check_landmarks, juice_graph, make_not_zero, plot_graph_square
+from .import_functions import cross_val_score, cross_validate, show_scan, ImportLog, format_scan, find_thetas, combine_scans, add_noise, euclidean_distance, check_landmarks, juice_graph, make_not_zero, plot_graph_square, GraphSLAM2D

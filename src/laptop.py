@@ -13,6 +13,7 @@ import time
 import openpyxl
 import pickle
 import sys
+import g2o
 
 from datetime import datetime
 from drivers.aruco_udp_driver import ArUcoUDPDriver
@@ -443,7 +444,7 @@ class LaptopPilot:
             Ql[N,N] = 0.1**2
             Ql[N,E] = 0
             Ql[E,N] = np.deg2rad(5)**2
-            Ql[E,E] = 0
+            Ql[E,E] = np.deg2rad(1)**2
             # Ql[N,N] = 0
             # Ql[N,E] = 0#
             # Ql[E,N] = 0
@@ -471,8 +472,10 @@ class LaptopPilot:
             self.cornerClassifier = Classifier()
             self.cornerClassifier.train_classifier('corner')
 
-            self.graph = graphslam_frontend()
-            self.graph.anchor(self.covariance)
+            self.graph = GraphSLAM2D(verbose=True)
+            self.graph.add_fixed_pose(g2o.SE2(), 0)
+            information = np.linalg.inv(self.covariance)
+            self.graph.add_odometry(self.state[0], self.state[1], self.state[2], information)
 
             H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
             self.reset_previous_state(H_eb)
@@ -533,6 +536,11 @@ class LaptopPilot:
                 else:
                     self.landmark = None
 
+    def get_last_vertex(self):
+        vertices = self.graph.optimizer.vertices()
+        last_id = [v for v in vertices if type(vertices[v]) == g2o.VertexSE2]
+        return max(last_id)
+    
     def infinite_loop(self):
         """Main control loop
 
@@ -620,7 +628,7 @@ class LaptopPilot:
                 new_id, landmark_id = check_landmarks(self.landmark, self.graph, self.landmark_acceptance_radius)
                 print(landmark_id)
                 # Check distance to other landmarks
-                self.graph.observation(self.landmark, sigma_observe_xy, landmark_id, t_lm)
+                self.graph.add_landmark(self.landmark[0], self.landmark[1], np.linalg.inv(sigma_lidar), self.get_last_vertex(), landmark_id)
                 # Check if landmark is older than 1 observation
                 if new_id is False and landmark_id != self.graph.landmark_id_array[-2]:
                 # if landmark_id != 0:
@@ -629,13 +637,13 @@ class LaptopPilot:
                     self.stop_to_think = True
                     self.za_warudo_part_one = True
                 else:
-                    self.graph.motion(self.p_, self.sigma_, dp_, final=False)
+                    self.graph.add_odometry(self.state[0], self.state[1], self.state[2], np.linalg.inv(self.covariance))
                     self.pose_groundtruth.append(self.groundtruth_update())
                     self.reset_previous_state(H_eb)
                 self.count = 0
             # If no landmarks and moving, business as usual 
             elif u.all() != 0 and self.count > 10:
-                self.graph.motion(self.p_, self.sigma_, dp_, final=False)
+                self.graph.add_odometry(self.state[0], self.state[1], self.state[2], np.linalg.inv(self.covariance))
                 self.pose_groundtruth.append(self.groundtruth_update())
                 self.reset_previous_state(H_eb)
                 self.count = 0
@@ -645,18 +653,17 @@ class LaptopPilot:
             if self.za_warudo_part_two:
                     self.za_warudo_part_two = False
                     self.robo_stop()
-                    self.graph.motion(self.p_, self.sigma_, dp_, final=True)
+                    self.graph.add_odometry(self.state[0], self.state[1], self.state[2], np.linalg.inv(self.covariance))
                     self.reset_previous_state(H_eb)
                     self.pose_groundtruth.append(self.groundtruth_update())
-                    self.graph.construct_graph() 
                     init_graph = self.graph
                     np.savetxt("output.csv", self.graph.H, delimiter=",", fmt='%d')
                     self.save_object(init_graph,filename="init_graph.pkl")
                     self.save_object(self.pose_groundtruth, "grdtruth.pkl")
                     # Optimise graph and update position
-                    self.graph = juice_graph(self.graph)
+                    self.graph.optimize(10, verbose=True)
                     print("old state", self.state)
-                    self.state = self.graph.pose[-1:][0]
+                    self.state = self.graph.vertex_pose(self.get_last_vertex())
                     print("new state", self.state)
                     self.save_object(self.graph,filename="final_graph.pkl")
                     #
