@@ -430,8 +430,6 @@ def format_scan_lablee(filepath, threshold=0.001, fit_error_tolerance=0.01, fit_
         new_observation = GPC_input_output(observation, None)
         values = new_observation.data
 
-        corner_training = []
-
 
         # ... (keep your existing data processing code) ...
 
