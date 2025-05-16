@@ -67,8 +67,8 @@ class LaptopPilot:
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        lapx = [0,1.4,1.4,0]
-        lapy = [0,0,1.4,1.4]
+        lapx = [0,1,1,0]
+        lapy = [0,0,1,1]
         # lapx = [0,-0.1]
         # lapy = [0,-0.1]
         self.northings_path = lapx+lapx+lapx
@@ -469,7 +469,7 @@ class LaptopPilot:
 
             #Graphslam
             self.cornerClassifier = Classifier()
-            self.cornerClassifier.train_classifier('corner')
+            self.cornerClassifier.train_classifier()
 
             self.graph = graphslam_frontend()
             self.graph.anchor(self.covariance)

@@ -8,7 +8,7 @@ class Classifier:
 
         filepath = "src/Tools/training_data/"
         gameroajgood = [0,0,0,0,0,1,1,1,1,1,1]
-        corner_no_noise = format_scan(filepath+"NOW.json", gameroajgood)
+        corner_no_noise = format_scan(filepath+"realsquare3x.json", gameroajgood)
 
         # corner_no_noise = format_scan(filepath+"corner_0.json", 'corner')
         # corner_sider = format_scan(filepath+"corner_0_sider.json", 'corner')
@@ -23,15 +23,15 @@ class Classifier:
         # nothing = format_scan(filepath+"nothing.json",'None')
 
         # no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,wall_wides, object_no_noise)
-
-        self.data = corner_no_noise
+        self.corner_ids = [0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0]
+        self.data = corner_no_noise[:len(self.corner_ids)]
         # self.data = [no_noise,low_noise,high_noise]
 
     def train_classifier(self):
-        gjaisfagsos = [0,0,0,0,0,1,1,1,1,1,1]
-        data = self.data[:120,:]
+        
+        data = self.data
         for i in range(len(data)):
-            if gjaisfagsos[i] == 0:
+            if self.corner_ids[i] == 0:
                 data[i].label = 'not corner'
             else:
                 data[i].label = 'corner'
@@ -39,7 +39,7 @@ class Classifier:
         print("theta 1 is:",theta1, "theta 2 is:",theta2)
 
     def check_classifier(self):
-        test_d = format_scan("src/Tools/training_data/realsquare3x.json",None)
+        test_d = format_scan("src/Tools/training_data/realsquare_latest.json",None)
         return test_d
 
 
