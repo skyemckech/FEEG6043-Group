@@ -1582,7 +1582,7 @@ for i, wl in enumerate(wl_values):
         wr_values_store[j] = wr
 
         _, _, _, _,__, score2,__ = find_thetas_cross_validate(
-                realsquarx3,
+                combine_scans(realsquarx3, c_wall_0_noise, c_object_0_noise),
                 c_10_noise_DataX,
                 c_10_noise_DataY,
                 wl=wl,
