@@ -17,32 +17,11 @@ from sklearn.base import clone
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+from matplotlib.widgets import Button
+from pyton_skin import data_manager
 
-
-# # Create meaningfully different initial kernels
-# gpc_0_R_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.8),
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_0_R = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.0) * RBF(length_scale=1.5),  # Different initial length scale
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_0 = GaussianProcessClassifier(
-#     kernel=ConstantKernel(0.8) * RBF(length_scale=2.0),  # Different constant value
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
-
-# gpc_H = GaussianProcessClassifier(
-#     kernel=ConstantKernel(1.2) * RBF(length_scale=1.0),  # Distinct configuration
-#     optimizer='fmin_l_bfgs_b',
-#     n_restarts_optimizer=5
-# )
 
 
 
@@ -80,6 +59,27 @@ H_eb = HomogeneousTransformation(p[0:2],p[2])
 H_el = HomogeneousTransformation()
 H_el.H = H_eb.H@lidar.H_bl.H
 fig,ax = plt.subplots()
+
+def analyze_scans():
+    # Get all corner scans
+    corners = data_manager.get_scans_by_label('corner')
+    print(f"Found {sum(len(v) for v in corners.values())} corner scans")
+    
+    # Get all non-corner scans
+    non_corners = data_manager.get_scans_by_label('not_corner')
+    print(f"Found {sum(len(v) for v in non_corners.values())} non-corner scans")
+    
+    # Example: Plot the first corner scan from each file
+    for file_key, scans in corners.items():
+        if scans:
+            scan = scans[0]
+            plt.figure()
+            plt.scatter(scan['observation'][:, 1], scan['observation'][:, 0], s=1)
+            plt.title(f"Corner scan from {file_key}")
+            plt.show()
+
+if __name__ == "__main__":
+    analyze_scans()
 
 
 def fit_line_to_points(points,fit_error_tolerance = 0.5 ):
@@ -356,10 +356,192 @@ class ImportLog:
                 extracted_data.append(np.array([data]))
 
         return extracted_data
+def format_scan_lablee(filepath, threshold=0.001, fit_error_tolerance=0.01, fit_error_tolerance_wall=0.005):
+    class LabelSelector:
+        def __init__(self):
+            self.label = None
+        
+        def corner(self, event):
+            self.label = 'corner'
+            plt.close()
+        
+        def not_corner(self, event):
+            self.label = 'not corner'
+            plt.close()
 
+    # Initialize label selector outside the loop
+    label_selector = LabelSelector()
+
+    # ... (keep all your original data loading and validation code) ...
+    fit_error = None
+    variables = ImportLog(filepath)
+    r = variables.extract_data("/lidar", ["message", "ranges"])
+    theta = variables.extract_data("/lidar", ["message", "angles"])
+    timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+    j = 0
+
+    ###########________random bull shit which fixes formating_______###########
+
+    if not isinstance(r, list):
+        raise TypeError("Expected r to be a list, got {} instead.".format(type(r)))
+    if not isinstance(theta, list):
+        raise TypeError("Expected theta to be a list, got {} instead.".format(type(theta)))
+
+    if len(r) == 0 or len(theta) == 0:
+        raise ValueError("Extracted r or theta is empty. Ensure your logs have valid data.")
+
+    if isinstance(r[0], list) or isinstance(r[0], np.ndarray):
+        r[0] = np.array(r[0])
+    else:
+        r = [np.array(r)]  
+
+    if isinstance(theta[0], list) or isinstance(theta[0], np.ndarray):
+        theta[0] = np.array(theta[0])
+    else:
+        theta = [np.array(theta)]  
+
+    observation = np.column_stack((r[0], theta[0]))  
+    corner_example = GPC_input_output(observation, None)
+    corner_training = [corner_example]
+
+    for i in range(len(r)):
+        if isinstance(r[i], list) or isinstance(r[i], np.ndarray):
+            r[i] = np.array(r[i])
+        else:
+            print(f"Warning: Unexpected type for r[{i}]. Skipping.")
+            continue
+
+        if isinstance(theta[i], list) or isinstance(theta[i], np.ndarray):
+            theta[i] = np.array(theta[i])
+        else:
+            print(f"Warning: Unexpected type for theta[{i}]. Skipping.")
+            continue
+
+        observation = np.column_stack((r[i], theta[i]))  
+        z_lm = Vector(2)
+
+        z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
+        #print(z_lm, loc)
+
+        new_observation = GPC_input_output(observation, None)
+        values = new_observation.data
+
+
+        # ... (keep your existing data processing code) ...
+
+        if j < 1000:
+            j = j + 1
+            fig, ax = plt.subplots()
+            show_scan(p, lidar, observation)
+            ax.scatter(m_y, m_x, s=0.01)
+            plt.title(loc)
+
+            # Create fresh buttons for each plot
+            ax_corner = plt.axes([0.4, 0.05, 0.1, 0.075])
+            ax_not_corner = plt.axes([0.55, 0.05, 0.1, 0.075])
+            
+            btn_corner = Button(ax_corner, 'Corner')
+            btn_not_corner = Button(ax_not_corner, 'Not Corner')
+            
+            # Connect buttons to the label selector instance
+            btn_corner.on_clicked(label_selector.corner)
+            btn_not_corner.on_clicked(label_selector.not_corner)
+            
+            plt.show()
+            
+            # Assign the selected label
+            new_observation.label = label_selector.label
+            print(f"Scan {j} labeled as: {new_observation.label}")
+            corner_training.append(new_observation)
+
+
+    return corner_training
     
 #"logs/all_static_corners_&_walls_20250325_135405_log.json"
+def format_scan_lable(filepath, threshold=0.001, fit_error_tolerance=0.01, fit_error_tolerance_wall=0.005):
 
+    fit_error = None
+    variables = ImportLog(filepath)
+    r = variables.extract_data("/lidar", ["message", "ranges"])
+    theta = variables.extract_data("/lidar", ["message", "angles"])
+    timestamps = variables.extract_data("/groundtruth", ["timestamp"])
+    j = 0
+
+    ###########________random bull shit which fixes formating_______###########
+
+    if not isinstance(r, list):
+        raise TypeError("Expected r to be a list, got {} instead.".format(type(r)))
+    if not isinstance(theta, list):
+        raise TypeError("Expected theta to be a list, got {} instead.".format(type(theta)))
+
+    if len(r) == 0 or len(theta) == 0:
+        raise ValueError("Extracted r or theta is empty. Ensure your logs have valid data.")
+
+    if isinstance(r[0], list) or isinstance(r[0], np.ndarray):
+        r[0] = np.array(r[0])
+    else:
+        r = [np.array(r)]  
+
+    if isinstance(theta[0], list) or isinstance(theta[0], np.ndarray):
+        theta[0] = np.array(theta[0])
+    else:
+        theta = [np.array(theta)]  
+
+    observation = np.column_stack((r[0], theta[0]))  
+    corner_example = GPC_input_output(observation, None)
+    corner_training = [corner_example]
+
+    for i in range(len(r)):
+        if isinstance(r[i], list) or isinstance(r[i], np.ndarray):
+            r[i] = np.array(r[i])
+        else:
+            print(f"Warning: Unexpected type for r[{i}]. Skipping.")
+            continue
+
+        if isinstance(theta[i], list) or isinstance(theta[i], np.ndarray):
+            theta[i] = np.array(theta[i])
+        else:
+            print(f"Warning: Unexpected type for theta[{i}]. Skipping.")
+            continue
+
+        observation = np.column_stack((r[i], theta[i]))  
+        z_lm = Vector(2)
+
+        z_lm[0], z_lm[1], loc = find_corner(observation, threshold)
+        #print(z_lm, loc)
+
+        new_observation = GPC_input_output(observation, None)
+        values = new_observation.data
+
+        if j < 1000:
+            j = j + 1
+            fig, ax = plt.subplots()
+            show_scan(p, lidar, observation)
+            ax.scatter(m_y, m_x, s=0.01)
+            plt.title(loc)
+
+            # Add buttons
+            ax_corner = plt.axes([0.4, 0.05, 0.1, 0.075])
+            ax_not_corner = plt.axes([0.55, 0.05, 0.1, 0.075])
+            
+            btn_corner = Button(ax_corner, 'Corner')
+            btn_not_corner = Button(ax_not_corner, 'Not Corner')
+            
+            btn_corner.on_clicked(label_selector.corner)
+            btn_not_corner.on_clicked(label_selector.not_corner)
+            
+            plt.show()
+            
+            # Wait for user input
+            new_observation.label = label_selector.label
+            print(f"Scan {j} labeled as: {new_observation.label}")
+            
+            corner_training.append(new_observation)
+        else:
+            print("Maximum scans reached")
+            break
+
+    return corner_training
 
 def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, fit_error_tolerance_wall = 0.005):
     fit_error = None
@@ -421,16 +603,16 @@ def format_scan_corner(filepath, threshold = 0.001, fit_error_tolerance = 0.01, 
 
         ####plotting funcitons####
         
-        # if j < 6:
-        #     j = j + 1
-        #     fig,ax = plt.subplots()
-        #     show_scan(p, lidar, observation)
-        #     ax.scatter(m_y, m_x,s=0.01)
-        #     plt.title(loc)
-        #     plt.show()
-        #     print(j)
-        # else:
-        #     print("yummy cummy")
+        if j < 1000:
+            j = j + 1
+            # fig,ax = plt.subplots()
+            # show_scan(p, lidar, observation)
+            # ax.scatter(m_y, m_x,s=0.01)
+            # plt.title(loc)
+            # # plt.show()
+            # print(j)
+        else:
+            print("yummy cummy")
 
             ####if the number of nan's is more than X of the total size then pass#######
         if np.count_nonzero(~np.isnan(values[:,0])) > 0.1 * len(values[:,0]):
@@ -703,9 +885,6 @@ def clean_data(a):
 
     return X_train_clean, y_train_clean
 
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel
-import numpy as np
 
 def find_thetas(scans, model_name=None, wl = 1, wr = 1):
     """
@@ -774,24 +953,8 @@ def find_thetas(scans, model_name=None, wl = 1, wr = 1):
 
     # kernel = ConstantKernel(settings['constant'], settings['constant_bounds']) * \
     #          RBF(settings['length'], settings['length_bounds'])
-    kernel = wl * RBF(wr, length_scale_bounds='fixed')  # Prevent optimization
-
-    # --- Fit GPC ---
-    # gpc = GaussianProcessClassifier(
-    #     kernel=kernel,
-    #     optimizer='fmin_l_bfgs_b',
-    #     n_restarts_optimizer=settings['restarts'],
-    #     random_state=settings['seed'],
-    #     copy_X_train=False
-    # )
-
-    # --- Fit GPC ---
-    gpc = GaussianProcessClassifier(
-        kernel=kernel,
-        optimizer=None,
-        random_state=settings['seed'],
-        copy_X_train=False
-    )
+    kernel = wl * RBF(length_scale=wr, length_scale_bounds='fixed')  # Disable optimization
+    gpc = GaussianProcessClassifier(kernel=kernel, optimizer=None)    # No post-training tuning
 
     gpc.fit(X_train_clean, y_train_clean)
 
@@ -813,10 +976,13 @@ def find_thetas(scans, model_name=None, wl = 1, wr = 1):
 def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
     
 
-    theta_1,theta_0, gpc, X_train,y_train = find_thetas(scans,model_name='11', wl=wl , wr=wr)
-    score = cross_validate(gpc, X_train, y_train)   # Get a performance metric
+    #theta_1,theta_0, gpc, X_train,y_train = find_thetas(scans,model_name='11', wl=wl , wr=wr)
+    #added danae
+    theta_1, theta_0, gpc, _, _ = find_thetas(scans, wl=wl, wr=wr)
 
-    return theta_1, theta_0, gpc, X_train, y_train, score  # Add score to returns
+    score, rep = cross_validate_acc_and_rep(gpc, X_train, y_train)   # Get a performance metric
+
+    return theta_1, theta_0, gpc, X_train, y_train, score, rep  # Add score to returns
 
 def find_thetas_old_1(a, model_name=None):
     target_size = a[0].data_filled[:, 0].size
@@ -1031,9 +1197,25 @@ def cross_validate(original_gpc, X_train_clean, y_train_clean):
     
     print(f"Mean accuracy: {scores.mean():.4f}")
     print(f"Repeatability: {1 - scores.std()/scores.mean():.4f}")
-    
+    rep = 1 - scores.std()/scores.mean()
+
     return scores.mean()
 
+def cross_validate_acc_and_rep(original_gpc, X_train_clean, y_train_clean):
+    # Clone the trained model and preserve the fitted kernel
+    kernel = original_gpc.kernel_
+    
+    # Build a new GPC with fixed kernel and NO further optimization
+    model = GaussianProcessClassifier(kernel=kernel, optimizer=None)
+    
+    # Cross-validation without fitting again (scikit-learn handles this safely)
+    scores = cross_val_score(model, X_train_clean, y_train_clean, cv=5)
+    
+    print(f"Mean accuracy: {scores.mean():.4f}")
+    print(f"Repeatability: {1 - scores.std()/scores.mean():.4f}")
+    rep = 1 - scores.std()/scores.mean()
+
+    return scores.mean(), rep
 
 def cross_validate_old(original_gpc, X_train_clean, y_train_clean):
     # Create a true independent copy
@@ -1197,8 +1379,22 @@ def gpc_example_old(corner_0_noise, gpc_0,threshold = 0.5, scan = 0):
     else:
         return "nothing homie"
 
+# print("c_full_test_0")
+# c_full_test_0 = format_scan_lablee("logs/full_test_0_noise_rr.json", 10,50,1)
 
+# for i in range(len(c_full_test_0)):
+#     print('Entry:', i, ', Class', c_full_test_0[i].label, ', Size', c_full_test_0[i].data_filled[:, 0].size)
+#     # print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
+#     # print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
 
+# print("c_full_test_1")
+# c_full_test_1 = format_scan_lablee("logs/full_test_1_noise_rr.json", 10,50,1)
+# print("c_full_test_3")
+# c_full_test_3 = format_scan_lablee("logs/full_test_3_noise_rr.json", 10,50,1)
+# print("c_full_test_10")
+# c_full_test_10 = format_scan_lablee("logs/full_test_10_noise_rr.json", 10,50,1)
+print("c_full_test_10")
+realsquarx3 = format_scan_lablee("logs/realsquare3x.json", 10,50,1)
 
 #0.0005
 ##corner training### 
@@ -1209,13 +1405,28 @@ c_object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1
 c_corner_low_noise = format_scan_corner("logs/corner_1_deg_5mm.json", 0.001,0.1,1)
 c_corner_high_noise = format_scan_corner("logs/corner_3deg_15mm.json", 0.001,0.1,1)
 
-#########extended corner data#######
+
+# for i in range(len(c_corner_0_noise)):
+#     print('Entry:', i, ', Class', c_corner_0_noise[i].label, ', Size', c_corner_0_noise[i].data_filled[:, 0].size)
+#     print('Data type: Radius', c_corner_0_noise[i].data_filled[:, 0])
+#     print('Data type:Theta', c_corner_0_noise[i].data_filled[:, 1])
+
+########extended corner data#######
 c_ranged_far = format_scan_corner("logs/Corner_range_far.json", 0,0.1,1)
 c_ranged_near = format_scan_corner("logs/corner_range_near.json", 0,0.1,1)
 c_rotaion = format_scan_corner("logs/corner_0_test1_rotation.json", 0,0.1,1)
 c_side_left = format_scan_corner("logs/side_corner_left.json", 0,0.1,1)
 c_side_right = format_scan_corner("logs/side_corner_right_real.json", 0,0.1,1)
 
+c_wall_low_noise = format_scan_corner("logs/wall_1_deg_5mm.json", 100,0.1,1)
+c_wall_high_noise = format_scan_corner("logs/wall_3deg_15mm.json", 100,0.1,1)
+
+c_object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 100,50,1)
+c_object_high_noise = format_scan_corner("logs/object_3deg_15mm.json", 100,50,1)
+
+c_object_vhigh_noise = format_scan_corner("logs/circle_x10R.json", 100,50,1)
+c_wall_vhigh_noise = format_scan_corner("logs/wall_x10R.json", 100,0.1,1)
+c_corner_vhigh_noise = format_scan_corner("logs/corner_x10R.json", 0.00001,0.1,1)
 
 
 
@@ -1254,7 +1465,6 @@ w_side_right = format_scan_wall("logs/side_wall_right.json", 10,0,1)
 
 
 
-
 #-----extras----
 # object_0_noise = format_scan_corner("logs/object_perfect_lidar.json", 10,0.1,1)
 # object_low_noise = format_scan_corner("logs/object_1_deg_5mm.json", 10,0.1,1)
@@ -1269,7 +1479,7 @@ w_side_right = format_scan_wall("logs/side_wall_right.json", 10,0,1)
 print("-----------------------testcombine_scan----------------")
 
 
-
+# realsquarx3 = combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise)
 
 
 
@@ -1282,6 +1492,21 @@ print("-----------------------testcombine_scan----------------")
 
 corner_0 = combine_scans(c_corner_0_noise,c_wall_0_noise,c_object_0_noise)
 c_corner_theta1_0, c_corner_theta2_0, c_gpc_0, c_DataX_0,c_DataY_0 = find_thetas(corner_0,model_name='1')
+
+c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
+c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
+c_10_noise_DataX, c_10_noise_DataY = clean_data(realsquarx3)
+
+                                                                                                                                        # c_0_noise_DataX, c_0_noise_DataY = clean_data(realsquarx3)
+# c_1_noise_DataX, c_1_noise_DataY = clean_data(c_full_test_1)
+# c_3_noise_DataX, c_3_noise_DataY = clean_data(c_full_test_3)
+# c_10_noise_DataX, c_10_noise_DataY = clean_data(c_full_test_10)
+
+#full test
+c_vhigh_noise_DataX, c_vhigh_noise_DataY = clean_data(combine_scans(c_corner_vhigh_noise,c_wall_vhigh_noise,c_object_vhigh_noise))
+
+c_low_noise_DataX, c_low_noise_DataY = clean_data(combine_scans(c_corner_low_noise,c_wall_low_noise,c_object_low_noise))
+c_high_noise_DataX, c_high_noise_DataY = clean_data(combine_scans(c_corner_high_noise,c_wall_high_noise,c_object_high_noise))
 
 cc_ranged_far = combine_scans(c_ranged_far,corner_0)
 cc_ranged_near = combine_scans(c_ranged_near,corner_0)
@@ -1320,297 +1545,173 @@ c,d, best_gpc_0, best_DataX_0,best_DataY_0 = find_thetas(combine_scans(c_corner_
 # print("----------c_side_right_gpc_0 vs c_DataX_0")
 # cross_validate(c_side_right_gpc_0, c_DataX_0,c_DataY_0)
 
-print("---------------------c_gpc_0----------------------")
-print("c_gpc_0 vs c_DataX_0")
-cross_validate(c_gpc_0, c_DataX_0,c_DataY_0)
-print("c_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(c_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("c_gpc_0 vs c_ranged_near_only_DataX_0")
-cross_validate(c_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
-print("c_gpc_0 vs c_rotaion_only_DataX_0")
-cross_validate(c_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
-print("c_gpc_0 vs c_side_left_only_DataX_0")
-cross_validate(c_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
-print("c_gpc_0 vs c_side_right_only_DataX_0")
-cross_validate(c_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
-
-
-print("----------------validate vs themselves---------------")
-print("----------c_ranged_far_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(c_ranged_far_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("----------c_ranged_near_gpc_0 vs c_ranged_near_DataX_0")
-cross_validate(c_ranged_near_gpc_0, c_ranged_near_DataX_0,c_ranged_near_DataY_0)
-print("----------c_rotaion_gpc_0 vs c_rotaion_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
-print("----------c_side_left_gpc_0 vs c_side_left_DataX_0")
-cross_validate(c_side_left_gpc_0, c_side_left_DataX_0,c_side_left_DataY_0)
-print("----------c_side_right_gpc_0 vs c_side_right_DataX_0")
-cross_validate(c_side_right_gpc_0, c_side_right_DataX_0,c_side_right_DataY_0)
-
-
-print("---------------------ALL----------------------")
-print("c_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(All_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("c_gpc_0 vs c_ranged_near_only_DataX_0")
-cross_validate(All_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
-print("c_gpc_0 vs c_rotaion_only_DataX_0")
-cross_validate(All_gpc_0, c_rotaion_only_DataX_0,c_rotaion_only_DataY_0 )
-print("c_gpc_0 vs c_side_left_only_DataX_0")
-cross_validate(All_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
-print("c_gpc_0 vs c_side_right_only_DataX_0")
-cross_validate(All_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
-print("c_gpc_0 vs c_DataX_0")
-cross_validate(All_gpc_0, c_DataX_0,c_DataY_0)
-
-
-print("---------------------Best----------------------")
-print("best_gpc_0 vs c_ranged_far_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_ranged_far_only_DataX_0, c_ranged_far_only_DataY_0)
-print("best_gpc_0 vs c_ranged_near_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_ranged_near_only_DataX_0,c_ranged_near_only_DataY_0)
-print("best_gpc_0 vs c_rotaion_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_rotaion_DataX_0,c_rotaion_DataY_0)
-print("best_gpc_0 vs c_side_left_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_side_left_only_DataX_0,c_side_left_only_DataY_0)
-print("best_gpc_0 vs c_side_right_only_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_side_right_only_DataX_0,c_side_right_only_DataY_0)
-print("best_gpc_0 vs c_DataX_0")
-cross_validate(c_rotaion_gpc_0, c_DataX_0,c_DataY_0)
-
+# c_0_noise_DataX, c_0_noise_DataY = clean_data(c_full_test_0)
+# c_1_noise_DataX, c_1_noise_DataY = clean_data(c_full_test_1)
+# c_3_noise_DataX, c_3_noise_DataY = clean_data(c_full_test_3)
 
 # Define ranges for wl and wr
-wl_values = np.arange(1.3, 2.5, 0.25)  # 0.1 to 0.9 in steps of 0.1
-wr_values = np.arange(0.1, 5.0, 0.1)   # 1.0 to 4.5 in steps of 0.5
+wl_values = np.arange(0.1, 5.0, 0.25)  # 0.1 to 0.9 in steps of 0.1
+wr_values = np.arange(0.1, 5.0, 0.25)   # 1.0 to 4.5 in steps of 0.5
 
 # Initialize a grid to store scores
-scores = np.zeros((len(wl_values), len(wr_values)))
+scores_normal = np.zeros((len(wl_values), len(wr_values)))
+scores_real_only = np.zeros((len(wl_values), len(wr_values)))
+scores_real_rotation = np.zeros((len(wl_values), len(wr_values)))
+scores_all = np.zeros((len(wl_values), len(wr_values)))
 wl_values_store = np.zeros((len(wl_values)))
 wr_values_store = np.zeros((len(wr_values)))
 
 
 #def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
 
+#################Iterative bull shit################
+c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion, c_10_noise_DataX, c_10_noise_DataY
 # Iterate over all combinations
 for i, wl in enumerate(wl_values):
     for j, wr in enumerate(wr_values):
         
-        _, _, _, _,__, score = find_thetas_cross_validate(
-            combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-            c_DataX_0,
-            c_DataY_0,
-            wl=wl,
-            wr=wr
-        )
-        scores[i, j] = score  # Store the score
+        _, _, _, _,__, score1,__ = find_thetas_cross_validate(
+                combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
+                c_10_noise_DataX,
+                c_10_noise_DataY,
+                wl=wl,
+                wr=wr
+            )
+        scores_normal[i, j] = score1  # Store the score
         wl_values_store[i] = wl
         wr_values_store[j] = wr
 
-        _, _, _, _,__, score = find_thetas_cross_validate(
-            combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion),
-            c_DataX_0,
-            c_DataY_0,
-            wl=wl,
-            wr=wr
-        )
-        scores[i, j] = score  # Store the score
-        wl_values_store[i] = wl
-        wr_values_store[j] = wr
+        _, _, _, _,__, score2,__ = find_thetas_cross_validate(
+                realsquarx3,
+                c_10_noise_DataX,
+                c_10_noise_DataY,
+                wl=wl,
+                wr=wr
+            )
+        scores_real_only[i, j] = score2  # Store the score
 
 
+        _, _, _, _,__, score3,__ = find_thetas_cross_validate(
+                combine_scans(realsquarx3,c_rotaion),
+                c_10_noise_DataX,
+                c_10_noise_DataY,
+                wl=wl,
+                wr=wr
+            )
+
+        scores_real_rotation[i, j] = score3  # Store the score
+
+
+
+        _, _, _, _,__, score4,__ = find_thetas_cross_validate(
+                combine_scans(c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion,realsquarx3),
+                c_10_noise_DataX,
+                c_10_noise_DataY,
+                wl=wl,
+                wr=wr
+            )
+
+        scores_all[i, j] = score4  # Store the score
+
+print("wl_values_store")
 print(wl_values_store)
+print("wr_values_store")
 print(wr_values_store)
-print(scores)
+print("scores_normal")
+print(scores_normal)
+print("scores_real_only")
+print(scores_real_only)
+print("scores_real_rotation")
+print(scores_real_rotation)
+print("scores_all")
+print(scores_all)
 
-np.savez('optimization_results.npz', wl_values=wl_values, wr_values=wr_values, scores=scores)
 
 # Create a grid for plotting
 Wr, Wl = np.meshgrid(wl_values, wr_values)
 
-max_idx = np.argmax(scores)  # Index of max value in flattened array
-wl_idx, wr_idx = np.unravel_index(max_idx, scores.shape)  # Convert to 2D indices
+max_idx_normal = np.argmax(scores_normal)  # Index of max value in flattened array
+max_idx_real = np.argmax(scores_real_only)  # Index of max value in flattened array
+max_idx_real_rotaion = np.argmax(scores_real_rotation)  # Index of max value in flattened array
+max_idx_all = np.argmax(scores_all)  # Index of max value in flattened array
 
-best_wl = wl_values[wl_idx]
-best_wr = wr_values[wr_idx]
-best_score = scores[wl_idx, wr_idx]
+wl_idx_normal, wr_idx_normal = np.unravel_index(max_idx_normal, scores_normal.shape)  # Convert to 2D indices
+wl_idx_real, wr_idx_real = np.unravel_index(max_idx_real, scores_real_only.shape)  # Convert to 2D indices
+wl_idx_real_rotaion, wr_idx_real_rotaion = np.unravel_index(max_idx_real_rotaion, scores_real_rotation.shape)  # Convert to 2D indices
+wl_idx_all, wr_idx_all = np.unravel_index(max_idx_all, scores_all.shape)  # Convert to 2D indices
 
-print(f"Optimal weights: wl = {best_wl:.2f}, wr = {best_wr:.2f}")
-print(f"Best score: {best_score:.4f}")
+
+
+
+best_wl_normal = wl_values[wl_idx_normal]
+best_wr_normal = wr_values[wr_idx_normal]
+
+best_wl_real = wl_values[wl_idx_real]
+best_wr_real = wr_values[wr_idx_real]
+
+best_wl_rotaion = wl_values[wl_idx_real_rotaion]
+best_wr_rotaion = wr_values[wr_idx_real_rotaion]
+
+best_wl_all = wl_values[wl_idx_all]
+best_wr_all = wr_values[wr_idx_all]
+
+best_score_normal = scores_normal[best_wl_normal, best_wr_normal]
+best_score_real_only = scores_real_only[best_wl_real, best_wr_real]
+best_score_rotaion = scores_real_rotation[best_wl_rotaion, best_wr_rotaion]
+best_score_all = scores_all[best_wl_all, best_wr_all]
+
+print("--------Normal Best Values----------")
+print(f"Optimal weights: wl = {best_wl_normal:.2f}, wr = {best_wr_normal:.2f}")
+print(f"Best score: {best_score_normal:.4f}")
+
+print("--------A Best Values----------")
+print(f"Optimal weights: wl = {best_wl_real:.2f}, wr = {best_wr_real:.2f}")
+print(f"Best score: {best_score_real_only:.4f}")
+
+print(f"Optimal weights: wl = {best_wl_rotaion:.2f}, wr = {best_wr_rotaion:.2f}")
+print(f"Best score: {best_score_rotaion:.4f}")
+
+print(f"Optimal weights: wl = {best_wl_all:.2f}, wr = {best_wr_all:.2f}")
+print(f"Best score: {best_score_all:.4f}")
 
 # Create meshgrid for 3D plotting
 
-# Set up the figure
-fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(111, projection='3d')
-
-# Plot the surface (grey)
-surf = ax.plot_surface(
-    Wl, Wr, scores.T,  # Transpose scores to match meshgrid
-    cmap='RdBu',      # Grey colormap
-    alpha=0.7,         # Slightly transparent
-    edgecolor='none'
-)
-
-# Highlight the optimal point (red)
-ax.scatter(
-    best_wl, best_wr, best_score,
-    color='red',
-    s=100,             # Marker size
-    label=f'Optimal: wl={best_wl:.2f}, wr={best_wr:.2f}\nScore={best_score:.3f}'
-)
-
-# Customize the plot
-ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
-ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
-ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
-ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
-ax.legend(loc='upper right')
-
-# Add a colorbar for the surface
-fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
-
-plt.tight_layout()
-plt.show()
 
 
-# ##wall test data gpc found#####
-# __,__, w_ranged_far_gpc_0, w_ranged_far_DataX_0,w_ranged_far_DataY_0 = find_thetas(w_ranged_far,model_name='9')
-# __,__, w_ranged_near_gpc_0, w_ranged_near_DataX_0,w_ranged_near_DataY_0 = find_thetas(w_ranged_near,model_name='10')
-# __,__, w_rotaion_gpc_0, w_rotaion_DataX_0,w_rotaion_DataY_0 = find_thetas(w_rotaion,model_name='11')
-# __,__, w_side_left_gpc_0, w_side_left_DataX_0,w_side_left_DataY_0 = find_thetas(w_side_left,model_name='12')
-# __,__, w_side_right_gpc_0, w_side_right_DataX_0,w_side_right_DataY_0 = find_thetas(w_side_right,model_name='13')
+#################plotting bull shti ################
+# # Set up the figure
+# fig = plt.figure(figsize=(12, 8))
+# ax = fig.add_subplot(111, projection='3d')
 
+# # Plot the surface (grey)
+# surf = ax.plot_surface(
+#     Wl, Wr, scores.T,  # Transpose scores to match meshgrid
+#     cmap='RdBu',      # Grey colormap
+#     alpha=0.7,         # Slightly transparent
+#     edgecolor='none'
+# )
 
-# ##object test data gpc found#####
-# __,__, o_ranged_far_gpc_0, o_ranged_far_DataX_0,o_ranged_far_DataY_0 = find_thetas(o_ranged_far,model_name='15')
-# __,__, o_ranged_near_gpc_0, o_ranged_near_DataX_0,o_ranged_near_DataY_0 = find_thetas(o_ranged_near,model_name='16')
-# __,__, o_rotaion_gpc_0, o_rotaion_DataX_0,o_rotaion_DataY_0 = find_thetas(o_rotaion,model_name='17')
-# __,__, o_side_left_gpc_0, o_side_left_DataX_0,o_side_left_DataY_0 = find_thetas(o_side_left,model_name='18')
-# __,__, o_side_right_gpc_0, o_side_right_DataX_0,o_side_right_DataY_0 = find_thetas(o_side_right,model_name='14')
+# # Highlight the optimal point (red)
+# ax.scatter(
+#     best_wl, best_wr, best_score,
+#     color='red',
+#     s=100,             # Marker size
+#     label=f'Optimal: wl={best_wl:.2f}, wr={best_wr:.2f}\nScore={best_score:.3f}'
+# )
+
+# # Customize the plot
+# ax.set_xlabel('wl (Kernel Multiplier)', fontsize=12)
+# ax.set_ylabel('wr (RBF Length Scale)', fontsize=12)
+# ax.set_zlabel('Score (e.g., Accuracy)', fontsize=12)
+# ax.set_title('3D Surface Plot of Scores with Optimal Weights', fontsize=14)
+# ax.legend(loc='upper right')
+
+# # Add a colorbar for the surface
+# fig.colorbar(surf, shrink=0.5, aspect=10, label='Score')
+
+# plt.tight_layout()
+# plt.show()
 
 
 
 
-
-
-# print("corner_0_R_H")
-# for i in range(len(corner_0_R_H)):
-#       print('Entry:', i, ', Class', corner_0_R_H[i].label)
-
-# print("corner_0_R")
-# for i in range(len(corner_0_R)):
-#       print('Entry:', i, ', Class', corner_0_R[i].label)
-
-# print("corner_0")
-# for i in range(len(corner_0)):
-#       print('Entry:', i, ', Class', corner_0[i].label)
-
-# print("corner_H")
-# for i in range(len(corner_H)):
-#       print('Entry:', i, ', Class', corner_H[i].label)
-
-#print("object_theta1:",object_theta1, "object_theta2:",object_theta2)
-# # print("corner_theta1_0_R_H:",corner_theta1_0_R_H, "corner_theta2_0_R_H:",corner_theta2_0_R_H)
-# print("corner_theta1_0_R:",corner_theta1_0_R, "corner_theta2_0_R:",corner_theta2_0_R)
-# print("corner_theta1_0:",corner_theta1_0, "corner_theta2_0:",corner_theta2_0)
-# print("corner_theta1_H:",corner_theta1_H, "corner_theta2_H:",corner_theta2_H)
-
-
-
-
-# Verify initial kernel differences
-# print("\n=== Initial Model Kernels ===")
-# print(f"gpc_0_R_H: {gpc_0_R_H.kernel}")
-# print(f"gpc_0_R: {gpc_0_R.kernel}") 
-# print(f"gpc_0: {gpc_0.kernel}")
-# print(f"gpc_H: {gpc_H.kernel}")
-
-# print("\n=== Initial Model Kernels ===")
-# print(f"gpc_0_R_H: {gpc_0_R_H}")
-# print(f"gpc_0_R: {gpc_0_R}") 
-# print(f"gpc_0: {gpc_0}")
-# print(f"gpc_H: {gpc_H}")
-
-# # # Verify data differences
-# # print("\n=== Data Verification ===")
-# # print(f"Data_0_R_H shape: {DataX_0_R_H_.shape}")
-# # print(f"Data_0_R shape: {DataX_0_R.shape}")
-# # print(f"Unique y counts:\nData_0_R_H: {np.unique(DataY_0_R_H_, return_counts=True)}\nData_0_R: {np.unique(DataY_0_R, return_counts=True)}")
-
-
-# # # Verify model differences
-# # print("\n=== Model Differences Verification ===")
-# # models = {
-# #     'gpc_0_R_H': gpc_0_R_H,
-# #     'gpc_0_R': gpc_0_R,
-# #     'gpc_0': gpc_0,
-# #     'gpc_H': gpc_H
-# # }
-
-# # for name, model in models.items():
-# #     print(f"{name} kernel: {model.kernel}")
-# #     print(f"{name} params: {model.get_params()['kernel']}\n")
-
-
-# # for i, model in enumerate([gpc_0_R_H, gpc_0_R, gpc_0, gpc_H]):
-# #     model.kernel.theta = [i+1] * len(model.kernel.theta)  # Force different starting point
-
-# print("-----------------gpc_0_R_H vs Data_0_R_H_---------------")
-# meanacc1 = cross_validate(gpc_0_R_H,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_0_R_H vs Data_0_R---------------")
-# meanacc2 = cross_validate(gpc_0_R_H,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_0_R_H vs Data_0---------------")
-# meanacc3 = cross_validate(gpc_0_R_H,DataX_0,DataY_0)
-
-# print("-----------------gpc_0_R_H vs Data_H---------------")
-# meanacc4 = cross_validate(gpc_0_R_H,DataX_H,DataY_H)
-
-
-
-
-# print("-----------------gpc_0_R vs Data_0_R_H_---------------")
-# meanacc5 = cross_validate(gpc_0_R,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_0_R vs Data_0_R---------------")
-# meanacc6 = cross_validate(gpc_0_R,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_0_R vs Data_0---------------")
-# meanacc7 = cross_validate(gpc_0_R,DataX_0,DataY_0)
-
-# print("-----------------gpc_0_R vs Data_H---------------")
-# meanacc8 = cross_validate(gpc_0_R,DataX_H,DataY_H)
-
-
-
-
-
-# print("-----------------gpc_0 vs Data_0_R_H_---------------")
-# meanacc9 = cross_validate(gpc_0,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_0 vs Data_0_R---------------")
-# meanacc10 = cross_validate(gpc_0,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_0 vs Data_0---------------")
-# meanacc11 = cross_validate(gpc_0,DataX_0,DataY_0)
-
-# print("-----------------gpc_0 vs Data_H---------------")
-# meanacc12 = cross_validate(gpc_0,DataX_H,DataY_H)
-
-
-
-
-# print("-----------------gpc_H vs Data_0_R_H_---------------")
-# meanacc13 = cross_validate(gpc_H,DataX_0_R_H_,DataY_0_R_H_)
-
-# print("-----------------gpc_H vs Data_0_R---------------")
-# meanacc14 = cross_validate(gpc_H,DataX_0_R,DataY_0_R)
-
-# print("-----------------gpc_H vs Data_0---------------")
-# meanacc15 = cross_validate(gpc_H,DataX_0,DataY_0)
-
-# print("-----------------gpc_H vs Data_H---------------")
-# meanacc16 = cross_validate(gpc_H,DataX_H,DataY_H)
-
-# # print(f"Data shapes - 0_R_H: {DataX_0_R_H_.shape}, 0_R: {DataX_0_R.shape}")
-# # print(f"Data equality check: {np.array_equal(DataX_0_R_H_, DataX_0_R)}")
