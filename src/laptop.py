@@ -414,8 +414,8 @@ class LaptopPilot:
             sigma_motion[0,1]= np.deg2rad(0.012)**2# impact of w angular velocity on x
             sigma_motion[1,0]= 0.0155**2# impact of v linear ve   locity on y
             sigma_motion[1,1]=np.deg2rad(0.012)**2 # impact of w angular velocity on y
-            sigma_motion[2,0]= 0.0155**2 # impact of v linear velocity on gamma
-            sigma_motion[2,1]=np.deg2rad(0.012)**2 # impact of w linear velocity on gamma
+            sigma_motion[2,0]= 0.00155**2 # impact of v linear velocity on gamma
+            sigma_motion[2,1]=np.deg2rad(0.0012)**2 # impact of w linear velocity on gamma
             
             return sigma_motion
 
@@ -738,21 +738,9 @@ class LaptopPilot:
                 p_robot_truth[2,0] = self.groundtruth_yaw
                 self.p_groundtruth_tracker = p_robot_truth[0:3,0]
 
-                # dp_truth = self.state - p_robot_truth
-                # dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+                dp_truth = self.state - p_robot_truth
+                dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
-
-                # error = Vector3Stamped()
-                # error.vector.x = dp_truth[0,0]   # Right wheelspeed rad/s
-                # error.vector.y = dp_truth[1,0] # Left wheelspeed rad/s
-                # error.vector.y = dp_truth[2,0]
-                # self.datalog.log(error, topic_name="/error")
-
-                # uncertainty = Vector3Stamped()
-                # uncertainty.vector.x = self.covariance[0,0] # Right wheelspeed rad/s
-                # uncertainty.vector.y = self.covariance[1,0] # Left wheelspeed rad/s
-                # uncertainty.vector.y = self.covariance[2,0]
-                # self.datalog.log(uncertainty, topic_name="/uncertainty")
                 
 
 
