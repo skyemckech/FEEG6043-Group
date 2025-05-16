@@ -7,28 +7,34 @@ class Classifier:
         self.classifier = None
 
         filepath = "src/Tools/training_data/"
-        corner_no_noise = format_scan(filepath+"corner_0.json", 'corner')
-        corner_sider = format_scan(filepath+"corner_0_sider.json", 'corner')
-        corner_sidel = format_scan(filepath+"corner_0_sidel.json", 'corner')
+        gameroajgood = [0,0,0,0,0,1,1,1,1,1,1]
+        corner_no_noise = format_scan(filepath+"NOW.json", gameroajgood)
 
-        wall_no_noise = format_scan(filepath+"wall_0.json", 'wall')
-        wall_wides = format_scan(filepath+'wall_wides.json', 'wall')
+        # corner_no_noise = format_scan(filepath+"corner_0.json", 'corner')
+        # corner_sider = format_scan(filepath+"corner_0_sider.json", 'corner')
+        # corner_sidel = format_scan(filepath+"corner_0_sidel.json", 'corner')
 
-        object_no_noise = format_scan(filepath+"circle_0.json", 'object')
+        # wall_no_noise = format_scan(filepath+"wall_0.json", 'wall')
+        # wall_wides = format_scan(filepath+'wall_wides.json', 'wall')
+
+        # object_no_noise = format_scan(filepath+"circle_0.json", 'object')
 
 
-        nothing = format_scan(filepath+"nothing.json",'None')
+        # nothing = format_scan(filepath+"nothing.json",'None')
 
-        no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,wall_wides, object_no_noise)
+        # no_noise = combine_scans(corner_no_noise,corner_sider,corner_sidel, wall_no_noise,wall_wides, object_no_noise)
 
-        self.data = no_noise
+        self.data = corner_no_noise
         # self.data = [no_noise,low_noise,high_noise]
 
-    def train_classifier(self, label=str):
-        data = self.data
+    def train_classifier(self):
+        gjaisfagsos = [0,0,0,0,0,1,1,1,1,1,1]
+        data = self.data[:120,:]
         for i in range(len(data)):
-            if data[i].label is not label:
-                data[i].label = 'not '+ label
+            if gjaisfagsos[i] == 0:
+                data[i].label = 'not corner'
+            else:
+                data[i].label = 'corner'
         theta1, theta2, self.classifier, _,_ = find_thetas(data)
         print("theta 1 is:",theta1, "theta 2 is:",theta2)
 

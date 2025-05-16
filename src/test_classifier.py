@@ -3,16 +3,18 @@ from Libraries import *
 from matplotlib import pyplot as plt
 
 cornerClassifier = Classifier()
-cornerClassifier.train_classifier('corner')
+cornerClassifier.train_classifier()
 testd = cornerClassifier.check_classifier()
 
 # observation = cornerClassifier.data[52]
-observation = testd[6]
+observation = testd[10]
 observation.data_filled = observation.data_filled[:120,:]
 observation.data = observation.data[:120,:]
 proba = cornerClassifier.classifier.predict_proba([observation.data_filled[:,0]])
 observation.label = (cornerClassifier.classifier.classes_[np.argmax(proba)])
 print(proba)
+# [0,1,2,3,4,5,6,7,8]
+# ['not corner','not corner','not corner','not corner','not corner', 'corner, 'corner', 'corner']
 
 p = Vector(3); 
 

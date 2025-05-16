@@ -63,7 +63,7 @@ class LaptopPilot:
         #>Modelling<#
         ################
         # path
-        self.path_velocity = 0.1
+        self.path_velocity = 0.04
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
@@ -207,20 +207,6 @@ class LaptopPilot:
             self.workbook.close
             self.dataLine = []
 
-    def sample_to_120(original_list):
-        """
-        Samples a list to exactly 120 equally spaced terms.
-        """
-        if len(original_list) <= 120:
-            raise ValueError("List must contain more than 120 elements to downsample.")
-
-        # Calculate step size
-        step = len(original_list) / 120
-
-        # Sample indices and generate the reduced list
-        sampled_list = [original_list[int(i * step)] for i in range(120)]
-        return sampled_list
-
     def true_wheel_speeds_callback(self, msg):
         # print("Received sensed wheel speeds: R=", msg.vector.x,", L=", msg.vector.y)
         # update wheel rates
@@ -244,7 +230,7 @@ class LaptopPilot:
         self.lidar_data[:,0] = msg.ranges # use ranges as a placeholder, workout northings in Task 4
         self.lidar_data[:,1] = msg.angles # use angles as a placeholder, workout eastings in Task 4
 
-        self.raw_lidar = self.sample_to_120(self.lidar_data)
+        self.raw_lidar = self.lidar_data[:120,:]
         ###############(imported)#########################
         self.datalog.log(msg, topic_name="/lidar")
 
