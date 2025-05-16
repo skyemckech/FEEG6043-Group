@@ -21,6 +21,7 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 from matplotlib.widgets import Button
 from pyton_skin import data_manager
+from collections import Counter 
 
 
 
@@ -862,6 +863,35 @@ def clean_data(a):
     X_train = []
     y_train = []
 
+    # Debug: Count initial classes
+    initial_classes = Counter(scan.label for scan in a if scan.label is not None)
+    print(f"Initial class counts: {initial_classes}")
+
+    for i in range(len(a)):
+        if a[i].label is None:
+            continue
+            
+        data = a[i].data_filled[:, 0]
+        if data.size < target_size:
+            padded = np.pad(data, (0, target_size - data.size), 'constant', constant_values=0)  # Pad with 0, not NaN
+        else:
+            padded = data[:target_size]
+        
+        X_train.append(padded)
+        y_train.append(a[i].label)
+
+    # Debug: Count final classes
+    final_classes = Counter(y_train)
+    print(f"Final class counts: {final_classes}")
+
+    return np.array(X_train), np.array(y_train)
+
+
+def clean_data_old(a):
+    target_size = a[0].data_filled[:, 0].size
+    X_train = []
+    y_train = []
+
     # Data preparation
     for i in range(len(a)):
         if a[i].label is None:
@@ -968,6 +998,16 @@ def find_thetas(scans, model_name=None, wl = 1, wr = 1):
     print(f'Optimized kernel: {opt_kernel}')
     print(f'Theta: [theta_0: {theta_0:.3f}, theta_1: {theta_1:.3f}]')
     print(f'Negative Log-Likelihood (NLL): {nll:.3f}')
+
+    unique_classes = np.unique(y_train_clean)
+    if len(unique_classes) < 2:
+        print("\n[ERROR] Only one class detected in y_train_clean!")
+        print(f"Classes present: {unique_classes}")
+        print(f"Class counts: {Counter(y_train_clean)}")
+        print("First 10 labels:", y_train_clean[:10])
+        raise ValueError("Training data must contain at least 2 classes.")
+    
+    gpc.fit(X_train_clean, y_train_clean)  # Proceed only if validation passes
 
     return theta_1, theta_0, gpc, X_train_clean, y_train_clean
 
@@ -1563,6 +1603,10 @@ wr_values_store = np.zeros((len(wr_values)))
 
 
 #def find_thetas_cross_validate(scans, X_train, y_train, wl = 1, wr = 1):
+
+for i in range(len(realsquarx3)):
+    print('Entry:', i, ', Class', realsquarx3[i].label, ', Size', realsquarx3[i].data_filled[:, 0].size)
+
 
 #################Iterative bull shit################
 c_corner_0_noise, c_wall_0_noise, c_object_0_noise, c_rotaion, c_10_noise_DataX, c_10_noise_DataY
