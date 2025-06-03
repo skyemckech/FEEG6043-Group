@@ -35,7 +35,7 @@ class LaptopPilot:
         # network for sensed pose
         aruco_params = {
             "port": 50000,  # Port to listen to (DO NOT CHANGE)
-            "marker_id": 21,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
+            "marker_id": 22,  # Marker ID to listen to (CHANGE THIS to your marker ID)            
         }
         self.robot_ip = "192.168.90.1"
         
@@ -56,12 +56,12 @@ class LaptopPilot:
         #>Modelling<#
         ################
         # path
-        self.path_velocity = 0.1
+        self.path_velocity = 0.05
         self.path_acceleration = 0.1/3
         self.path_radius = 0.3
         self.accept_radius = 0.2
-        lapx = [0,1.4,1.4,0.3,0.3,1.1,1.1,0]
-        lapy = [0,0,1.4,1.4,0.3,0.3,1.1,1.1]
+        lapx = [0,1,1,0]
+        lapy = [0,0,1,1]
         self.northings_path = lapx+[0]
         self.eastings_path = lapy+[0]      
         self.relative_path = True #False if you want it to be absolute  
@@ -71,8 +71,8 @@ class LaptopPilot:
         self.ddrive = ActuatorConfiguration(wheel_distance, wheel_diameter) #look at your tutorial and see how to use this
 
         # control parameters        
-        self.tau_s = 0.5 # s to remove along track error
-        self.L = 0.2 # m distance to remove normal and angular error
+        self.tau_s = 2 # s to remove along track error
+        self.L = 0.4 # m distance to remove normal and angular error
         self.v_max = 0.2 # m/s fastest the robot can go
         self.w_max = np.deg2rad(30) # fastest the robot can turn
         self.timeout = 10 #s
@@ -446,12 +446,12 @@ class LaptopPilot:
             
             if aruco_pose is not None:
                 Q = self.uncertainty.get_yaw_sensor_uncertainty()
-                p_noise = 0.002
+                p_noise = 0.0
                 self.yaw_sensor_update(p_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.yaw_sensor_transform, Q, wrap_index = G)
 
                 Q = self.uncertainty.get_p_sensor_uncertainty()
-                h_noise = 0.002
+                h_noise = 0.0
                 self.position_sensor_update(h_noise)
                 self.state, self.covariance = extended_kalman_filter_update(self.state, self.covariance, self.sensor_measurement, self.position_sensor_transform, Q)
 
@@ -461,11 +461,7 @@ class LaptopPilot:
 
             
             #creates measured pose
-            p_robot_truth = Vector(3)
-            p_robot_truth[0,0] = self.groundtruth_northings
-            p_robot_truth[1,0] = self.groundtruth_eastings
-            p_robot_truth[2,0] = self.groundtruth_yaw
-            self.p_groundtruth_tracker = p_robot_truth[0:3,0]
+
                                 
             #p_robot[2] = p_robot[2] % (2 * np.pi)  # deal with angle wrapping          
 
@@ -488,10 +484,10 @@ class LaptopPilot:
             ################################################################################
             # feedback control: get pose change to desired trajectory from body
             dp = p_ref - self.state[0:3] #compute difference between reference and estimated pose in the $e$-frame
-            dp_truth = p_ref - p_robot_truth
+            # dp_truth = p_ref - p_robot_truth
 
             dp[2] = (dp[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
-            dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
+            # dp_truth[2] = (dp_truth[2] + np.pi) % (2 * np.pi) - np.pi # handle angle wrapping for yaw
 
             H_eb = HomogeneousTransformation(self.state[0:2], self.state[2])
             ds = Inverse(H_eb.H_R) @ dp # rotate the $e$-frame difference to get it in the $b$-frame (Hint: dp_b = H_be.H_R @ dp_e)
