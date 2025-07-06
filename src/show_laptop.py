@@ -180,11 +180,11 @@ class Window(QWidget):
                 measured_pose_yaw_rad = None
 
             # waypoints # 
-            if northings_path != self.Laptop.northings_path or eastings_path != self.Laptop.eastings_path:                  
+            if northings_path != self.Laptop.config.northings_path or eastings_path != self.Laptop.config.eastings_path:                  
                 self.waypoints.x.clear()
                 self.waypoints.y.clear()              
-                northings_path = copy.deepcopy(self.Laptop.northings_path)
-                eastings_path = copy.deepcopy(self.Laptop.eastings_path)                                
+                northings_path = copy.deepcopy(self.Laptop.config.northings_path)
+                eastings_path = copy.deepcopy(self.Laptop.config.eastings_path)                                
 
             # wheel rate commands and actual #
             cmd_wheelrate_right = self.Laptop.cmd_wheelrate_right
