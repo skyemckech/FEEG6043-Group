@@ -91,7 +91,7 @@ class LaptopPilot:
         lidar_xb = 0 # location of lidar centre in b-frame primary axis ########################(changed)
         lidar_yb = 0.1 # location of lidar centre in b-frame secondary axis ###################(Changed)
         self.lidar = RangeAngleKinematics(lidar_xb,lidar_yb) ####################(changed)
-
+        self.new_lidar = False
 
         # Create variable for plotting ground truth and reference position
         self.p_reference_tracker = None
@@ -165,6 +165,8 @@ class LaptopPilot:
 
         # this filters out any 
         self.lidar_data = self.lidar_data[~np.isnan(self.lidar_data).any(axis=1)]
+
+        self.new_lidar = True
 
     def groundtruth_callback(self, msg):
         """This callback receives the odometry ground truth from the simulator."""
@@ -271,7 +273,11 @@ class LaptopPilot:
             if self.initialise_pose == True:
                 # set initial measurements
                 self.initialise_robot_pose()
-                self.ParticleFilter.initialise_position(self.position_data, self.uncertainty_data)
+                self.particle_filter = ParticlePathSLAM(self.config.N,
+                                 self.lidar,
+                                 self.position_data.position_vector, 
+                                 self.uncertainty_data.position_vector,                                 
+                                 )
                 self.path = generate_trajectory(self.config, self.position_data)
                 
                 # get current time and determine timestep

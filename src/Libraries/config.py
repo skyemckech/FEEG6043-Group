@@ -41,6 +41,12 @@ class RobotConfig:
         self.g_std   = np.deg2rad(1)   # rad
         self.x_dot_std = 0.3 #m/s
         self.g_dot_std = np.deg2rad(0.1) #rad/s
+        self.auxiliary_noise = [self.g_std, self.x_dot_std, self.g_dot_std]
+
+        self.position_std = 0.2
         self.aruco_northings_std = 0.01 #m
         self.aruco_eastings_std = 0.01 #m
         self.N = 100
+        
+        self.sigma_resolution = 0.2
+        self.sampling_resolution = 100 
